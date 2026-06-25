@@ -1,1 +1,11 @@
-Coloque aqui os PDFs das propostas. Ex.: imersaofoco2026.pdf
+Os PDFs NÃO ficam no Git (são pesados).
+Suba cada PDF direto na KingHost, pelo Gerenciador de Arquivos, em:
+   /www/propostas/pdfs/
+
+Use exatamente estes nomes (o botão da página procura por eles):
+   imersaofoco2026.pdf
+   protocolomaestria.pdf
+   ascensaoempresarial.pdf
+   oconselho.pdf
+   achavedotempo.pdf
+   ciclodainovacao.pdf

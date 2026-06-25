@@ -1,0 +1,2 @@
+# PDFs ficam hospedados direto na KingHost (/www/propostas/pdfs/), fora do Git.
+*.pdf

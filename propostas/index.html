@@ -32,6 +32,13 @@
     .btn-lp:hover { background:var(--grafite-2); }
     .btn-pdf { background:var(--dourado); color:var(--grafite); }
     .btn-pdf:hover { background:var(--dourado-esc); }
+    .section-title { font-size:18px; margin:40px 0 14px; padding-top:28px; border-top:1px solid rgba(22,26,32,.10); color:var(--grafite); }
+    .materials { display:grid; grid-template-columns:repeat(auto-fill,minmax(420px,1fr)); gap:16px; }
+    .mat-card { background:#fff; border:1px solid rgba(22,26,32,0.10); border-radius:14px; padding:18px 22px; display:flex; align-items:center; justify-content:space-between; gap:16px; transition:box-shadow .15s, transform .15s; }
+    .mat-card:hover { box-shadow:0 8px 24px rgba(22,26,32,0.08); transform:translateY(-1px); }
+    .mat-info h3 { font-size:16px; margin-bottom:3px; }
+    .mat-info p { font-size:13px; color:var(--cinza); }
+    .mat-card .btn { flex:none; }
     footer { text-align:center; margin-top:40px; color:var(--cinza); font-size:12px; }
   </style>
 </head>
@@ -99,6 +106,17 @@
         </div>
       </div>
 
+    </div>
+
+    <h2 class="section-title">Materiais de apoio</h2>
+    <div class="materials">
+      <div class="mat-card">
+        <div class="mat-info">
+          <h3>Blackbook</h3>
+          <p>Material base do projeto · referência interna</p>
+        </div>
+        <a class="btn btn-pdf" href="pdfs/blackbook.pdf" download>Baixar PDF</a>
+      </div>
     </div>
 
     <footer>Área interna · não divulgar · Ednaldo Henper</footer>

@@ -16,7 +16,11 @@
     header { text-align:center; margin-bottom:6px; }
     .tag { display:inline-block; font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--dourado-esc); font-weight:700; margin-bottom:10px; }
     h1 { font-size:30px; margin-bottom:8px; }
-    .sub { color:var(--cinza); font-size:15px; margin-bottom:36px; text-align:center; }
+    .sub { color:var(--cinza); font-size:15px; margin-bottom:18px; text-align:center; }
+    .legend { display:flex; justify-content:center; gap:18px; flex-wrap:wrap; margin-bottom:34px; font-size:12.5px; color:var(--cinza); }
+    .legend span { display:inline-flex; align-items:center; gap:6px; }
+    .dot { width:11px; height:11px; border-radius:3px; display:inline-block; }
+    .dot.on { background:var(--dourado); } .dot.off { background:#D9D6CF; }
     .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(460px,1fr)); gap:16px; }
     .card { background:#fff; border:1px solid rgba(22,26,32,0.10); border-radius:14px; padding:20px 22px; transition:box-shadow .15s, transform .15s; display:flex; flex-direction:column; }
     .card:hover { box-shadow:0 8px 24px rgba(22,26,32,0.08); transform:translateY(-1px); }
@@ -26,6 +30,7 @@
     .meta { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
     .chip { font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; background:var(--creme); color:var(--grafite-2); border:1px solid rgba(201,162,74,.35); }
     .chip.price { background:#161A20; color:var(--dourado); border-color:#161A20; }
+    .chip.warn { background:#FBEFD9; color:#B5642E; border-color:rgba(181,100,46,.4); }
     .persona { background:var(--creme); border-radius:10px; padding:12px 14px; margin-bottom:16px; }
     .persona .qc { display:block; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--dourado-esc); font-weight:700; margin-bottom:5px; }
     .persona p { font-size:13.5px; color:var(--grafite-2); line-height:1.55; }
@@ -35,6 +40,7 @@
     .btn-lp:hover { background:var(--grafite-2); }
     .btn-pdf { background:var(--dourado); color:var(--grafite); }
     .btn-pdf:hover { background:var(--dourado-esc); }
+    .btn-off { background:#ECEAE5; color:#9A9486; cursor:not-allowed; }
     .section-title { font-size:18px; margin:40px 0 14px; padding-top:28px; border-top:1px solid rgba(22,26,32,.10); }
     .materials { display:grid; grid-template-columns:repeat(auto-fill,minmax(460px,1fr)); gap:16px; }
     .mat-card { background:#fff; border:1px solid rgba(22,26,32,0.10); border-radius:14px; padding:18px 22px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
@@ -51,7 +57,11 @@
       <span class="tag">Uso interno · Esteira</span>
       <h1>Esteira de Produtos</h1>
     </header>
-    <p class="sub">Para cada produto: quem compra, o nível de consciência, a LP e a proposta. O preço sobe junto com a consciência. Apoio ao time — não divulgar.</p>
+    <p class="sub">Para cada produto: quem compra, o nível de consciência, a LP e a proposta. Apoio ao time — não divulgar.</p>
+    <div class="legend">
+      <span><i class="dot on"></i> Ativo (online)</span>
+      <span><i class="dot off"></i> Pendente (falta colocar online)</span>
+    </div>
 
     <div class="grid">
 
@@ -61,17 +71,17 @@
         <div class="persona"><span class="qc">Quem compra</span><p>Dono de PME curioso, que quer “ver o Ednaldo ao vivo” antes de se comprometer. Baixo compromisso e baixo risco — o ticket baixo derruba a objeção (“por esse preço, vou”). O palco vende o Protocolo. <strong>Não é pra</strong> quem já está quente pro Protocolo.</p></div>
         <div class="actions">
           <a class="btn btn-lp" href="/ascensaoempresarial/" target="_blank" rel="noopener">Ver LP</a>
-          <a class="btn btn-pdf" href="pdfs/ascensaoempresarial.pdf" download>Baixar PDF</a>
+          <span class="btn btn-off" title="PDF ainda não enviado">PDF pendente</span>
         </div>
       </div>
 
       <div class="card">
         <div class="top"><span class="num">2</span><h2>A Chave do Tempo</h2></div>
-        <div class="meta"><span class="chip">Nível 3–4</span><span class="chip">Desafio 7 dias</span><span class="chip price">R$197–297</span></div>
+        <div class="meta"><span class="chip">Nível 3–4</span><span class="chip">Desafio 7 dias</span><span class="chip price">R$197–297</span><span class="chip warn">checkout + vídeo pendentes</span></div>
         <div class="persona"><span class="qc">Quem compra</span><p>Dono sufocado pela falta de tempo, que quer uma <strong>vitória rápida</strong> num problema concreto: recuperar horas e sentir que “funciona” em 7 dias. Impulso de baixo risco. No encerramento, a ponte pro Protocolo. <strong>Não é pra</strong> quem precisa de transformação ampla.</p></div>
         <div class="actions">
           <a class="btn btn-lp" href="/achavedotempo/" target="_blank" rel="noopener">Ver LP</a>
-          <a class="btn btn-pdf" href="pdfs/achavedotempo.pdf" download>Baixar PDF</a>
+          <span class="btn btn-off" title="PDF ainda não enviado">PDF pendente</span>
         </div>
       </div>
 
@@ -81,7 +91,7 @@
         <div class="persona"><span class="qc">Quem compra</span><p>Dono que “chegou longe mas perdeu o brilho” e quer transformação de <strong>mentalidade e identidade</strong>: foco, autoconfiança, propósito — um divisor de águas. Decide com emoção + a urgência da data e das 50 vagas. <strong>Não é pra</strong> quem só quer tática de negócio.</p></div>
         <div class="actions">
           <a class="btn btn-lp" href="/imersaofoco2026/" target="_blank" rel="noopener">Ver LP</a>
-          <a class="btn btn-pdf" href="pdfs/imersaofoco2026.pdf" download>Baixar PDF</a>
+          <span class="btn btn-off" title="PDF ainda não enviado">PDF pendente</span>
         </div>
       </div>
 
@@ -97,11 +107,11 @@
 
       <div class="card">
         <div class="top"><span class="num">5</span><h2>Ciclo da Inovação</h2></div>
-        <div class="meta"><span class="chip">Nível 5 · Mais consciente</span><span class="chip">Continuidade anual</span><span class="chip price">R$40k/ano · por aplicação</span></div>
+        <div class="meta"><span class="chip">Nível 5 · Mais consciente</span><span class="chip">Continuidade anual</span><span class="chip price">R$40k/ano · por aplicação</span><span class="chip warn">link de aplicação + data pendentes</span></div>
         <div class="persona"><span class="qc">Quem compra</span><p>Quem quer <strong>implementação acompanhada de longo prazo</strong> — já fez o Protocolo, ou chega decidido pelo pacote completo (com o Protocolo dentro). Pensa em anos, não em sprint: hotseats, atravessar sem recair. <strong>Não é pra</strong> quem quer “resolver rápido e sair”. Valor e condição saem na conversa, nunca na página.</p></div>
         <div class="actions">
           <a class="btn btn-lp" href="/ciclodainovacao/" target="_blank" rel="noopener">Ver LP</a>
-          <a class="btn btn-pdf" href="pdfs/ciclodainovacao.pdf" download>Baixar PDF</a>
+          <span class="btn btn-off" title="PDF ainda não enviado">PDF pendente</span>
         </div>
       </div>
 
@@ -111,7 +121,7 @@
         <div class="persona"><span class="qc">Quem compra</span><p>Dono de topo que quer <strong>o Ednaldo direto</strong>, como conselheiro do negócio. Já estruturado, busca proximidade máxima e exclusividade — uma sala de um. Decisão de status, não de preço. Poucas cadeiras, por curadoria. <strong>Não é pra</strong> quem ainda precisa de método estruturado.</p></div>
         <div class="actions">
           <a class="btn btn-lp" href="/oconselho/" target="_blank" rel="noopener">Ver LP</a>
-          <a class="btn btn-pdf" href="pdfs/oconselho.pdf" download>Baixar PDF</a>
+          <span class="btn btn-off" title="PDF ainda não enviado">PDF pendente</span>
         </div>
       </div>
 

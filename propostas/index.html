@@ -18,20 +18,21 @@
     h1 { font-size:30px; margin-bottom:8px; }
     .sub { color:var(--cinza); font-size:15px; margin-bottom:36px; text-align:center; }
     .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(420px,1fr)); gap:16px; }
-    .card { background:#fff; border:1px solid rgba(22,26,32,0.10); border-radius:14px; padding:20px 22px; transition:box-shadow .15s, transform .15s; }
+    .card { background:#fff; border:1px solid rgba(22,26,32,0.10); border-radius:14px; padding:20px 22px; transition:box-shadow .15s, transform .15s; display:flex; flex-direction:column; }
     .card:hover { box-shadow:0 8px 24px rgba(22,26,32,0.08); transform:translateY(-1px); }
-    .card .top { display:flex; align-items:center; gap:12px; margin-bottom:4px; }
+    .card .top { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
     .num { flex-shrink:0; width:28px; height:28px; border-radius:50%; background:var(--grafite); color:var(--dourado); font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; }
     .card h2 { font-size:18px; }
-    .card .desc { font-size:13px; color:var(--cinza); margin:2px 0 16px 40px; }
-    .actions { display:flex; gap:10px; margin-left:40px; }
-    .btn { flex:1; text-align:center; text-decoration:none; font-weight:700; font-size:14px; padding:11px 14px; border-radius:9px; transition:background .15s, border-color .15s; }
+    .persona { background:var(--creme); border-radius:10px; padding:12px 14px; margin-bottom:16px; }
+    .persona .qc { display:block; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--dourado-esc); font-weight:700; margin-bottom:5px; }
+    .persona p { font-size:13.5px; color:var(--grafite-2); line-height:1.5; }
+    .actions { display:flex; gap:10px; margin-top:auto; }
+    .btn { flex:1; text-align:center; text-decoration:none; font-weight:700; font-size:14px; padding:11px 14px; border-radius:9px; transition:background .15s; }
     .btn-lp { background:var(--grafite); color:#fff; }
     .btn-lp:hover { background:var(--grafite-2); }
     .btn-pdf { background:var(--dourado); color:var(--grafite); }
     .btn-pdf:hover { background:var(--dourado-esc); }
     footer { text-align:center; margin-top:40px; color:var(--cinza); font-size:12px; }
-    @media (max-width:480px){ .card .desc,.actions{ margin-left:0; } }
   </style>
 </head>
 <body>
@@ -40,31 +41,13 @@
       <span class="tag">Uso interno · Esteira</span>
       <h1>Esteira de Produtos</h1>
     </header>
-    <p class="sub">Página de vendas (LP) e proposta (PDF) de cada produto, para o time. Não divulgar.</p>
+    <p class="sub">Para cada produto: quem compra, a página de vendas (LP) e a proposta (PDF). Apoio ao time de vendas — não divulgar.</p>
 
     <div class="grid">
 
       <div class="card">
-        <div class="top"><span class="num">1</span><h2>Imersão Foco 2026</h2></div>
-        <p class="desc">[descrição opcional / oferta]</p>
-        <div class="actions">
-          <a class="btn btn-lp" href="/imersaofoco2026/" target="_blank" rel="noopener">Ver LP</a>
-          <a class="btn btn-pdf" href="pdfs/imersaofoco2026.pdf" download>Baixar PDF</a>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="top"><span class="num">2</span><h2>Protocolo Maestria</h2></div>
-        <p class="desc">[descrição opcional / oferta]</p>
-        <div class="actions">
-          <a class="btn btn-lp" href="/protocolomaestria/" target="_blank" rel="noopener">Ver LP</a>
-          <a class="btn btn-pdf" href="pdfs/protocolomaestria.pdf" download>Baixar PDF</a>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="top"><span class="num">3</span><h2>Ascensão Empresarial</h2></div>
-        <p class="desc">[descrição opcional / oferta]</p>
+        <div class="top"><span class="num">1</span><h2>Ascensão Empresarial</h2></div>
+        <div class="persona"><span class="qc">Quem compra</span><p>[Perfil do comprador + momento que ele vive]</p></div>
         <div class="actions">
           <a class="btn btn-lp" href="/ascensaoempresarial/" target="_blank" rel="noopener">Ver LP</a>
           <a class="btn btn-pdf" href="pdfs/ascensaoempresarial.pdf" download>Baixar PDF</a>
@@ -72,17 +55,8 @@
       </div>
 
       <div class="card">
-        <div class="top"><span class="num">4</span><h2>O Conselho</h2></div>
-        <p class="desc">[descrição opcional / oferta]</p>
-        <div class="actions">
-          <a class="btn btn-lp" href="/oconselho/" target="_blank" rel="noopener">Ver LP</a>
-          <a class="btn btn-pdf" href="pdfs/oconselho.pdf" download>Baixar PDF</a>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="top"><span class="num">5</span><h2>A Chave do Tempo</h2></div>
-        <p class="desc">[descrição opcional / oferta]</p>
+        <div class="top"><span class="num">2</span><h2>A Chave do Tempo</h2></div>
+        <div class="persona"><span class="qc">Quem compra</span><p>[Perfil do comprador + momento que ele vive]</p></div>
         <div class="actions">
           <a class="btn btn-lp" href="/achavedotempo/" target="_blank" rel="noopener">Ver LP</a>
           <a class="btn btn-pdf" href="pdfs/achavedotempo.pdf" download>Baixar PDF</a>
@@ -90,11 +64,38 @@
       </div>
 
       <div class="card">
-        <div class="top"><span class="num">6</span><h2>Ciclo da Inovação</h2></div>
-        <p class="desc">[descrição opcional / oferta]</p>
+        <div class="top"><span class="num">3</span><h2>Protocolo Maestria</h2></div>
+        <div class="persona"><span class="qc">Quem compra</span><p>[Perfil do comprador + momento que ele vive]</p></div>
+        <div class="actions">
+          <a class="btn btn-lp" href="/protocolomaestria/" target="_blank" rel="noopener">Ver LP</a>
+          <a class="btn btn-pdf" href="pdfs/protocolomaestria.pdf" download>Baixar PDF</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="top"><span class="num">4</span><h2>Ciclo da Inovação</h2></div>
+        <div class="persona"><span class="qc">Quem compra</span><p>[Perfil do comprador + momento que ele vive]</p></div>
         <div class="actions">
           <a class="btn btn-lp" href="/ciclodainovacao/" target="_blank" rel="noopener">Ver LP</a>
           <a class="btn btn-pdf" href="pdfs/ciclodainovacao.pdf" download>Baixar PDF</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="top"><span class="num">5</span><h2>O Conselho</h2></div>
+        <div class="persona"><span class="qc">Quem compra</span><p>[Perfil do comprador + momento que ele vive]</p></div>
+        <div class="actions">
+          <a class="btn btn-lp" href="/oconselho/" target="_blank" rel="noopener">Ver LP</a>
+          <a class="btn btn-pdf" href="pdfs/oconselho.pdf" download>Baixar PDF</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="top"><span class="num">6</span><h2>Imersão Foco 2026</h2></div>
+        <div class="persona"><span class="qc">Quem compra</span><p>[a confirmar se entra na esteira]</p></div>
+        <div class="actions">
+          <a class="btn btn-lp" href="/imersaofoco2026/" target="_blank" rel="noopener">Ver LP</a>
+          <a class="btn btn-pdf" href="pdfs/imersaofoco2026.pdf" download>Baixar PDF</a>
         </div>
       </div>
 

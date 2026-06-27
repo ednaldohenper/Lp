@@ -412,7 +412,7 @@ function renderSegs(){
         </div>
         <button class="toggle ${seg.keep?"keep":"cut"}">${seg.keep?"✓ manter":"✕ cortar"}</button>
       </div>${tools}`;
-    card.querySelector(".thumb").onclick=()=>{ skipMode=false; $("#previewResult").style.color=""; vid.currentTime=seg.start; vid.play(); };
+    card.querySelector(".thumb").onclick=()=>{ stopPreview(); vid.currentTime=seg.start; vid.play(); };
     card.querySelector(".toggle").onclick=()=>{ seg.keep=!seg.keep; renderAll(); };
     card.querySelectorAll(".seg-tools button").forEach(b=> b.onclick=()=>{
       const a=b.dataset.act;
@@ -440,47 +440,84 @@ function renderTimeline(){
 }
 
 // ---------- player ----------
-$("#play").onclick=()=>{ reviewStopAt=null; vid.paused?vid.play():vid.pause(); };
 vid.onplay =()=> $("#play").textContent="❚❚";
 vid.onpause=()=> $("#play").textContent="▶︎";
-let skipMode=false;
-$("#previewResult").onclick=()=>{ reviewStopAt=null; setSkip(!skipMode); if(skipMode){ jumpToKept(vid.currentTime); vid.play(); } };
-function setSkip(on){ skipMode=on; $("#previewResult").style.color=on?"var(--ouro)":""; }
-function jumpToKept(t){ const r=keptRanges(); for(const x of r){ if(t< x.end-0.01){ if(t<x.start) vid.currentTime=x.start; return; } } vid.pause(); }
+$("#play").onclick=()=>{ stopPreview(); vid.paused?vid.play():vid.pause(); };
 
-// ouvir SÓ a junção de um corte específico (começa um pouco antes, pula a pausa e para sozinho)
-let reviewStopAt=null;
-function hearJoin(i){
-  setSkip(true);
-  const seg=S.segs[i];
-  reviewStopAt = seg.end + 0.8;            // para um pouco depois da emenda
-  vid.currentTime=Math.max(0, seg.start-0.8);
-  vid.play();
+// atualiza overlay/destaque/timeline para um tempo (no relógio ORIGINAL do vídeo)
+let lastPlayIdx=-1;
+function updateUIAt(t, moving){
+  $("#ph").style.left=(t/S.duration*100)+"%";
+  $("#time").textContent=`${fmt(t)} / ${fmt(S.duration)}`;
+  const c=S.caps.find(c=>t>=c.start && t<c.end);
+  $("#capOverlay").textContent=c?c.text:"";
+  document.querySelectorAll(".seg-card.playing").forEach(n=>n.classList.remove("playing"));
+  const idx=S.segs.findIndex(s=>t>=s.start && t<s.end);
+  if(idx>=0){ const c2=document.querySelector(`.seg-card[data-i="${idx}"]`); if(c2){ c2.classList.add("playing"); if(moving && idx!==lastPlayIdx) scrollToCard(idx); } }
+  lastPlayIdx=idx;
 }
+// reprodução normal (com pausas): só reflete na UI
+vid.ontimeupdate=()=>{ if(!preview.on) updateUIAt(vid.currentTime, false); };
+
+// ===== MOTOR "OUVIR SÓ O ÚTIL" =====
+// Toca o ÁUDIO apenas dos trechos mantidos, colado e SEM emenda audível (Web Audio).
+// O vídeo (mudo) só acompanha a imagem. Resultado: a pausa nunca é ouvida, sem engasgo de seek.
+const preview={on:false, ac:null, node:null, ranges:[], t0:0, total:0, raf:0, stopCut:Infinity};
+function origToCut(t, R){ let acc=0; for(const r of R){ if(t<r.start) return acc; if(t<=r.end) return acc+(t-r.start); acc+=r.end-r.start; } return acc; }
+function cutToOrig(ct, R){ let acc=0; for(const r of R){ const d=r.end-r.start; if(ct<=acc+d) return r.start+(ct-acc); acc+=d; } return S.duration; }
+
+function startPreview(fromOrig, stopOrig){
+  stopPreview();
+  if(!S.audio){ setStatus("⚠️ Áudio não carregado pra pré-escuta."); return; }
+  const R=keptRanges(); if(!R.length){ setStatus("Tudo está cortado — não há conteúdo pra ouvir."); return; }
+  const sr=S.audio.sampleRate, ch=S.audio.numberOfChannels;
+  let total=0; R.forEach(r=> total+=Math.max(0, Math.floor(r.end*sr)-Math.floor(r.start*sr)));
+  const ac=new (window.AudioContext||window.webkitAudioContext)();
+  const buf=ac.createBuffer(ch, total, sr);
+  for(let c=0;c<ch;c++){ const dst=buf.getChannelData(c), src=S.audio.getChannelData(c); let off=0;
+    for(const r of R){ const s=Math.max(0,Math.floor(r.start*sr)), e=Math.min(src.length,Math.floor(r.end*sr)); if(e>s){ dst.set(src.subarray(s,e), off); off+=e-s; } } }
+  const node=ac.createBufferSource(); node.buffer=buf; node.connect(ac.destination);
+  const offCut=origToCut(Math.max(0, fromOrig||0), R);
+  preview.on=true; preview.ac=ac; preview.node=node; preview.ranges=R; preview.total=total/sr;
+  preview.stopCut=(stopOrig!=null)? origToCut(stopOrig,R)+0.8 : Infinity;
+  preview.t0=ac.currentTime-offCut;
+  node.onended=()=>{ if(preview.on) stopPreview(); };
+  node.start(0, offCut);
+  vid.muted=true; vid.play().catch(()=>{});
+  $("#play").textContent="❚❚"; $("#previewResult").style.color="var(--ouro)";
+  loopPreview();
+}
+function loopPreview(){
+  if(!preview.on) return;
+  const ct=preview.ac.currentTime-preview.t0;
+  if(ct>=preview.total-0.02 || ct>=preview.stopCut){ stopPreview(); return; }
+  const target=cutToOrig(ct, preview.ranges);
+  if(Math.abs(vid.currentTime-target)>0.08){ try{ vid.currentTime=target; }catch(e){} }
+  updateUIAt(target, true);
+  preview.raf=requestAnimationFrame(loopPreview);
+}
+function stopPreview(){
+  if(preview.raf) cancelAnimationFrame(preview.raf);
+  if(preview.node){ try{ preview.node.onended=null; preview.node.stop(); }catch(e){} }
+  if(preview.ac){ try{ preview.ac.close(); }catch(e){} }
+  const was=preview.on; preview.on=false; preview.node=null; preview.ac=null;
+  $("#previewResult").style.color=""; $("#play").textContent="▶︎";
+  if(was){ vid.pause(); vid.muted=false; }
+}
+
+// "só o resultado" no player: liga/desliga a pré-escuta a partir de onde está
+$("#previewResult").onclick=()=>{ if(preview.on) stopPreview(); else startPreview(vid.currentTime,null); };
+
+// ouvir SÓ a junção de um corte (entra um pouco antes, pula a pausa, para sozinho)
+function hearJoin(i){ const seg=S.segs[i]; startPreview(Math.max(0, seg.start-0.8), seg.start); }
+
 // ajuste fino do respiro de um corte, sem afetar o resto (move a fronteira com o vizinho)
 function nudge(i, side, delta){
   const seg=S.segs[i];
-  if(side==="start"){
-    const prev=S.segs[i-1], min=prev?prev.start+0.05:0, max=seg.end-0.05;
-    const v=Math.min(max, Math.max(min, seg.start+delta));
-    seg.start=v; if(prev) prev.end=v;
-  }else{
-    const next=S.segs[i+1], max=next?next.end-0.05:S.duration, min=seg.start+0.05;
-    const v=Math.max(min, Math.min(max, seg.end+delta));
-    seg.end=v; if(next) next.start=v;
-  }
-  renderAll();
-  hearJoin(i); // toca de novo a junção pra você conferir na hora
+  if(side==="start"){ const prev=S.segs[i-1], min=prev?prev.start+0.05:0, max=seg.end-0.05; const v=Math.min(max,Math.max(min,seg.start+delta)); seg.start=v; if(prev) prev.end=v; }
+  else{ const next=S.segs[i+1], max=next?next.end-0.05:S.duration, min=seg.start+0.05; const v=Math.max(min,Math.min(max,seg.end+delta)); seg.end=v; if(next) next.start=v; }
+  renderAll(); hearJoin(i); // re-toca a junção pra conferir o ajuste
 }
-
-// pulo das pausas em tempo real (rAF) — mais preciso que o timeupdate, não deixa vazar o áudio da pausa
-function skipLoop(){
-  if(!skipMode || vid.paused) return;
-  const cur=S.segs.find(s=>vid.currentTime>=s.start && vid.currentTime<s.end);
-  if(cur && !cur.keep) jumpToKept(cur.end);
-  requestAnimationFrame(skipLoop);
-}
-vid.addEventListener("play", ()=>{ if(skipMode) requestAnimationFrame(skipLoop); });
 
 // ---------- revisão guiada (ouvir tudo / corte a corte / excluir pausas) ----------
 let reviewIdx=-1;
@@ -499,29 +536,12 @@ function reviewGoto(k){
   ensureTab("segs"); scrollToCard(seg.i); hearJoin(seg.i); updateReviewBar();
 }
 function ensureTab(name){ const t=document.querySelector(`.tab[data-tab="${name}"]`); if(t && !t.classList.contains("active")) t.click(); }
-$("#rvAll").onclick=()=>{ reviewStopAt=null; setSkip(true); const r=keptRanges(); vid.currentTime=r[0]?r[0].start:0; ensureTab("segs"); vid.play(); setStatus("Ouvindo o resultado (pulando as pausas). Se algo soar estranho, pause e ajuste o corte destacado."); };
+$("#rvAll").onclick=()=>{ const r=keptRanges(); ensureTab("segs"); startPreview(r[0]?r[0].start:0, null); setStatus("Ouvindo SÓ o conteúdo útil — as pausas são puladas. Se algo soar estranho, pause e ajuste o corte em destaque."); };
 $("#rvNext").onclick=()=> reviewGoto(reviewIdx+1);
 $("#rvPrev").onclick=()=> reviewGoto(reviewIdx-1);
-$("#rvFinal").onclick=()=>{ ensureTab("export"); $("#expMp4").click(); };
+$("#rvFinal").onclick=()=>{ stopPreview(); ensureTab("export"); $("#expMp4").click(); };
 
-vid.ontimeupdate=()=>{
-  updateTime();
-  $("#ph").style.left=(vid.currentTime/S.duration*100)+"%";
-  // parada da revisão corte-a-corte (ouvir só aquela junção)
-  if(reviewStopAt!=null && vid.currentTime>=reviewStopAt){ vid.pause(); reviewStopAt=null; }
-  // legenda
-  const c=S.caps.find(c=>vid.currentTime>=c.start && vid.currentTime<c.end);
-  $("#capOverlay").textContent=c?c.text:"";
-  // pulo (reforço; o principal é o skipLoop)
-  if(skipMode){ const cur=S.segs.find(s=>vid.currentTime>=s.start && vid.currentTime<s.end); if(cur && !cur.keep) jumpToKept(cur.end); }
-  // destaca cartão tocando (e rola pra acompanhar quando muda de trecho durante o "ouvir tudo")
-  document.querySelectorAll(".seg-card.playing").forEach(n=>n.classList.remove("playing"));
-  const idx=S.segs.findIndex(s=>vid.currentTime>=s.start && vid.currentTime<s.end);
-  if(idx>=0){ const c2=document.querySelector(`.seg-card[data-i="${idx}"]`); if(c2){ c2.classList.add("playing"); if(skipMode && idx!==lastPlayIdx && !vid.paused) scrollToCard(idx); } }
-  lastPlayIdx=idx;
-};
-let lastPlayIdx=-1;
-$("#tl").onclick=e=>{ const r=$("#tl").getBoundingClientRect(); vid.currentTime=(e.clientX-r.left)/r.width*S.duration; };
+$("#tl").onclick=e=>{ stopPreview(); const r=$("#tl").getBoundingClientRect(); vid.currentTime=(e.clientX-r.left)/r.width*S.duration; updateUIAt(vid.currentTime,false); };
 function updateTime(){ $("#time").textContent=`${fmt(vid.currentTime)} / ${fmt(S.duration)}`; }
 
 // ---------- tabs ----------
@@ -634,6 +654,7 @@ async function getFF(){
   return ff;
 }
 $("#expMp4").onclick=async ()=>{
+  stopPreview();
   const ranges=keptRanges(); if(!ranges.length){ setStatus("Nada pra exportar — todos os trechos estão cortados."); return; }
   try{
     setStatus("Carregando o motor de vídeo (ffmpeg)…", true);
@@ -659,7 +680,9 @@ $("#expMp4").onclick=async ()=>{
 };
 
 // --- WebM com legenda queimada (canvas + MediaRecorder, tempo real) ---
+let burnAC=null, burnSrc=null; // createMediaElementSource só pode ser criado 1x por elemento — cacheia
 $("#expBurn").onclick=async ()=>{
+  stopPreview();
   const ranges=keptRanges(); if(!ranges.length){ setStatus("Nada pra exportar."); return; }
   const caps=capsForCut();
   const cv=document.createElement("canvas");
@@ -667,7 +690,9 @@ $("#expBurn").onclick=async ()=>{
   const cx=cv.getContext("2d");
   const stream=cv.captureStream(30);
   // áudio: roteia o som do vídeo pro gravador
-  const ac=new AudioContext(); const srcN=ac.createMediaElementSource(vid); const dest=ac.createMediaStreamDestination();
+  if(!burnAC){ burnAC=new AudioContext(); burnSrc=burnAC.createMediaElementSource(vid); }
+  const ac=burnAC; const srcN=burnSrc; const dest=ac.createMediaStreamDestination();
+  if(ac.state==="suspended") await ac.resume();
   srcN.connect(dest); srcN.connect(ac.destination);
   dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
   const rec=new MediaRecorder(stream,{mimeType:"video/webm;codecs=vp9,opus", videoBitsPerSecond:8_000_000});
@@ -700,7 +725,9 @@ $("#expBurn").onclick=async ()=>{
   requestAnimationFrame(tick);
   async function finish(){
     vid.pause(); cancelAnimationFrame(raf);
-    rec.stop(); await done; ac.close();
+    rec.stop(); await done;
+    try{ srcN.disconnect(); }catch(e){}   // não fecha o AudioContext (é cacheado pra reuso)
+    vid.muted=false;
     download(new Blob(chunks,{type:"video/webm"}), "reel-com-legenda.webm");
     setStatus("✅ WebM com legenda exportado.");
   }

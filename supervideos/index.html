@@ -100,6 +100,7 @@
   .seg-card .meta .badge{font-size:10px; padding:1px 6px; border-radius:5px; font-weight:700}
   .seg-card .badge.silence{background:rgba(215,99,79,.18); color:var(--verm)}
   .seg-card .badge.speech{background:rgba(63,174,122,.16); color:var(--verde)}
+  .seg-card .badge.repeat{background:rgba(91,141,239,.18); color:var(--azul)}
   .toggle{flex:none; border-radius:8px; padding:6px 10px; font-size:11px; font-weight:700}
   .toggle.keep{color:var(--verde); border-color:rgba(63,174,122,.4)}
   .toggle.cut{color:var(--verm); border-color:rgba(215,99,79,.4)}
@@ -200,7 +201,8 @@
         <button id="genCaps" class="ghost" disabled>✨ Gerar legendas (automático)</button>
         <button id="importSrt" class="ghost">Importar .srt</button>
         <input type="file" id="srtFile" accept=".srt,.vtt,.txt" hidden />
-        <span class="hint">o automático baixa um modelo de transcrição na 1ª vez (~70 MB), roda no seu navegador.</span>
+        <button id="findReps" class="ghost" disabled title="Acha falas repetidas (erro + refez) e marca o take anterior pra cortar">🔁 Marcar repetições</button>
+        <span class="hint">o automático baixa um modelo de transcrição na 1ª vez (~70 MB), roda no seu navegador. As repetições usam essa transcrição.</span>
       </div>
       <div id="capList" class="empty">Nenhuma legenda. Gere automaticamente ou importe um .srt.</div>
     </div>
@@ -389,8 +391,9 @@ function renderSegs(){
     card.dataset.i=i;
     const dur=seg.end-seg.start;
     const cap=S.caps.find(c=>c.start>=seg.start-0.2 && c.start<seg.end);
-    // trecho de pausa (cortado) ganha controles de "ouvir junção" e ajuste fino do respiro
-    const tools = seg.type==="silence" ? `
+    const badgeTxt = seg.type==="silence"?"pausa": seg.type==="repeat"?"repetição":"fala";
+    // qualquer trecho cortado ganha controles de "ouvir junção" e ajuste fino do respiro
+    const tools = !seg.keep ? `
       <div class="seg-tools">
         <button class="hear" data-act="hear" title="Ouvir como esse corte soa no resultado">▶︎ ouvir junção</button>
         <span class="lbl">fala antes</span>
@@ -407,7 +410,7 @@ function renderSegs(){
         </div>
         <div class="meta">
           <div class="t">${fmt(seg.start)} → ${fmt(seg.end)}
-            <span class="badge ${seg.type}">${seg.type==="silence"?"pausa":"fala"}</span></div>
+            <span class="badge ${seg.type}">${badgeTxt}</span></div>
           <div class="txt">${cap?cap.text:(seg.type==="silence"?"— silêncio —":"…")}</div>
         </div>
         <button class="toggle ${seg.keep?"keep":"cut"}">${seg.keep?"✓ manter":"✕ cortar"}</button>
@@ -521,7 +524,7 @@ function nudge(i, side, delta){
 
 // ---------- revisão guiada (ouvir tudo / corte a corte / excluir pausas) ----------
 let reviewIdx=-1;
-function cutList(){ return S.segs.map((s,i)=>({s,i})).filter(o=>o.s.type==="silence" && !o.s.keep); }
+function cutList(){ return S.segs.map((s,i)=>({s,i})).filter(o=>!o.s.keep); }
 function updateReviewBar(){
   const cs=cutList(), has=S.segs.length>0, hasCuts=cs.length>0;
   $("#rvAll").disabled=!has; $("#rvFinal").disabled=!has;
@@ -569,6 +572,7 @@ const srtT=s=>{ const [h,m,rest]=s.replace(",",".").split(":"); return +h*3600+ 
 const toSrtT=t=>{ const h=Math.floor(t/3600), m=Math.floor(t%3600/60), s=Math.floor(t%60), ms=Math.round((t%1)*1000); return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")},${String(ms).padStart(3,"0")}`; };
 
 function renderCaps(){
+  $("#findReps").disabled = !S.caps.length;
   const el=$("#capList");
   if(!S.caps.length){ el.className="empty"; el.textContent="Nenhuma legenda. Gere automaticamente ou importe um .srt."; return; }
   el.className=""; el.innerHTML="";
@@ -624,6 +628,57 @@ function capsForCut(){
 }
 function firstKeptAt(t){ const r=keptRanges().find(x=>x.end>t); return r?Math.max(t,r.start):t; }
 function lastKeptAt(t){ const rs=keptRanges().filter(x=>x.start<t); const r=rs[rs.length-1]; return r?Math.min(t,r.end):t; }
+
+// ---------- detecção de REPETIÇÕES (take errado + refez) ----------
+// usa a transcrição: acha falas seguidas quase iguais e marca o take ANTERIOR pra cortar (fica o último).
+const DIACRITICS=new RegExp("[\\u0300-\\u036f]","g");
+function normWords(t){
+  return (t||"").toLowerCase().normalize("NFD").replace(DIACRITICS,"")
+    .replace(/[^a-z0-9\s]/g," ").split(/\s+/).filter(Boolean);
+}
+function lev(a,b){ // distância de edição em PALAVRAS
+  const m=a.length, n=b.length; if(!m) return n; if(!n) return m;
+  let prev=Array.from({length:n+1},(_,j)=>j), cur=new Array(n+1);
+  for(let i=1;i<=m;i++){ cur[0]=i;
+    for(let j=1;j<=n;j++){ const c=a[i-1]===b[j-1]?0:1; cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+c); }
+    [prev,cur]=[cur,prev];
+  }
+  return prev[n];
+}
+function wordSim(t1,t2){ const a=normWords(t1), b=normWords(t2); if(!a.length||!b.length) return 0; return 1 - lev(a,b)/Math.max(a.length,b.length); }
+
+// corta um intervalo de tempo qualquer (divide os segmentos que ele cruza)
+function cutTimeRange(s,e,type){
+  const out=[];
+  for(const seg of S.segs){
+    if(e<=seg.start+0.001 || s>=seg.end-0.001){ out.push(seg); continue; }
+    if(s>seg.start+0.001) out.push({start:seg.start,end:s,type:seg.type,keep:seg.keep,thumb:seg.thumb});
+    out.push({start:Math.max(s,seg.start),end:Math.min(e,seg.end),type:type,keep:false,thumb:null});
+    if(e<seg.end-0.001) out.push({start:e,end:seg.end,type:seg.type,keep:seg.keep,thumb:null});
+  }
+  S.segs=out;
+}
+
+const REP={ thr:0.62, maxGapS:4, window:4, minWords:3 };
+$("#findReps").onclick=()=>{
+  if(!S.caps.length){ setStatus("⚠️ Gere as legendas primeiro (aba Legendas) — a repetição usa a transcrição."); return; }
+  const caps=S.caps.slice().sort((a,b)=>a.start-b.start);
+  const cutRanges=[];
+  for(let i=0;i<caps.length;i++){
+    if(normWords(caps[i].text).length < REP.minWords) continue;
+    for(let j=i+1; j<=i+REP.window && j<caps.length; j++){
+      if(caps[j].start - caps[i].end > REP.maxGapS) break;
+      if(wordSim(caps[i].text, caps[j].text) >= REP.thr){
+        cutRanges.push([caps[i].start, caps[i].end]); // corta o take ANTERIOR
+        break;
+      }
+    }
+  }
+  if(!cutRanges.length){ ensureTab("segs"); setStatus("Nenhuma repetição clara encontrada. (Se você sabe que tem, baixe a sensibilidade me avisando.)"); return; }
+  for(const [s,e] of cutRanges) cutTimeRange(s,e,"repeat");
+  reviewIdx=-1; renderAll(); makeThumbs(); ensureTab("segs");
+  setStatus(`Marquei ${cutRanges.length} repetição(ões) em azul. Revise: clique no cartão pra ouvir e mantenha/corte. Depois "Excluir pausas" gera tudo junto.`);
+};
 
 // ---------- exportar ----------
 function refreshExportButtons(){

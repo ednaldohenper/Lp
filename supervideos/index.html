@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Editor de Reels — corte por pausa, com revisão</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Playfair+Display:ital,wght@1,500;1,600&display=swap" rel="stylesheet">
 <style>
   :root{
     --preto:#0a0a0b; --preto2:#121214; --preto3:#1b1b1f;
@@ -45,7 +48,14 @@
   /* PREVIEW */
   .stage{flex:1; display:flex; align-items:center; justify-content:center; position:relative; background:#000; min-height:0; overflow:hidden}
   video{max-width:100%; max-height:100%; display:block}
+  #previewCanvas{position:absolute; display:none; z-index:3; pointer-events:none}
   #cropBox{position:absolute; border:2px solid var(--ouro); box-shadow:0 0 0 9999px rgba(0,0,0,.55); cursor:grab; z-index:4; touch-action:none}
+  .ov-card{display:flex; gap:10px; align-items:center; padding:8px; border:1px solid var(--linha); border-radius:10px; margin-bottom:8px; background:var(--preto2)}
+  .ov-card .thumb{width:60px;height:60px;border-radius:6px;background:#000 center/cover no-repeat;flex:none;border:1px solid var(--linha)}
+  .ov-card .meta{flex:1;min-width:0}
+  .ov-card .meta .nm{font-size:12px;color:var(--texto);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ov-card .meta .t{font-size:11px;color:var(--suave);font-variant-numeric:tabular-nums;margin-top:3px}
+  .ov-card .meta button{padding:3px 7px;font-size:10px;margin-right:4px;margin-top:4px}
   #cropBox.drag{cursor:grabbing}
   #cropBox::after{content:attr(data-fmt); position:absolute; top:4px; left:6px; font-size:11px; font-weight:700; color:var(--ouro); text-shadow:0 1px 2px #000}
   .cropbar{display:flex; align-items:center; gap:10px; padding:8px 14px; border-top:1px solid var(--linha); background:var(--preto2); flex-wrap:wrap}
@@ -55,12 +65,12 @@
   #drop b{color:var(--texto); font-size:15px}
   #capOverlay{
     position:absolute; left:6%; right:6%; bottom:8%; text-align:center; pointer-events:none;
-    font-weight:800; font-size:clamp(16px,3.2vw,30px); line-height:1.2; text-transform:lowercase;
-    color:#fff; text-shadow:0 2px 0 #000,0 0 12px rgba(0,0,0,.9);
-    -webkit-text-stroke:1px rgba(0,0,0,.5); z-index:5;
+    font-family:'Inter',system-ui,-apple-system,sans-serif; font-weight:700; font-size:clamp(16px,3.2vw,30px);
+    line-height:1.15; letter-spacing:-.01em; text-transform:lowercase;
+    color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.5), 0 1px 2px rgba(0,0,0,.55); z-index:5;
   }
   #capOverlay .w-on{color:#fff}
-  #capOverlay .w-em{color:#fff; font-style:italic; font-weight:600; font-family:Georgia,"Times New Roman",serif; text-transform:none}
+  #capOverlay .w-em{color:#fff; font-style:italic; font-weight:500; font-family:'Playfair Display',Georgia,serif; letter-spacing:0}
   #capOverlay .capbox{display:inline}
   .transport{display:flex; align-items:center; gap:10px; padding:10px 14px; border-top:1px solid var(--linha); background:var(--preto2)}
   .time{font-variant-numeric:tabular-nums; color:var(--suave); font-size:12px; min-width:96px}
@@ -142,6 +152,7 @@
   <section class="pane left">
     <div class="stage" id="stage">
       <video id="vid" playsinline></video>
+      <canvas id="previewCanvas"></canvas>
       <div id="cropBox" hidden></div>
       <div id="capOverlay"></div>
       <div id="drop">
@@ -165,7 +176,12 @@
         <option value="1">1:1 — Quadrado</option>
         <option value="1.7778">16:9 — Horizontal (YouTube)</option>
       </select>
-      <span class="hint" id="cropHint">arraste o quadro dourado pra escolher o que fica enquadrado</span>
+      <label class="lbl" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--suave)">Zoom <b id="vZoom" style="color:var(--ouro)">1.0×</b>
+        <input type="range" id="zoom" min="1" max="3" step="0.05" value="1" disabled style="width:90px;accent-color:var(--ouro)"></label>
+      <button id="mkKey" class="ghost" disabled title="Grava posição e zoom do quadro neste instante. Marque em vários momentos pra ele te acompanhar/dar zoom.">📍 Marcar posição</button>
+      <span class="lbl" id="keyCount" style="font-size:12px;color:var(--suave)"></span>
+      <button id="clrKeys" class="ghost" disabled>limpar pontos</button>
+      <span class="hint" id="cropHint">arraste o quadro; ajuste o zoom; marque a posição em vários momentos pra ele seguir/ampliar</span>
     </div>
   </section>
 
@@ -198,8 +214,9 @@
     </div>
 
     <div class="tabs">
-      <div class="tab active" data-tab="segs">🎞️ Trechos que compõem</div>
+      <div class="tab active" data-tab="segs">🎞️ Trechos</div>
       <div class="tab" data-tab="caps">💬 Legendas</div>
+      <div class="tab" data-tab="split">🖼️ Meia-tela</div>
       <div class="tab" data-tab="export">⬇︎ Exportar</div>
     </div>
 
@@ -232,15 +249,25 @@
       <div id="capList" class="empty">Nenhuma legenda. Gere automaticamente ou importe um .srt.</div>
     </div>
 
+    <div class="panel hidden" id="panel-split">
+      <div class="row" style="margin-bottom:8px">
+        <button id="addOvVid" class="ghost" disabled>＋ Vídeo em cima</button>
+        <button id="addOvImg" class="ghost" disabled>＋ Imagem em cima</button>
+        <input type="file" id="ovFile" accept="video/*,image/*" hidden />
+      </div>
+      <div class="hint" style="margin-bottom:8px">A meia-tela aparece só nos trechos que você criar: <b>vai até o ponto do vídeo</b>, adicione o vídeo/imagem, e use <b>“início aqui”/“fim aqui”</b> pra marcar quando ele aparece. Em cima fica o conteúdo; embaixo, você. (Sai no export <b>WebM com legenda</b>.)</div>
+      <div id="ovList" class="empty">Nenhuma meia-tela. Adicione um vídeo ou imagem.</div>
+    </div>
+
     <div class="panel hidden" id="panel-export">
       <p class="hint" style="margin-top:0">Você revisa na tela, aprova os trechos, e exporta. Recomendo testar primeiro o <b>“só o resultado”</b> no player.</p>
       <div class="seg-card" style="flex-direction:column; align-items:stretch; gap:10px">
-        <div><b>1. Corte limpo (MP4)</b><div class="hint">Junta só os trechos mantidos, com respiro nas pontas. Rápido e em boa qualidade. Sem legenda queimada — exporte o .srt junto.</div></div>
-        <button id="expMp4" class="primary" disabled>Exportar MP4 (corte limpo)</button>
+        <div><b>1. Completo — MP4 pronto pro Instagram</b><div class="hint">Legenda queimada, meia-tela, zoom e quadro que te acompanha. Grava em tempo real (~a duração do vídeo) e entrega <b>MP4 (H.264/AAC)</b> que o Instagram aceita. Inclui o áudio do vídeo de cima na meia-tela.</div></div>
+        <button id="expBurn" class="primary" disabled>Exportar MP4 completo (com legenda)</button>
       </div>
       <div class="seg-card" style="flex-direction:column; align-items:stretch; gap:10px">
-        <div><b>2. Com legenda queimada (WebM)</b><div class="hint">Grava o resultado com a legenda igual à da tela. Demora ~o tempo do vídeo (é gravado em tempo real). Ótimo pra postar direto.</div></div>
-        <button id="expBurn" class="ghost" disabled>Exportar WebM (com legenda)</button>
+        <div><b>2. Corte limpo — MP4 (rápido, sem legenda)</b><div class="hint">Só junta os trechos mantidos (+ recorte/zoom fixos). Rápido. Sem legenda nem meia-tela — exporte o .srt junto se quiser.</div></div>
+        <button id="expMp4" class="ghost" disabled>Exportar MP4 (corte limpo)</button>
       </div>
       <div class="seg-card" style="flex-direction:column; align-items:stretch; gap:10px">
         <div><b>3. Só a legenda (.srt)</b><div class="hint">Tempos já remapeados pro vídeo cortado. Sobe no Instagram/CapCut junto do MP4.</div></div>
@@ -297,7 +324,8 @@ async function loadVideo(file){
   S.duration=vid.duration;
   $("#play").disabled=false; $("#detect").disabled=false; $("#keepAll").disabled=false; $("#genCaps").disabled=false;
   $("#expEdl").disabled=false; $("#fmt").disabled=false; $("#findReps").disabled=false;
-  renderCropOverlay();
+  $("#zoom").disabled=false; $("#addOvVid").disabled=false; $("#addOvImg").disabled=false;
+  refreshStage(); updateKeyUI();
   updateTime();
   setStatus("Lendo o áudio pra achar as pausas…", true);
   try{ await decodeAudio(file); setStatus('Vídeo pronto. Clique em "Detectar pausas".'); }
@@ -382,7 +410,7 @@ async function makeThumbs(){
 }
 
 // ---------- render ----------
-function renderAll(){ renderSummary(); renderSegs(); renderTimeline(); refreshExportButtons(); }
+function renderAll(){ if(S.caps.length) buildWords(); renderSummary(); renderSegs(); renderTimeline(); refreshExportButtons(); }
 
 function keptRanges(){
   // funde trechos mantidos contíguos em faixas
@@ -473,7 +501,7 @@ function renderTimeline(){
 
 // ---------- player ----------
 vid.onplay =()=> $("#play").textContent="❚❚";
-vid.onpause=()=> $("#play").textContent="▶︎";
+vid.onpause=()=>{ $("#play").textContent="▶︎"; if(typeof refreshStage==="function") refreshStage(); };
 $("#play").onclick=()=>{ stopPreview(); vid.paused?vid.play():vid.pause(); };
 
 // atualiza overlay/destaque/timeline para um tempo (no relógio ORIGINAL do vídeo)
@@ -481,6 +509,7 @@ let lastPlayIdx=-1;
 function updateUIAt(t, moving){
   $("#ph").style.left=(t/S.duration*100)+"%";
   $("#time").textContent=`${fmt(t)} / ${fmt(S.duration)}`;
+  renderStage(t, preview.on || !vid.paused);
   renderCaption(t);
   document.querySelectorAll(".seg-card.playing").forEach(n=>n.classList.remove("playing"));
   const idx=S.segs.findIndex(s=>t>=s.start && t<s.end);
@@ -513,7 +542,11 @@ function buildWordsFrom(caps){
   });
   return out;
 }
-function buildWords(){ S.words=buildWordsFrom(S.caps); }
+function buildWords(){
+  const R=keptRanges();
+  const kept=t=> R.some(r=> t>=r.start-0.001 && t<r.end+0.001);
+  S.words=buildWordsFrom(S.caps).map(w=>({...w, keep: kept((w.start+w.end)/2)}));
+}
 // retângulo (em coords do palco) do que vai aparecer no vídeo final — segue o crop 9:16 se houver
 function frameDisplayRect(){
   const vr=vid.getBoundingClientRect(), st=$("#stage").getBoundingClientRect();
@@ -524,7 +557,7 @@ function frameDisplayRect(){
   return {left:base.left+r.cx*sc, top:base.top+r.cy*sc, w:r.cw*sc, h:r.ch*sc};
 }
 function positionCaption(ov){
-  const fr=frameDisplayRect(); if(!fr) return;
+  const fr=(typeof frameRect!=="undefined" && frameRect) ? frameRect : frameDisplayRect(); if(!fr) return;
   ov.style.left=(fr.left+fr.w*0.06)+"px"; ov.style.right="auto";
   ov.style.width=(fr.w*0.88)+"px";
   ov.style.top=(fr.top+fr.h*0.50)+"px"; ov.style.bottom="auto";
@@ -532,18 +565,19 @@ function positionCaption(ov){
 }
 function renderCaption(t){
   const ov=$("#capOverlay"); positionCaption(ov);
+  const span=w=> w? `<span class="${w.emph?"w-em":"w-on"}">${esc(w.text)}</span>` : "";
   if(S.capStyle==="box"){
-    const c=S.caps.find(c=>t>=c.start && t<c.end);
+    // só mostra a frase se o instante atual NÃO está num trecho cortado
+    const inCut = S.segs.some(s=>!s.keep && t>=s.start && t<s.end);
+    const c = inCut ? null : S.caps.find(c=>t>=c.start && t<c.end);
     ov.innerHTML = c ? `<span class="capbox">${esc(c.text)}</span>` : "";
     return;
   }
-  // palavra a palavra: palavra ativa (branca) + a próxima (apagada), dentro da mesma fala
-  const ci=S.caps.findIndex(c=> t>=c.start-0.05 && t<c.end+0.05);
-  if(ci<0){ ov.innerHTML=""; return; }
-  const ws=S.words.filter(w=>w.capId===ci); if(!ws.length){ ov.innerHTML=""; return; }
-  let ai=ws.findIndex(w=> t < w.end); if(ai<0) ai=ws.length-1; if(t<ws[0].start) ai=0;
-  const span=w=> w? `<span class="${w.emph?"w-em":"w-on"}">${esc(w.text)}</span>` : "";
-  const a=ws[ai], b=ws[ai+1];
+  // palavra a palavra — só palavras de trechos MANTIDOS (some nas pausas/repetições)
+  const W=S.words.filter(w=>w.keep);
+  let ai=-1; for(let k=0;k<W.length;k++){ if(t>=W[k].start && t<W[k].end){ ai=k; break; } }
+  if(ai<0){ ov.innerHTML=""; return; }
+  const a=W[ai], b=(W[ai+1] && W[ai+1].capId===a.capId) ? W[ai+1] : null;
   ov.innerHTML = span(a) + (b? " "+span(b) : "");
 }
 $("#capStyle").onchange=()=>{ S.capStyle=$("#capStyle").value; renderCaption(preview.posOrig||vid.currentTime||0); };
@@ -597,6 +631,7 @@ function pausePreview(){
   preview.on=false; preview.paused=true; preview.node=null; preview.ac=null;
   vid.pause(); vid.muted=false;
   $("#previewResult").style.color=""; $("#play").textContent="▶︎"; setRvLabel(false);
+  refreshStage();
   setStatus(`⏸ Pausado em ${fmt(preview.posOrig||0)}. O trecho em destaque (ou o logo acima) é o que tocava — corte/ajuste e clique em "Ouvir tudo" pra continuar de onde parou.`);
 }
 // PARAR de vez (zera a posição) — usado por play normal, timeline, export
@@ -607,6 +642,7 @@ function stopPreview(){
   const was=preview.on; preview.on=false; preview.paused=false; preview.posOrig=0; preview.node=null; preview.ac=null;
   $("#previewResult").style.color=""; $("#play").textContent="▶︎"; setRvLabel(false);
   if(was){ vid.pause(); vid.muted=false; }
+  if(typeof refreshStage==="function") refreshStage();
 }
 
 // "só o resultado" no player: liga/desliga a pré-escuta a partir de onde está
@@ -664,19 +700,36 @@ $("#rvFinal").onclick=()=>{ stopPreview(); ensureTab("export"); $("#expMp4").cli
 $("#tl").onclick=e=>{ stopPreview(); const r=$("#tl").getBoundingClientRect(); vid.currentTime=(e.clientX-r.left)/r.width*S.duration; updateUIAt(vid.currentTime,false); };
 function updateTime(){ $("#time").textContent=`${fmt(vid.currentTime)} / ${fmt(S.duration)}`; }
 
-// ---------- reenquadrar / crop (9:16, 4:5, 1:1, 16:9) ----------
-const crop={ ar:0, fx:0.5, fy:0.5 }; // ar = largura/altura (0 = original, sem corte)
-function cropRect(){
-  if(!crop.ar || !vid.videoWidth) return null;
+// ---------- reenquadrar / crop com pontos no tempo (keyframes) + zoom ----------
+const crop={ ar:0, fx:0.5, fy:0.5, zoom:1, keys:[] }; // keys:[{t,fx,fy,zoom}] em tempo ORIGINAL
+let cropDragging=false;
+function curTime(){ return (preview.on||preview.paused) ? (preview.posOrig||0) : (vid.currentTime||0); }
+function cropActive(){ return !!(crop.ar || crop.zoom>1.001 || crop.keys.length); }
+function cropFXY(t){
+  const K=crop.keys; if(!K.length || t==null) return {fx:crop.fx, fy:crop.fy, zoom:crop.zoom};
+  if(t<=K[0].t) return {fx:K[0].fx, fy:K[0].fy, zoom:K[0].zoom};
+  if(t>=K[K.length-1].t){ const k=K[K.length-1]; return {fx:k.fx, fy:k.fy, zoom:k.zoom}; }
+  for(let i=0;i<K.length-1;i++){ if(t>=K[i].t && t<K[i+1].t){ const a=K[i],b=K[i+1],u=(t-a.t)/((b.t-a.t)||1);
+    return {fx:a.fx+(b.fx-a.fx)*u, fy:a.fy+(b.fy-a.fy)*u, zoom:a.zoom+(b.zoom-a.zoom)*u}; } }
+  return {fx:crop.fx, fy:crop.fy, zoom:crop.zoom};
+}
+// retorna o sub-retângulo de origem (cx,cy,cw,ch) + o tamanho de SAÍDA (cw0,ch0, zoom=1)
+function cropRect(t){
+  if(!vid.videoWidth || !cropActive()) return null;
   const W=vid.videoWidth, H=vid.videoHeight;
-  let cw, ch;
-  if(H*crop.ar <= W){ ch=H; cw=H*crop.ar; } else { cw=W; ch=W/crop.ar; }
-  cw=Math.min(W,Math.max(2,Math.round(cw/2)*2)); ch=Math.min(H,Math.max(2,Math.round(ch/2)*2));
+  let cw0, ch0;
+  if(crop.ar){ if(H*crop.ar<=W){ ch0=H; cw0=H*crop.ar; } else { cw0=W; ch0=W/crop.ar; } }
+  else { cw0=W; ch0=H; }
+  cw0=Math.min(W,Math.max(2,Math.round(cw0/2)*2)); ch0=Math.min(H,Math.max(2,Math.round(ch0/2)*2));
+  const f=cropFXY(t); const z=Math.max(1, f.zoom||1);
+  let cw=Math.max(2,Math.round((cw0/z)/2)*2), ch=Math.max(2,Math.round((ch0/z)/2)*2);
+  cw=Math.min(W,cw); ch=Math.min(H,ch);
   const panX=W-cw, panY=H-ch;
-  return {W,H,cw,ch,cx:Math.round(panX*crop.fx),cy:Math.round(panY*crop.fy),panX,panY};
+  return {W,H,cw,ch,cw0,ch0,cx:Math.round(panX*f.fx),cy:Math.round(panY*f.fy),panX,panY};
 }
 function renderCropOverlay(){
-  const box=$("#cropBox"), r=cropRect();
+  const box=$("#cropBox");
+  const r = cropDragging ? cropRect() : cropRect(curTime());
   if(!r){ box.hidden=true; return; }
   const vr=vid.getBoundingClientRect(), st=$("#stage").getBoundingClientRect();
   if(!vr.width){ box.hidden=true; return; }
@@ -687,29 +740,129 @@ function renderCropOverlay(){
   box.style.top   =((vr.top -st.top )+r.cy*sc)+"px";
   box.style.width =(r.cw*sc)+"px";
   box.style.height=(r.ch*sc)+"px";
-  positionCaption($("#capOverlay")); // legenda acompanha o quadro
 }
-$("#fmt").onchange=()=>{ crop.ar=parseFloat($("#fmt").value)||0; crop.fx=0.5; crop.fy=0.5; renderCropOverlay();
-  setStatus(crop.ar?'Arraste o quadro dourado pra enquadrar. O corte vale pro export (MP4 e WebM).':'Saída no formato original (sem corte).'); };
-window.addEventListener("resize", renderCropOverlay);
-if(window.ResizeObserver) new ResizeObserver(renderCropOverlay).observe(vid);
+function updateKeyUI(){
+  const n=crop.keys.length;
+  $("#keyCount").textContent = cropActive() ? (n? `📍 ${n} ponto(s)` : "fixo") : "";
+  $("#mkKey").disabled=false; $("#clrKeys").disabled=!n;
+}
+function setKeyAt(t){ // grava/atualiza ponto no instante t com posição+zoom atuais
+  crop.keys=crop.keys.filter(k=>Math.abs(k.t-t)>0.25);
+  crop.keys.push({t, fx:crop.fx, fy:crop.fy, zoom:crop.zoom});
+  crop.keys.sort((a,b)=>a.t-b.t); updateKeyUI();
+}
+$("#fmt").onchange=()=>{ crop.ar=parseFloat($("#fmt").value)||0; crop.fx=0.5; crop.fy=0.5; crop.keys=[]; refreshStage(); updateKeyUI();
+  setStatus(crop.ar?'Arraste o quadro pra enquadrar. Pra te acompanhar/dar zoom ao longo do vídeo, posicione e clique "📍 Marcar posição" em vários momentos.':'Saída no formato original.'); };
+$("#zoom").oninput=e=>{ crop.zoom=parseFloat(e.target.value)||1; $("#vZoom").textContent=crop.zoom.toFixed(1)+"×"; if(crop.keys.length) setKeyAt(curTime()); refreshStage(); };
+$("#mkKey").onclick=()=>{ const t=curTime(); setKeyAt(t); refreshStage();
+  setStatus(`📍 Ponto em ${fmt(t)} (${crop.keys.length} no total) — posição e zoom gravados. Avance, ajuste e marque de novo: move/amplia suave entre os pontos.`); };
+$("#clrKeys").onclick=()=>{ crop.keys=[]; updateKeyUI(); refreshStage(); setStatus("Pontos limpos."); };
+function refreshStage(){ renderStage(curTime(), preview.on || !vid.paused); }
+window.addEventListener("resize", refreshStage);
+if(window.ResizeObserver) new ResizeObserver(refreshStage).observe(vid);
 (function(){
   const box=$("#cropBox"); let d=null;
-  box.addEventListener("pointerdown",e=>{ const r=cropRect(); if(!r) return; e.preventDefault(); box.classList.add("drag"); box.setPointerCapture(e.pointerId);
+  box.addEventListener("pointerdown",e=>{ if(!cropActive()) return; e.preventDefault();
+    const f=cropFXY(curTime()); crop.fx=f.fx; crop.fy=f.fy; crop.zoom=f.zoom;
+    const r=cropRect(); if(!r) return;
+    cropDragging=true; box.classList.add("drag"); box.setPointerCapture(e.pointerId);
     d={x:e.clientX,y:e.clientY,fx:crop.fx,fy:crop.fy,r,sc:vid.getBoundingClientRect().width/vid.videoWidth}; });
   box.addEventListener("pointermove",e=>{ if(!d) return;
     if(d.r.panX>0) crop.fx=Math.min(1,Math.max(0, d.fx+(e.clientX-d.x)/(d.r.panX*d.sc)));
     if(d.r.panY>0) crop.fy=Math.min(1,Math.max(0, d.fy+(e.clientY-d.y)/(d.r.panY*d.sc)));
     renderCropOverlay(); });
-  const end=()=>{ d=null; box.classList.remove("drag"); };
+  const end=()=>{ if(!d) return; d=null; cropDragging=false; box.classList.remove("drag");
+    if(crop.keys.length) setKeyAt(curTime());
+    refreshStage();
+  };
   box.addEventListener("pointerup",end); box.addEventListener("pointercancel",end);
 })();
+
+// ---------- #4 meia-tela (overlay vídeo/imagem por trecho) ----------
+let OV=[], ovSeq=0, ovType="video";
+function activeOverlay(t){ return OV.find(o=> t>=o.start && t<o.end) || null; }
+$("#addOvVid").onclick=()=>{ ovType="video"; $("#ovFile").accept="video/*"; $("#ovFile").click(); };
+$("#addOvImg").onclick=()=>{ ovType="image"; $("#ovFile").accept="image/*"; $("#ovFile").click(); };
+$("#ovFile").onchange=e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return;
+  const url=URL.createObjectURL(f); const t0=curTime();
+  const o={id:++ovSeq, type:f.type.startsWith("image")?"image":"video", name:f.name, url, start:t0, end:Math.min(S.duration||t0+3, t0+3)};
+  if(o.type==="image"){ o.img=new Image(); o.img.src=url; o.img.onload=()=>refreshStage(); }
+  else { o.vid=document.createElement("video"); o.vid.src=url; o.vid.muted=true; o.vid.playsInline=true; o.vid.preload="auto"; }
+  OV.push(o); renderOvList(); refreshStage();
+  setStatus(`Meia-tela adicionada (${o.type==="image"?"imagem":"vídeo"}). Ajuste "início aqui / fim aqui" no trecho que quiser.`);
+};
+function renderOvList(){
+  const el=$("#ovList");
+  if(!OV.length){ el.className="empty"; el.textContent="Nenhuma meia-tela. Adicione um vídeo ou imagem."; return; }
+  el.className=""; el.innerHTML=""; OV.sort((a,b)=>a.start-b.start);
+  OV.forEach(o=>{
+    const card=document.createElement("div"); card.className="ov-card";
+    card.innerHTML=`<div class="thumb" ${o.type==="image"?`style="background-image:url(${o.url})"`:""}>${o.type==="video"?"▶":""}</div>
+      <div class="meta"><div class="nm">${esc(o.name)} <span style="color:var(--suave)">(${o.type==="image"?"imagem":"vídeo"})</span></div>
+      <div class="t">${fmt(o.start)} → ${fmt(o.end)}</div>
+      <div><button data-a="si" class="ghost">início aqui</button><button data-a="fi" class="ghost">fim aqui</button><button data-a="go" class="ghost">ir ao início</button><button data-a="rm" class="ghost">remover</button></div></div>`;
+    card.querySelectorAll("button").forEach(b=> b.onclick=()=>{
+      const a=b.dataset.a, t=curTime();
+      if(a==="si") o.start=Math.min(t, o.end-0.2);
+      if(a==="fi") o.end=Math.max(t, o.start+0.2);
+      if(a==="go"){ stopPreview(); vid.currentTime=o.start; updateUIAt(o.start,false); }
+      if(a==="rm"){ if(o.vid) o.vid.pause(); OV=OV.filter(x=>x!==o); }
+      renderOvList(); refreshStage();
+    });
+    el.appendChild(card);
+  });
+}
+function drawCover(ctx, el, sx,sy,sw,sh, dx,dy,dw,dh){
+  const scale=Math.max(dw/sw, dh/sh), vw=dw/scale, vh=dh/scale;
+  ctx.drawImage(el, sx+(sw-vw)/2, sy+(sh-vh)/2, vw, vh, dx,dy,dw,dh);
+}
+// desenha o frame composto (crop+zoom + meia-tela), SEM legenda
+function drawComposite(ctx, W, H, t){
+  const r=cropRect(t), m=r||{cx:0,cy:0,cw:vid.videoWidth,ch:vid.videoHeight};
+  const o=activeOverlay(t);
+  if(!o){ ctx.drawImage(vid, m.cx,m.cy,m.cw,m.ch, 0,0,W,H); return; }
+  const halfH=Math.round(H/2);
+  drawCover(ctx, vid, m.cx,m.cy,m.cw,m.ch, 0,halfH, W,H-halfH); // embaixo: você
+  if(o.type==="image"){ if(o.img&&o.img.naturalWidth) drawCover(ctx,o.img,0,0,o.img.naturalWidth,o.img.naturalHeight,0,0,W,halfH); else {ctx.fillStyle="#000";ctx.fillRect(0,0,W,halfH);} }
+  else { if(o.vid&&o.vid.readyState>=2) drawCover(ctx,o.vid,0,0,o.vid.videoWidth,o.vid.videoHeight,0,0,W,halfH); else {ctx.fillStyle="#000";ctx.fillRect(0,0,W,halfH);} }
+}
+function syncOverlays(t, playing){
+  for(const o of OV){ if(o.type!=="video"||!o.vid) continue;
+    const active=t>=o.start && t<o.end;
+    if(active){ const rel=Math.max(0,t-o.start);
+      if(o.vid.readyState>=1 && Math.abs(o.vid.currentTime-rel)>0.35){ try{o.vid.currentTime=rel;}catch(e){} }
+      if(playing && o.vid.paused) o.vid.play().catch(()=>{}); if(!playing && !o.vid.paused) o.vid.pause();
+    } else if(!o.vid.paused) o.vid.pause();
+  }
+}
+// área (em coords do palco) onde o frame final é mostrado — usada pra posicionar a legenda
+let frameRect=null;
+function renderStage(t, playing){
+  const cvp=$("#previewCanvas"), st=$("#stage").getBoundingClientRect();
+  syncOverlays(t, playing);
+  const useCanvas = playing && (cropActive() || activeOverlay(t)) && vid.videoWidth;
+  if(useCanvas){
+    const base=cropRect(t); const W=base?base.cw0:vid.videoWidth, H=base?base.ch0:vid.videoHeight;
+    if(cvp.width!==W) cvp.width=W; if(cvp.height!==H) cvp.height=H;
+    drawComposite(cvp.getContext("2d"), W, H, t);
+    const ar=W/H; let dw=st.width, dh=dw/ar; if(dh>st.height){ dh=st.height; dw=dh*ar; }
+    const left=(st.width-dw)/2, top=(st.height-dh)/2;
+    cvp.style.display="block"; cvp.style.left=left+"px"; cvp.style.top=top+"px"; cvp.style.width=dw+"px"; cvp.style.height=dh+"px";
+    vid.style.visibility="hidden"; $("#cropBox").hidden=true;
+    frameRect={left,top,w:dw,h:dh};
+  }else{
+    cvp.style.display="none"; vid.style.visibility="";
+    if(cropActive()){ renderCropOverlay(); } else { $("#cropBox").hidden=true; }
+    frameRect=frameDisplayRect();
+  }
+  positionCaption($("#capOverlay"));
+}
 
 // ---------- tabs ----------
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
   t.classList.add("active");
-  ["segs","caps","export"].forEach(n=>$("#panel-"+n).classList.toggle("hidden", n!==t.dataset.tab));
+  ["segs","caps","split","export"].forEach(n=>$("#panel-"+n).classList.toggle("hidden", n!==t.dataset.tab));
 });
 
 // ---------- legendas ----------
@@ -909,14 +1062,15 @@ $("#expMp4").onclick=async ()=>{
       vlab+=`[v${i}]`; alab+=`[a${i}]`;
     });
     fg+=`${vlab}${alab}concat=n=${ranges.length}:v=1:a=1[vc][outa]`;
-    const cr=cropRect();
-    if(cr) fg+=`;[vc]crop=${cr.cw}:${cr.ch}:${cr.cx}:${cr.cy},setsar=1[outv]`;
+    const cr=cropRect(curTime()); // crop ESTÁTICO (posição/zoom do instante atual)
+    if(cr) fg+=`;[vc]crop=${cr.cw}:${cr.ch}:${cr.cx}:${cr.cy},scale=${cr.cw0}:${cr.ch0},setsar=1[outv]`;
     else   fg+=`;[vc]null[outv]`;
-    setStatus("Renderizando MP4"+(cr?` (${$("#fmt").value==="0.5625"?"9:16":"recortado"})`:"")+"…", true);
+    const moving = crop.keys.length>1 || OV.length;
+    setStatus("Renderizando MP4"+(cr?" (recortado)":"")+"…", true);
     await f.exec(["-i",inName,"-filter_complex",fg,"-map","[outv]","-map","[outa]","-c:v","libx264","-preset","veryfast","-crf","20","-pix_fmt","yuv420p","-c:a","aac","-b:a","160k","out.mp4"]);
     const data=await f.readFile("out.mp4");
     download(new Blob([data.buffer],{type:"video/mp4"}), "reel-cortado.mp4");
-    setStatus("✅ MP4 exportado. (Quer legenda? Use o WebM com legenda ou suba o .srt junto.)");
+    setStatus("✅ MP4 exportado"+(moving?" — atenção: quadro móvel/zoom-animado e meia-tela NÃO entram no MP4; pra isso use o WebM com legenda.":". (Legenda? Use o WebM ou suba o .srt.)"));
   }catch(err){ console.error(err); setStatus("⚠️ Falha ao exportar MP4. Vídeos muito grandes podem estourar a memória — tente um trecho menor ou use o WebM."); }
 };
 
@@ -926,30 +1080,42 @@ $("#expBurn").onclick=async ()=>{
   stopPreview();
   const ranges=keptRanges(); if(!ranges.length){ setStatus("Nada pra exportar."); return; }
   const caps=capsForCut();
-  const cr=cropRect(); // null = sem corte
-  const src = cr ? cr : {cx:0,cy:0,cw:vid.videoWidth,ch:vid.videoHeight};
+  const cr0=cropRect(); // tamanho de SAÍDA (cw0/ch0); null = sem corte
   const cv=document.createElement("canvas");
-  cv.width=src.cw; cv.height=src.ch;
+  cv.width = cr0?cr0.cw0:vid.videoWidth; cv.height = cr0?cr0.ch0:vid.videoHeight;
   const cx=cv.getContext("2d");
   const stream=cv.captureStream(30);
-  // áudio: roteia o som do vídeo pro gravador
+  // áudio: sua voz (vídeo principal) + o áudio do(s) vídeo(s) da meia-tela
   if(!burnAC){ burnAC=new AudioContext(); burnSrc=burnAC.createMediaElementSource(vid); }
   const ac=burnAC; const srcN=burnSrc; const dest=ac.createMediaStreamDestination();
   if(ac.state==="suspended") await ac.resume();
   srcN.connect(dest); srcN.connect(ac.destination);
+  const ovNodes=[];
+  for(const o of OV){ if(o.type==="video"&&o.vid){
+    if(!o.srcNode){ try{ o.srcNode=ac.createMediaElementSource(o.vid); }catch(e){ o.srcNode=null; } }
+    if(o.srcNode){ o.vid.muted=false; try{ o.srcNode.connect(dest); o.srcNode.connect(ac.destination); }catch(e){} ovNodes.push(o.srcNode); }
+  }}
   dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
-  const rec=new MediaRecorder(stream,{mimeType:"video/webm;codecs=vp9,opus", videoBitsPerSecond:8_000_000});
+  // grava direto em MP4 quando o navegador suporta (Instagram aceita); senão WebM e converte no fim
+  const mp4ok = window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported("video/mp4;codecs=h264,aac");
+  const mime = mp4ok ? "video/mp4;codecs=h264,aac"
+             : (MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus") ? "video/webm;codecs=vp9,opus" : "video/webm");
+  const rec=new MediaRecorder(stream,{mimeType:mime, videoBitsPerSecond:8_000_000});
   const chunks=[]; rec.ondataavailable=e=>e.data.size&&chunks.push(e.data);
   const done=new Promise(r=>rec.onstop=r);
 
-  const words=buildWordsFrom(caps); // palavras em tempo de corte p/ estilo Reels
+  // palavras só dos trechos MANTIDOS, remapeadas pro tempo do corte (some pausas/repetições)
+  buildWords();
+  const words=S.words.filter(w=>w.keep).map(w=>({text:w.text,emph:w.emph,capId:w.capId,start:origToCut(w.start,ranges),end:origToCut(w.end,ranges)}));
+  try{ await document.fonts.load('700 40px Inter'); await document.fonts.load('italic 500 40px "Playfair Display"'); }catch(e){}
   let ri=0, cutClock=0; // relógio do tempo final
   vid.pause(); vid.currentTime=ranges[0].start; await new Promise(r=>vid.onseeked=r);
   rec.start();
   setStatus("Gravando com legenda (tempo real)… deixe a aba aberta.", true);
   let raf;
   const draw=()=>{
-    cx.drawImage(vid, src.cx,src.cy,src.cw,src.ch, 0,0,cv.width,cv.height);
+    syncOverlays(vid.currentTime, true);
+    drawComposite(cx, cv.width, cv.height, vid.currentTime); // crop + zoom + meia-tela neste instante
     if(S.capStyle==="box"){
       const c=caps.find(c=>cutClock>=c.start && cutClock<c.end);
       if(c) drawCaption(cx,cv,c.text);
@@ -976,36 +1142,57 @@ $("#expBurn").onclick=async ()=>{
   requestAnimationFrame(tick);
   async function finish(){
     vid.pause(); cancelAnimationFrame(raf);
+    OV.forEach(o=>{ if(o.vid){ o.vid.pause(); o.vid.muted=true; } });
     rec.stop(); await done;
-    try{ srcN.disconnect(); }catch(e){}   // não fecha o AudioContext (é cacheado pra reuso)
+    try{ srcN.disconnect(); }catch(e){}
+    ovNodes.forEach(n=>{ try{ n.disconnect(); }catch(e){} });
     vid.muted=false;
-    download(new Blob(chunks,{type:"video/webm"}), "reel-com-legenda.webm");
-    setStatus("✅ WebM com legenda exportado.");
+    const blob=new Blob(chunks,{type:mime});
+    if(mp4ok){
+      download(blob, "reel-final.mp4");
+      setStatus("✅ MP4 exportado — pronto pro Instagram (com legenda" + (OV.length?", meia-tela e áudio do vídeo de cima":"") + ").");
+      return;
+    }
+    // navegador não grava MP4 → converte WebM→MP4 (Instagram não aceita WebM)
+    try{
+      setStatus("Convertendo pra MP4 (Instagram não aceita WebM)…", true);
+      const f=await getFF();
+      await f.writeFile("cap.webm", new Uint8Array(await blob.arrayBuffer()));
+      await f.exec(["-i","cap.webm","-c:v","libx264","-preset","veryfast","-crf","20","-pix_fmt","yuv420p","-c:a","aac","-b:a","160k","capout.mp4"]);
+      const d=await f.readFile("capout.mp4");
+      download(new Blob([d.buffer],{type:"video/mp4"}), "reel-final.mp4");
+      setStatus("✅ MP4 exportado — pronto pro Instagram (com legenda" + (OV.length?", meia-tela e áudio do vídeo de cima":"") + ").");
+    }catch(e){ console.error(e);
+      download(blob, "reel-final.webm");
+      setStatus("⚠️ Gerei WebM mas falhei ao converter pra MP4. Instagram não aceita WebM — converta no CapCut/site, ou me avise.");
+    }
   }
 };
+function softShadow(cx,fs){ cx.shadowColor="rgba(0,0,0,.5)"; cx.shadowBlur=fs*0.22; cx.shadowOffsetX=0; cx.shadowOffsetY=fs*0.04; }
+function clearShadow(cx){ cx.shadowColor="transparent"; cx.shadowBlur=0; cx.shadowOffsetY=0; }
 function drawCaption(cx,cv,text){
-  const fs=Math.round(cv.width*0.055); cx.font=`800 ${fs}px -apple-system,Segoe UI,Roboto,sans-serif`;
+  const fs=Math.round(cv.width*0.058); cx.font=`700 ${fs}px Inter,system-ui,sans-serif`;
   cx.textAlign="center"; cx.textBaseline="bottom";
-  // quebra em até 2 linhas
-  const words=text.split(" "); const lines=[]; let cur="";
+  const words=text.toLowerCase().split(" "); const lines=[]; let cur="";
   const maxW=cv.width*0.86;
   for(const w of words){ const t=cur?cur+" "+w:w; if(cx.measureText(t).width>maxW && cur){ lines.push(cur); cur=w; } else cur=t; }
   if(cur) lines.push(cur); const L=lines.slice(-2);
-  const y0=cv.height*0.9 - (L.length-1)*fs*1.1;
-  L.forEach((ln,i)=>{ const y=y0+i*fs*1.1;
-    cx.lineWidth=fs*0.18; cx.strokeStyle="rgba(0,0,0,.85)"; cx.strokeText(ln,cv.width/2,y);
-    cx.fillStyle="#fff"; cx.fillText(ln,cv.width/2,y);
-  });
+  const y0=cv.height*0.9 - (L.length-1)*fs*1.15;
+  softShadow(cx,fs); cx.fillStyle="#fff";
+  L.forEach((ln,i)=> cx.fillText(ln,cv.width/2,y0+i*fs*1.15));
+  clearShadow(cx);
 }
-// estilo Reels: 2 palavras no meio do quadro; destaque (emph) em itálico serifado
+// estilo Reels: 2 palavras no meio do quadro; destaque (emph) em itálico serifado (Playfair)
 function drawWordCaption(cx,cv,a,b){
-  const fs=Math.round(cv.width*0.085), y=cv.height*0.55;
+  const fs=Math.round(cv.width*0.078), y=cv.height*0.5;
   cx.textAlign="left"; cx.textBaseline="middle";
-  const fontOf=w=> `${w.emph?"italic 600":"800"} ${fs}px ${w.emph?'Georgia,"Times New Roman",serif':'-apple-system,Segoe UI,Roboto,sans-serif'}`;
+  const fontOf=w=> w.emph ? `italic 500 ${fs}px "Playfair Display",Georgia,serif` : `700 ${fs}px Inter,system-ui,sans-serif`;
   const items=[a]; if(b) items.push(b);
-  const parts=items.map((w,i)=>{ const txt=(w.emph?w.text:w.text.toLowerCase())+(i<items.length-1?" ":""); cx.font=fontOf(w); return {txt,font:fontOf(w),wdt:cx.measureText(txt).width}; });
+  const parts=items.map((w,i)=>{ const txt=w.text.toLowerCase()+(i<items.length-1?" ":""); cx.font=fontOf(w); return {txt,font:fontOf(w),wdt:cx.measureText(txt).width}; });
   let x=(cv.width - parts.reduce((s,p)=>s+p.wdt,0))/2;
-  for(const p of parts){ cx.font=p.font; cx.lineWidth=fs*0.16; cx.strokeStyle="rgba(0,0,0,.8)"; cx.strokeText(p.txt,x,y); cx.fillStyle="#fff"; cx.fillText(p.txt,x,y); x+=p.wdt; }
+  softShadow(cx,fs); cx.fillStyle="#fff";
+  for(const p of parts){ cx.font=p.font; cx.fillText(p.txt,x,y); x+=p.wdt; }
+  clearShadow(cx);
 }
 
 setStatus("Abra um vídeo pra começar.");

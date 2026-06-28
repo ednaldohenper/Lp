@@ -43,8 +43,13 @@
   .pane.left{border-right:1px solid var(--linha)}
 
   /* PREVIEW */
-  .stage{flex:1; display:flex; align-items:center; justify-content:center; position:relative; background:#000; min-height:0}
+  .stage{flex:1; display:flex; align-items:center; justify-content:center; position:relative; background:#000; min-height:0; overflow:hidden}
   video{max-width:100%; max-height:100%; display:block}
+  #cropBox{position:absolute; border:2px solid var(--ouro); box-shadow:0 0 0 9999px rgba(0,0,0,.55); cursor:grab; z-index:4; touch-action:none}
+  #cropBox.drag{cursor:grabbing}
+  #cropBox::after{content:attr(data-fmt); position:absolute; top:4px; left:6px; font-size:11px; font-weight:700; color:var(--ouro); text-shadow:0 1px 2px #000}
+  .cropbar{display:flex; align-items:center; gap:10px; padding:8px 14px; border-top:1px solid var(--linha); background:var(--preto2); flex-wrap:wrap}
+  .cropbar .lbl{font-size:12px; color:var(--suave)}
   #drop{position:absolute; inset:0; display:flex; flex-direction:column; gap:8px; align-items:center; justify-content:center; text-align:center; color:var(--suave); border:2px dashed var(--linha); margin:18px; border-radius:14px; cursor:pointer}
   #drop.hover{border-color:var(--ouro); color:var(--texto); background:rgba(217,168,91,.05)}
   #drop b{color:var(--texto); font-size:15px}
@@ -135,6 +140,7 @@
   <section class="pane left">
     <div class="stage" id="stage">
       <video id="vid" playsinline></video>
+      <div id="cropBox" hidden></div>
       <div id="capOverlay"></div>
       <div id="drop">
         <b>Arraste seu reel aqui</b>
@@ -147,6 +153,17 @@
       <button id="previewResult" class="ghost" disabled title="Tocar pulando os trechos cortados">▶︎ só o resultado</button>
       <div id="tl"><div id="ph"></div></div>
       <span class="time" id="time">0:00 / 0:00</span>
+    </div>
+    <div class="cropbar">
+      <span class="lbl">Formato de saída:</span>
+      <select id="fmt" disabled>
+        <option value="0">Original (sem corte)</option>
+        <option value="0.5625">9:16 — Reels / Stories (vertical)</option>
+        <option value="0.8">4:5 — Feed (vertical)</option>
+        <option value="1">1:1 — Quadrado</option>
+        <option value="1.7778">16:9 — Horizontal (YouTube)</option>
+      </select>
+      <span class="hint" id="cropHint">arraste o quadro dourado pra escolher o que fica enquadrado</span>
     </div>
   </section>
 
@@ -268,7 +285,8 @@ async function loadVideo(file){
   await new Promise(r=> vid.onloadedmetadata=r);
   S.duration=vid.duration;
   $("#play").disabled=false; $("#detect").disabled=false; $("#keepAll").disabled=false; $("#genCaps").disabled=false;
-  $("#expEdl").disabled=false;
+  $("#expEdl").disabled=false; $("#fmt").disabled=false; $("#findReps").disabled=false;
+  renderCropOverlay();
   updateTime();
   setStatus("Lendo o áudio pra achar as pausas…", true);
   try{ await decodeAudio(file); setStatus('Vídeo pronto. Clique em "Detectar pausas".'); }
@@ -547,6 +565,46 @@ $("#rvFinal").onclick=()=>{ stopPreview(); ensureTab("export"); $("#expMp4").cli
 $("#tl").onclick=e=>{ stopPreview(); const r=$("#tl").getBoundingClientRect(); vid.currentTime=(e.clientX-r.left)/r.width*S.duration; updateUIAt(vid.currentTime,false); };
 function updateTime(){ $("#time").textContent=`${fmt(vid.currentTime)} / ${fmt(S.duration)}`; }
 
+// ---------- reenquadrar / crop (9:16, 4:5, 1:1, 16:9) ----------
+const crop={ ar:0, fx:0.5, fy:0.5 }; // ar = largura/altura (0 = original, sem corte)
+function cropRect(){
+  if(!crop.ar || !vid.videoWidth) return null;
+  const W=vid.videoWidth, H=vid.videoHeight;
+  let cw, ch;
+  if(H*crop.ar <= W){ ch=H; cw=H*crop.ar; } else { cw=W; ch=W/crop.ar; }
+  cw=Math.min(W,Math.max(2,Math.round(cw/2)*2)); ch=Math.min(H,Math.max(2,Math.round(ch/2)*2));
+  const panX=W-cw, panY=H-ch;
+  return {W,H,cw,ch,cx:Math.round(panX*crop.fx),cy:Math.round(panY*crop.fy),panX,panY};
+}
+function renderCropOverlay(){
+  const box=$("#cropBox"), r=cropRect();
+  if(!r){ box.hidden=true; return; }
+  const vr=vid.getBoundingClientRect(), st=$("#stage").getBoundingClientRect();
+  if(!vr.width){ box.hidden=true; return; }
+  const sc=vr.width/vid.videoWidth;
+  box.hidden=false;
+  box.dataset.fmt=($("#fmt").selectedOptions[0]?.textContent||"").split(" — ")[0];
+  box.style.left  =((vr.left-st.left)+r.cx*sc)+"px";
+  box.style.top   =((vr.top -st.top )+r.cy*sc)+"px";
+  box.style.width =(r.cw*sc)+"px";
+  box.style.height=(r.ch*sc)+"px";
+}
+$("#fmt").onchange=()=>{ crop.ar=parseFloat($("#fmt").value)||0; crop.fx=0.5; crop.fy=0.5; renderCropOverlay();
+  setStatus(crop.ar?'Arraste o quadro dourado pra enquadrar. O corte vale pro export (MP4 e WebM).':'Saída no formato original (sem corte).'); };
+window.addEventListener("resize", renderCropOverlay);
+if(window.ResizeObserver) new ResizeObserver(renderCropOverlay).observe(vid);
+(function(){
+  const box=$("#cropBox"); let d=null;
+  box.addEventListener("pointerdown",e=>{ const r=cropRect(); if(!r) return; e.preventDefault(); box.classList.add("drag"); box.setPointerCapture(e.pointerId);
+    d={x:e.clientX,y:e.clientY,fx:crop.fx,fy:crop.fy,r,sc:vid.getBoundingClientRect().width/vid.videoWidth}; });
+  box.addEventListener("pointermove",e=>{ if(!d) return;
+    if(d.r.panX>0) crop.fx=Math.min(1,Math.max(0, d.fx+(e.clientX-d.x)/(d.r.panX*d.sc)));
+    if(d.r.panY>0) crop.fy=Math.min(1,Math.max(0, d.fy+(e.clientY-d.y)/(d.r.panY*d.sc)));
+    renderCropOverlay(); });
+  const end=()=>{ d=null; box.classList.remove("drag"); };
+  box.addEventListener("pointerup",end); box.addEventListener("pointercancel",end);
+})();
+
 // ---------- tabs ----------
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
@@ -572,7 +630,6 @@ const srtT=s=>{ const [h,m,rest]=s.replace(",",".").split(":"); return +h*3600+ 
 const toSrtT=t=>{ const h=Math.floor(t/3600), m=Math.floor(t%3600/60), s=Math.floor(t%60), ms=Math.round((t%1)*1000); return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")},${String(ms).padStart(3,"0")}`; };
 
 function renderCaps(){
-  $("#findReps").disabled = !S.caps.length;
   const el=$("#capList");
   if(!S.caps.length){ el.className="empty"; el.textContent="Nenhuma legenda. Gere automaticamente ou importe um .srt."; return; }
   el.className=""; el.innerHTML="";
@@ -588,26 +645,28 @@ function renderCaps(){
 
 // transcrição automática (transformers.js / Whisper) — carregada sob demanda
 let transcriber=null;
+async function genCaptions(){
+  if(!S.audio){ setStatus("⚠️ Áudio não carregado."); return false; }
+  setStatus("Baixando o modelo de transcrição (1ª vez, ~70 MB)…", true);
+  if(!transcriber){
+    const { pipeline } = await import("https://esm.sh/@xenova/transformers@2.17.2");
+    transcriber = await pipeline("automatic-speech-recognition","Xenova/whisper-base",{
+      progress_callback:p=>{ if(p.status==="progress") setStatus(`Baixando modelo… ${Math.round(p.progress||0)}%`, true); }
+    });
+  }
+  setStatus("Transcrevendo o áudio (roda no seu navegador, pode levar alguns minutos)…", true);
+  const mono = await to16kMono(S.audio);
+  const out = await transcriber(mono, { language:"portuguese", task:"transcribe", return_timestamps:true, chunk_length_s:30, stride_length_s:5 });
+  const chunks = out.chunks || [];
+  S.caps = chunks.filter(c=>c.text && c.text.trim()).map(c=>({
+    start:c.timestamp[0]||0, end:c.timestamp[1]||((c.timestamp[0]||0)+2), text:c.text.trim()
+  }));
+  renderCaps(); renderSegs(); refreshExportButtons();
+  return S.caps.length>0;
+}
 $("#genCaps").onclick=async ()=>{
-  if(!S.audio){ setStatus("⚠️ Áudio não carregado."); return; }
-  try{
-    setStatus("Baixando o modelo de transcrição (1ª vez, ~70 MB)…", true);
-    if(!transcriber){
-      const { pipeline } = await import("https://esm.sh/@xenova/transformers@2.17.2");
-      transcriber = await pipeline("automatic-speech-recognition","Xenova/whisper-base",{
-        progress_callback:p=>{ if(p.status==="progress") setStatus(`Baixando modelo… ${Math.round(p.progress||0)}%`, true); }
-      });
-    }
-    setStatus("Transcrevendo o áudio (roda no seu navegador, pode levar alguns minutos)…", true);
-    const mono = await to16kMono(S.audio);
-    const out = await transcriber(mono, { language:"portuguese", task:"transcribe", return_timestamps:true, chunk_length_s:30, stride_length_s:5 });
-    const chunks = out.chunks || [];
-    S.caps = chunks.filter(c=>c.text && c.text.trim()).map(c=>({
-      start:c.timestamp[0]||0, end:c.timestamp[1]||((c.timestamp[0]||0)+2), text:c.text.trim()
-    }));
-    renderCaps(); renderSegs(); refreshExportButtons();
-    setStatus(`Pronto: ${S.caps.length} legenda(s). Revise os textos na aba Legendas.`);
-  }catch(err){ console.error(err); setStatus("⚠️ Falha na transcrição automática. Você pode importar um .srt feito em outro lugar."); }
+  try{ const ok=await genCaptions(); setStatus(ok?`Pronto: ${S.caps.length} legenda(s). Revise os textos na aba Legendas.`:"Não encontrei fala pra transcrever."); }
+  catch(err){ console.error(err); setStatus("⚠️ Falha na transcrição automática. Você pode importar um .srt feito em outro lugar."); }
 };
 async function to16kMono(ab){
   const off=new OfflineAudioContext(1, Math.ceil(ab.duration*16000), 16000);
@@ -646,6 +705,13 @@ function lev(a,b){ // distância de edição em PALAVRAS
   return prev[n];
 }
 function wordSim(t1,t2){ const a=normWords(t1), b=normWords(t2); if(!a.length||!b.length) return 0; return 1 - lev(a,b)/Math.max(a.length,b.length); }
+function lcs(a,b){ // maior subsequência comum (em palavras)
+  const n=b.length; const dp=new Array(n+1).fill(0);
+  for(let i=1;i<=a.length;i++){ let prev=0; for(let j=1;j<=n;j++){ const tmp=dp[j]; dp[j]= a[i-1]===b[j-1]? prev+1 : Math.max(dp[j],dp[j-1]); prev=tmp; } }
+  return dp[n];
+}
+// quanto da fala MENOR está contida na maior (pega recomeço parcial: "hoje eu vou..." dentro de "hoje eu vou falar sobre gestão")
+function containment(t1,t2){ const a=normWords(t1), b=normWords(t2); if(!a.length||!b.length) return 0; return lcs(a,b)/Math.min(a.length,b.length); }
 
 // corta um intervalo de tempo qualquer (divide os segmentos que ele cruza)
 function cutTimeRange(s,e,type){
@@ -659,25 +725,41 @@ function cutTimeRange(s,e,type){
   S.segs=out;
 }
 
-const REP={ thr:0.62, maxGapS:4, window:4, minWords:3 };
-$("#findReps").onclick=()=>{
-  if(!S.caps.length){ setStatus("⚠️ Gere as legendas primeiro (aba Legendas) — a repetição usa a transcrição."); return; }
+const REP={ thr:0.6, contain:0.8, maxGapS:5, window:5, minWords:2 };
+function markRepeats(){
   const caps=S.caps.slice().sort((a,b)=>a.start-b.start);
   const cutRanges=[];
   for(let i=0;i<caps.length;i++){
-    if(normWords(caps[i].text).length < REP.minWords) continue;
+    const wi=normWords(caps[i].text); if(wi.length<REP.minWords) continue;
     for(let j=i+1; j<=i+REP.window && j<caps.length; j++){
       if(caps[j].start - caps[i].end > REP.maxGapS) break;
-      if(wordSim(caps[i].text, caps[j].text) >= REP.thr){
-        cutRanges.push([caps[i].start, caps[i].end]); // corta o take ANTERIOR
+      const wj=normWords(caps[j].text); if(wj.length<REP.minWords) continue;
+      const sim=wordSim(caps[i].text, caps[j].text);
+      const con=containment(caps[i].text, caps[j].text);
+      // refez quase igual (sim) OU o take anterior é um pedaço/recomeço do seguinte (con)
+      if(sim>=REP.thr || con>=REP.contain){
+        cutRanges.push([caps[i].start, caps[i].end]); // corta o take ANTERIOR (fica o último)
         break;
       }
     }
   }
-  if(!cutRanges.length){ ensureTab("segs"); setStatus("Nenhuma repetição clara encontrada. (Se você sabe que tem, baixe a sensibilidade me avisando.)"); return; }
   for(const [s,e] of cutRanges) cutTimeRange(s,e,"repeat");
-  reviewIdx=-1; renderAll(); makeThumbs(); ensureTab("segs");
-  setStatus(`Marquei ${cutRanges.length} repetição(ões) em azul. Revise: clique no cartão pra ouvir e mantenha/corte. Depois "Excluir pausas" gera tudo junto.`);
+  if(cutRanges.length){ reviewIdx=-1; renderAll(); makeThumbs(); }
+  return cutRanges.length;
+}
+$("#findReps").onclick=async ()=>{
+  try{
+    if(!S.caps.length){
+      if(!S.audio){ setStatus("⚠️ Abra um vídeo primeiro."); return; }
+      setStatus("Pra achar as repetições eu preciso transcrever a fala — fazendo isso agora…", true);
+      const ok=await genCaptions();
+      if(!ok){ setStatus("Não consegui transcrever. Importe um .srt na aba Legendas e tente de novo."); return; }
+    }
+    const n=markRepeats();
+    ensureTab("segs");
+    setStatus(n? `Marquei ${n} repetição(ões) em AZUL nos Trechos. Clique no cartão pra ouvir, e mantenha/corte. "Excluir pausas" gera tudo junto.`
+              : "Não achei repetição clara. Confira a transcrição na aba Legendas — se você sabe onde repetiu, me diz que eu afino a sensibilidade.");
+  }catch(err){ console.error(err); setStatus("⚠️ Deu erro ao procurar repetições. Veja o console (F12)."); }
 };
 
 // ---------- exportar ----------
@@ -725,8 +807,11 @@ $("#expMp4").onclick=async ()=>{
       fg+=`[0:a]atrim=start=${r.start.toFixed(3)}:end=${r.end.toFixed(3)},asetpts=PTS-STARTPTS,afade=t=in:st=0:d=0.008,afade=t=out:st=${Math.max(0,d-0.008).toFixed(3)}:d=0.008[a${i}];`;
       vlab+=`[v${i}]`; alab+=`[a${i}]`;
     });
-    fg+=`${vlab}${alab}concat=n=${ranges.length}:v=1:a=1[outv][outa]`;
-    setStatus("Renderizando MP4…", true);
+    fg+=`${vlab}${alab}concat=n=${ranges.length}:v=1:a=1[vc][outa]`;
+    const cr=cropRect();
+    if(cr) fg+=`;[vc]crop=${cr.cw}:${cr.ch}:${cr.cx}:${cr.cy},setsar=1[outv]`;
+    else   fg+=`;[vc]null[outv]`;
+    setStatus("Renderizando MP4"+(cr?` (${$("#fmt").value==="0.5625"?"9:16":"recortado"})`:"")+"…", true);
     await f.exec(["-i",inName,"-filter_complex",fg,"-map","[outv]","-map","[outa]","-c:v","libx264","-preset","veryfast","-crf","20","-pix_fmt","yuv420p","-c:a","aac","-b:a","160k","out.mp4"]);
     const data=await f.readFile("out.mp4");
     download(new Blob([data.buffer],{type:"video/mp4"}), "reel-cortado.mp4");
@@ -740,8 +825,10 @@ $("#expBurn").onclick=async ()=>{
   stopPreview();
   const ranges=keptRanges(); if(!ranges.length){ setStatus("Nada pra exportar."); return; }
   const caps=capsForCut();
+  const cr=cropRect(); // null = sem corte
+  const src = cr ? cr : {cx:0,cy:0,cw:vid.videoWidth,ch:vid.videoHeight};
   const cv=document.createElement("canvas");
-  cv.width=vid.videoWidth; cv.height=vid.videoHeight;
+  cv.width=src.cw; cv.height=src.ch;
   const cx=cv.getContext("2d");
   const stream=cv.captureStream(30);
   // áudio: roteia o som do vídeo pro gravador
@@ -760,7 +847,7 @@ $("#expBurn").onclick=async ()=>{
   setStatus("Gravando com legenda (tempo real)… deixe a aba aberta.", true);
   let raf;
   const draw=()=>{
-    cx.drawImage(vid,0,0,cv.width,cv.height);
+    cx.drawImage(vid, src.cx,src.cy,src.cw,src.ch, 0,0,cv.width,cv.height);
     const c=caps.find(c=>cutClock>=c.start && cutClock<c.end);
     if(c) drawCaption(cx,cv,c.text);
     raf=requestAnimationFrame(draw);

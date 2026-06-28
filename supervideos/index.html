@@ -55,11 +55,13 @@
   #drop b{color:var(--texto); font-size:15px}
   #capOverlay{
     position:absolute; left:6%; right:6%; bottom:8%; text-align:center; pointer-events:none;
-    font-weight:800; font-size:clamp(16px,3.2vw,30px); line-height:1.2;
-    color:#fff; text-shadow:0 2px 0 #000,0 0 10px rgba(0,0,0,.9);
-    -webkit-text-stroke:1px rgba(0,0,0,.55);
+    font-weight:800; font-size:clamp(16px,3.2vw,30px); line-height:1.2; text-transform:lowercase;
+    color:#fff; text-shadow:0 2px 0 #000,0 0 12px rgba(0,0,0,.9);
+    -webkit-text-stroke:1px rgba(0,0,0,.5); z-index:5;
   }
-  #capOverlay .hl{background:var(--ouro); color:#1a1306; padding:.05em .2em; border-radius:4px; -webkit-text-stroke:0}
+  #capOverlay .w-on{color:#fff}
+  #capOverlay .w-em{color:#fff; font-style:italic; font-weight:600; font-family:Georgia,"Times New Roman",serif; text-transform:none}
+  #capOverlay .capbox{display:inline}
   .transport{display:flex; align-items:center; gap:10px; padding:10px 14px; border-top:1px solid var(--linha); background:var(--preto2)}
   .time{font-variant-numeric:tabular-nums; color:var(--suave); font-size:12px; min-width:96px}
   /* timeline */
@@ -219,8 +221,14 @@
         <button id="importSrt" class="ghost">Importar .srt</button>
         <input type="file" id="srtFile" accept=".srt,.vtt,.txt" hidden />
         <button id="findReps" class="ghost" disabled title="Acha falas repetidas (erro + refez) e marca o take anterior pra cortar">🔁 Marcar repetições</button>
+        <span class="lbl" style="font-size:12px;color:var(--suave)">Estilo:</span>
+        <select id="capStyle">
+          <option value="word">Palavra a palavra (estilo Reels)</option>
+          <option value="box">Frase inteira</option>
+        </select>
         <span class="hint">o automático baixa um modelo de transcrição na 1ª vez (~70 MB), roda no seu navegador. As repetições usam essa transcrição.</span>
       </div>
+      <div class="hint" style="margin-bottom:8px">💡 Destaque em itálico: escreva a palavra entre asteriscos no texto da legenda — ex.: <b>do *medo*</b> deixa só "medo" em itálico serifado. O resto fica reto.</div>
       <div id="capList" class="empty">Nenhuma legenda. Gere automaticamente ou importe um .srt.</div>
     </div>
 
@@ -261,8 +269,11 @@ const S = {
   audio:null,            // AudioBuffer decodificado
   segs:[],               // [{start,end,type:'silence'|'speech',keep,thumb}]
   caps:[],               // [{start,end,text}]  em tempo ORIGINAL
+  words:[],              // palavras com tempo (derivadas das caps) p/ legenda animada
+  capStyle:"word",       // "word" (palavra a palavra) | "box" (frase)
   params:{thr:-38, min:600, pad:140},
 };
+const esc = s => (s||"").replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 
 const vid = $("#vid");
 
@@ -470,8 +481,7 @@ let lastPlayIdx=-1;
 function updateUIAt(t, moving){
   $("#ph").style.left=(t/S.duration*100)+"%";
   $("#time").textContent=`${fmt(t)} / ${fmt(S.duration)}`;
-  const c=S.caps.find(c=>t>=c.start && t<c.end);
-  $("#capOverlay").textContent=c?c.text:"";
+  renderCaption(t);
   document.querySelectorAll(".seg-card.playing").forEach(n=>n.classList.remove("playing"));
   const idx=S.segs.findIndex(s=>t>=s.start && t<s.end);
   if(idx>=0){ const c2=document.querySelector(`.seg-card[data-i="${idx}"]`); if(c2){ c2.classList.add("playing"); if(moving && idx!==lastPlayIdx) scrollToCard(idx); } }
@@ -480,10 +490,69 @@ function updateUIAt(t, moving){
 // reprodução normal (com pausas): só reflete na UI
 vid.ontimeupdate=()=>{ if(!preview.on) updateUIAt(vid.currentTime, false); };
 
+// ===== LEGENDAS (dentro do quadro + estilo palavra a palavra) =====
+// tokeniza marcando destaque: palavras entre *asteriscos* viram itálico (emph)
+function tokenize(text){
+  const out=[]; let emph=false;
+  for(let tok of (text||"").trim().split(/\s+/).filter(Boolean)){
+    let here=emph;
+    if(tok.startsWith("*")){ here=true; emph=true; tok=tok.replace(/^\*+/,""); }
+    let close=false;
+    if(tok.endsWith("*")){ close=true; tok=tok.replace(/\*+$/,""); }
+    if(tok) out.push({text:tok, emph:here||emph});
+    if(close) emph=false;
+  }
+  return out;
+}
+function buildWordsFrom(caps){
+  const out=[];
+  caps.forEach((c,ci)=>{
+    const toks=tokenize(c.text); if(!toks.length) return;
+    const dur=Math.max(0.24, c.end-c.start), per=dur/toks.length;
+    toks.forEach((tk,k)=> out.push({text:tk.text, emph:tk.emph, start:c.start+k*per, end:c.start+(k+1)*per, capId:ci}));
+  });
+  return out;
+}
+function buildWords(){ S.words=buildWordsFrom(S.caps); }
+// retângulo (em coords do palco) do que vai aparecer no vídeo final — segue o crop 9:16 se houver
+function frameDisplayRect(){
+  const vr=vid.getBoundingClientRect(), st=$("#stage").getBoundingClientRect();
+  if(!vr.width) return null;
+  const base={left:vr.left-st.left, top:vr.top-st.top, w:vr.width, h:vr.height};
+  const r=cropRect(); if(!r) return base;
+  const sc=vr.width/vid.videoWidth;
+  return {left:base.left+r.cx*sc, top:base.top+r.cy*sc, w:r.cw*sc, h:r.ch*sc};
+}
+function positionCaption(ov){
+  const fr=frameDisplayRect(); if(!fr) return;
+  ov.style.left=(fr.left+fr.w*0.06)+"px"; ov.style.right="auto";
+  ov.style.width=(fr.w*0.88)+"px";
+  ov.style.top=(fr.top+fr.h*0.50)+"px"; ov.style.bottom="auto";
+  ov.style.fontSize=Math.max(13, fr.w*0.085)+"px";
+}
+function renderCaption(t){
+  const ov=$("#capOverlay"); positionCaption(ov);
+  if(S.capStyle==="box"){
+    const c=S.caps.find(c=>t>=c.start && t<c.end);
+    ov.innerHTML = c ? `<span class="capbox">${esc(c.text)}</span>` : "";
+    return;
+  }
+  // palavra a palavra: palavra ativa (branca) + a próxima (apagada), dentro da mesma fala
+  const ci=S.caps.findIndex(c=> t>=c.start-0.05 && t<c.end+0.05);
+  if(ci<0){ ov.innerHTML=""; return; }
+  const ws=S.words.filter(w=>w.capId===ci); if(!ws.length){ ov.innerHTML=""; return; }
+  let ai=ws.findIndex(w=> t < w.end); if(ai<0) ai=ws.length-1; if(t<ws[0].start) ai=0;
+  const span=w=> w? `<span class="${w.emph?"w-em":"w-on"}">${esc(w.text)}</span>` : "";
+  const a=ws[ai], b=ws[ai+1];
+  ov.innerHTML = span(a) + (b? " "+span(b) : "");
+}
+$("#capStyle").onchange=()=>{ S.capStyle=$("#capStyle").value; renderCaption(preview.posOrig||vid.currentTime||0); };
+
 // ===== MOTOR "OUVIR SÓ O ÚTIL" =====
 // Toca o ÁUDIO apenas dos trechos mantidos, colado e SEM emenda audível (Web Audio).
 // O vídeo (mudo) só acompanha a imagem. Resultado: a pausa nunca é ouvida, sem engasgo de seek.
-const preview={on:false, ac:null, node:null, ranges:[], t0:0, total:0, raf:0, stopCut:Infinity};
+const preview={on:false, paused:false, posOrig:0, ac:null, node:null, ranges:[], t0:0, total:0, raf:0, stopCut:Infinity};
+function setRvLabel(playing){ const b=$("#rvAll"); if(b) b.textContent = playing ? "❚❚ Pausar" : "▶︎ Ouvir tudo (revisar)"; }
 function origToCut(t, R){ let acc=0; for(const r of R){ if(t<r.start) return acc; if(t<=r.end) return acc+(t-r.start); acc+=r.end-r.start; } return acc; }
 function cutToOrig(ct, R){ let acc=0; for(const r of R){ const d=r.end-r.start; if(ct<=acc+d) return r.start+(ct-acc); acc+=d; } return S.duration; }
 
@@ -499,13 +568,14 @@ function startPreview(fromOrig, stopOrig){
     for(const r of R){ const s=Math.max(0,Math.floor(r.start*sr)), e=Math.min(src.length,Math.floor(r.end*sr)); if(e>s){ dst.set(src.subarray(s,e), off); off+=e-s; } } }
   const node=ac.createBufferSource(); node.buffer=buf; node.connect(ac.destination);
   const offCut=origToCut(Math.max(0, fromOrig||0), R);
-  preview.on=true; preview.ac=ac; preview.node=node; preview.ranges=R; preview.total=total/sr;
+  preview.on=true; preview.paused=false; preview.posOrig=Math.max(0,fromOrig||0);
+  preview.ac=ac; preview.node=node; preview.ranges=R; preview.total=total/sr;
   preview.stopCut=(stopOrig!=null)? origToCut(stopOrig,R)+0.8 : Infinity;
   preview.t0=ac.currentTime-offCut;
   node.onended=()=>{ if(preview.on) stopPreview(); };
   node.start(0, offCut);
   vid.muted=true; vid.play().catch(()=>{});
-  $("#play").textContent="❚❚"; $("#previewResult").style.color="var(--ouro)";
+  $("#play").textContent="❚❚"; $("#previewResult").style.color="var(--ouro)"; setRvLabel(true);
   loopPreview();
 }
 function loopPreview(){
@@ -513,16 +583,29 @@ function loopPreview(){
   const ct=preview.ac.currentTime-preview.t0;
   if(ct>=preview.total-0.02 || ct>=preview.stopCut){ stopPreview(); return; }
   const target=cutToOrig(ct, preview.ranges);
+  preview.posOrig=target;
   if(Math.abs(vid.currentTime-target)>0.08){ try{ vid.currentTime=target; }catch(e){} }
   updateUIAt(target, true);
   preview.raf=requestAnimationFrame(loopPreview);
 }
+// PAUSAR mantendo a posição (pra retomar de onde parou) — usado pelo botão "Ouvir tudo"
+function pausePreview(){
+  if(!preview.on) return;
+  if(preview.raf) cancelAnimationFrame(preview.raf);
+  if(preview.node){ try{ preview.node.onended=null; preview.node.stop(); }catch(e){} }
+  if(preview.ac){ try{ preview.ac.close(); }catch(e){} }
+  preview.on=false; preview.paused=true; preview.node=null; preview.ac=null;
+  vid.pause(); vid.muted=false;
+  $("#previewResult").style.color=""; $("#play").textContent="▶︎"; setRvLabel(false);
+  setStatus(`⏸ Pausado em ${fmt(preview.posOrig||0)}. O trecho em destaque (ou o logo acima) é o que tocava — corte/ajuste e clique em "Ouvir tudo" pra continuar de onde parou.`);
+}
+// PARAR de vez (zera a posição) — usado por play normal, timeline, export
 function stopPreview(){
   if(preview.raf) cancelAnimationFrame(preview.raf);
   if(preview.node){ try{ preview.node.onended=null; preview.node.stop(); }catch(e){} }
   if(preview.ac){ try{ preview.ac.close(); }catch(e){} }
-  const was=preview.on; preview.on=false; preview.node=null; preview.ac=null;
-  $("#previewResult").style.color=""; $("#play").textContent="▶︎";
+  const was=preview.on; preview.on=false; preview.paused=false; preview.posOrig=0; preview.node=null; preview.ac=null;
+  $("#previewResult").style.color=""; $("#play").textContent="▶︎"; setRvLabel(false);
   if(was){ vid.pause(); vid.muted=false; }
 }
 
@@ -557,7 +640,23 @@ function reviewGoto(k){
   ensureTab("segs"); scrollToCard(seg.i); hearJoin(seg.i); updateReviewBar();
 }
 function ensureTab(name){ const t=document.querySelector(`.tab[data-tab="${name}"]`); if(t && !t.classList.contains("active")) t.click(); }
-$("#rvAll").onclick=()=>{ const r=keptRanges(); ensureTab("segs"); startPreview(r[0]?r[0].start:0, null); setStatus("Ouvindo SÓ o conteúdo útil — as pausas são puladas. Se algo soar estranho, pause e ajuste o corte em destaque."); };
+$("#rvAll").onclick=()=>{
+  if(preview.on){ pausePreview(); return; }          // mesmo botão pausa
+  ensureTab("segs");
+  const resuming = preview.paused;
+  const from = resuming ? preview.posOrig : (keptRanges()[0]?.start || 0);
+  startPreview(from, null);
+  setStatus(resuming
+    ? `▶︎ Continuando de ${fmt(from)}…`
+    : "Ouvindo SÓ o conteúdo útil — pausas e repetições puladas. Clique de novo (ou aperte ESPAÇO) pra PAUSAR onde quiser e cortar o que faltou.");
+};
+// ESPAÇO pausa/retoma o "Ouvir tudo" (sem atrapalhar quando estiver digitando)
+document.addEventListener("keydown",e=>{
+  if(e.code!=="Space") return;
+  const t=e.target; if(t && /^(input|textarea|select)$/i.test(t.tagName)) return;
+  if($("#rvAll").disabled) return;
+  e.preventDefault(); $("#rvAll").click();
+});
 $("#rvNext").onclick=()=> reviewGoto(reviewIdx+1);
 $("#rvPrev").onclick=()=> reviewGoto(reviewIdx-1);
 $("#rvFinal").onclick=()=>{ stopPreview(); ensureTab("export"); $("#expMp4").click(); };
@@ -588,6 +687,7 @@ function renderCropOverlay(){
   box.style.top   =((vr.top -st.top )+r.cy*sc)+"px";
   box.style.width =(r.cw*sc)+"px";
   box.style.height=(r.ch*sc)+"px";
+  positionCaption($("#capOverlay")); // legenda acompanha o quadro
 }
 $("#fmt").onchange=()=>{ crop.ar=parseFloat($("#fmt").value)||0; crop.fx=0.5; crop.fy=0.5; renderCropOverlay();
   setStatus(crop.ar?'Arraste o quadro dourado pra enquadrar. O corte vale pro export (MP4 e WebM).':'Saída no formato original (sem corte).'); };
@@ -630,6 +730,7 @@ const srtT=s=>{ const [h,m,rest]=s.replace(",",".").split(":"); return +h*3600+ 
 const toSrtT=t=>{ const h=Math.floor(t/3600), m=Math.floor(t%3600/60), s=Math.floor(t%60), ms=Math.round((t%1)*1000); return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")},${String(ms).padStart(3,"0")}`; };
 
 function renderCaps(){
+  buildWords();
   const el=$("#capList");
   if(!S.caps.length){ el.className="empty"; el.textContent="Nenhuma legenda. Gere automaticamente ou importe um .srt."; return; }
   el.className=""; el.innerHTML="";
@@ -637,8 +738,8 @@ function renderCaps(){
     const row=document.createElement("div"); row.className="cap-row";
     row.innerHTML=`<div class="ct">${fmt(c.start)}–${fmt(c.end)}</div><textarea>${c.text}</textarea>`;
     const ta=row.querySelector("textarea");
-    ta.oninput=()=>{ c.text=ta.value; };
-    ta.onfocus=()=>{ vid.currentTime=c.start; };
+    ta.oninput=()=>{ c.text=ta.value; buildWords(); };
+    ta.onfocus=()=>{ stopPreview(); vid.currentTime=c.start; };
     el.appendChild(row);
   });
 }
@@ -772,7 +873,7 @@ const download=(blob,name)=>{ const a=document.createElement("a"); a.href=URL.cr
 
 $("#expSrt").onclick=()=>{
   const caps=capsForCut(); let out="";
-  caps.forEach((c,i)=> out+=`${i+1}\n${toSrtT(c.start)} --> ${toSrtT(c.end)}\n${c.text}\n\n`);
+  caps.forEach((c,i)=> out+=`${i+1}\n${toSrtT(c.start)} --> ${toSrtT(c.end)}\n${(c.text||"").replace(/\*/g,"")}\n\n`);
   download(new Blob([out],{type:"text/plain"}), "reel-legendas.srt");
 };
 $("#expEdl").onclick=()=>{
@@ -841,6 +942,7 @@ $("#expBurn").onclick=async ()=>{
   const chunks=[]; rec.ondataavailable=e=>e.data.size&&chunks.push(e.data);
   const done=new Promise(r=>rec.onstop=r);
 
+  const words=buildWordsFrom(caps); // palavras em tempo de corte p/ estilo Reels
   let ri=0, cutClock=0; // relógio do tempo final
   vid.pause(); vid.currentTime=ranges[0].start; await new Promise(r=>vid.onseeked=r);
   rec.start();
@@ -848,8 +950,15 @@ $("#expBurn").onclick=async ()=>{
   let raf;
   const draw=()=>{
     cx.drawImage(vid, src.cx,src.cy,src.cw,src.ch, 0,0,cv.width,cv.height);
-    const c=caps.find(c=>cutClock>=c.start && cutClock<c.end);
-    if(c) drawCaption(cx,cv,c.text);
+    if(S.capStyle==="box"){
+      const c=caps.find(c=>cutClock>=c.start && cutClock<c.end);
+      if(c) drawCaption(cx,cv,c.text);
+    }else{
+      const ci=caps.findIndex(c=> cutClock>=c.start-0.05 && cutClock<c.end+0.05);
+      if(ci>=0){ const ws=words.filter(w=>w.capId===ci);
+        if(ws.length){ let ai=ws.findIndex(w=>cutClock<w.end); if(ai<0) ai=ws.length-1; if(cutClock<ws[0].start) ai=0;
+          drawWordCaption(cx,cv, ws[ai], ws[ai+1]); } }
+    }
     raf=requestAnimationFrame(draw);
   };
   draw();
@@ -887,6 +996,16 @@ function drawCaption(cx,cv,text){
     cx.lineWidth=fs*0.18; cx.strokeStyle="rgba(0,0,0,.85)"; cx.strokeText(ln,cv.width/2,y);
     cx.fillStyle="#fff"; cx.fillText(ln,cv.width/2,y);
   });
+}
+// estilo Reels: 2 palavras no meio do quadro; destaque (emph) em itálico serifado
+function drawWordCaption(cx,cv,a,b){
+  const fs=Math.round(cv.width*0.085), y=cv.height*0.55;
+  cx.textAlign="left"; cx.textBaseline="middle";
+  const fontOf=w=> `${w.emph?"italic 600":"800"} ${fs}px ${w.emph?'Georgia,"Times New Roman",serif':'-apple-system,Segoe UI,Roboto,sans-serif'}`;
+  const items=[a]; if(b) items.push(b);
+  const parts=items.map((w,i)=>{ const txt=(w.emph?w.text:w.text.toLowerCase())+(i<items.length-1?" ":""); cx.font=fontOf(w); return {txt,font:fontOf(w),wdt:cx.measureText(txt).width}; });
+  let x=(cv.width - parts.reduce((s,p)=>s+p.wdt,0))/2;
+  for(const p of parts){ cx.font=p.font; cx.lineWidth=fs*0.16; cx.strokeStyle="rgba(0,0,0,.8)"; cx.strokeText(p.txt,x,y); cx.fillStyle="#fff"; cx.fillText(p.txt,x,y); x+=p.wdt; }
 }
 
 setStatus("Abra um vídeo pra começar.");

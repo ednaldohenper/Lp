@@ -232,6 +232,7 @@
         <span id="rvCount" class="lbl">—</span>
         <button id="rvNext" class="ghost" disabled>corte ›</button>
         <button id="mkCut" class="ghost" disabled title="Corta um pedaço qualquer: clique pra marcar o início, avance/ouça e clique pra cortar até ali.">✂︎ Cortar parte</button>
+        <button id="togPauses" class="ghost" disabled title="Some com os cartões de pausa pra limpar a lista (elas continuam cortadas).">👁 Pausas: ocultas</button>
         <span class="grow"></span>
         <button id="rvFinal" class="ghost" disabled title="As pausas/cortes já estão aplicados. Aqui você só vai pra aba Exportar — o vídeo só é gerado quando você escolher um export.">Ir para Exportar ⬇︎</button>
       </div>
@@ -401,7 +402,7 @@ function detectSilence(){
   if(!segs.length) segs.push({start:0,end:S.duration,type:"speech",keep:true,thumb:null});
   S.segs=segs; reviewIdx=-1;
   renderAll();
-  setStatus(`Achei ${cuts.length} pausa(s) — já removidas no resultado. Use "▶︎ Ouvir tudo" pra conferir e ajuste o que ficou estranho. O vídeo só é gerado quando você exportar.`);
+  setStatus(`Achei ${cuts.length} pausa(s) — já removidas e ocultas da lista pra deixar limpo. A lista mostra só falas/repetições/cortes. Use "▶︎ Ouvir tudo" pra conferir; o vídeo só é gerado quando você exportar.`);
   makeThumbs();
 }
 
@@ -457,7 +458,10 @@ function renderSegs(){
   const el=$("#segList");
   if(!S.segs.length){ el.innerHTML='<div class="empty">Sem trechos ainda. Clique em "Detectar pausas".</div>'; return; }
   el.innerHTML="";
+  let shown=0;
   S.segs.forEach((seg,i)=>{
+    if(seg.type==="silence" && !showPauses) return; // lista enxuta: pausas ocultas (continuam cortadas)
+    shown++;
     const card=document.createElement("div");
     card.className="seg-card"+(seg.keep?"":" cut");
     card.dataset.i=i;
@@ -503,6 +507,7 @@ function renderSegs(){
     });
     el.appendChild(card);
   });
+  if(!shown) el.innerHTML='<div class="empty">Só há pausas — clique em "👁 Pausas" pra mostrá-las.</div>';
 }
 
 function renderTimeline(){
@@ -699,10 +704,12 @@ function nudge(i, side, delta){
 
 // ---------- revisão guiada (ouvir tudo / corte a corte / excluir pausas) ----------
 let reviewIdx=-1;
+let showPauses=false; // lista enxuta por padrão: pausas ocultas
+$("#togPauses").onclick=()=>{ showPauses=!showPauses; $("#togPauses").textContent = showPauses?"👁 Pausas: visíveis":"👁 Pausas: ocultas"; renderSegs(); };
 function cutList(){ return S.segs.map((s,i)=>({s,i})).filter(o=>!o.s.keep); }
 function updateReviewBar(){
   const cs=cutList(), has=S.segs.length>0, hasCuts=cs.length>0;
-  $("#rvAll").disabled=!has; $("#rvFinal").disabled=!has; $("#mkCut").disabled=!has;
+  $("#rvAll").disabled=!has; $("#rvFinal").disabled=!has; $("#mkCut").disabled=!has; $("#togPauses").disabled=!has;
   $("#rvPrev").disabled=!hasCuts; $("#rvNext").disabled=!hasCuts;
   $("#rvCount").textContent = hasCuts ? (reviewIdx>=0?`corte ${Math.min(reviewIdx+1,cs.length)} de ${cs.length}`:`${cs.length} corte(s)`) : (has?"sem cortes":"—");
 }
@@ -717,7 +724,11 @@ $("#mkCut").onclick=()=>{
   cutTimeRange(s,e,"manual"); reviewIdx=-1; renderAll(); makeThumbs();
   setStatus(`✂︎ Cortei ${fmt(s)}–${fmt(e)} (${(e-s).toFixed(1)}s). Confira nos Trechos (etiqueta "corte") — dá pra ouvir a junção e ajustar.`);
 };
-function scrollToCard(i){ const c=document.querySelector(`.seg-card[data-i="${i}"]`); if(c) c.scrollIntoView({block:"center",behavior:"smooth"}); }
+function scrollToCard(i){
+  const c=document.querySelector(`.seg-card[data-i="${i}"]`); if(!c) return;
+  const cont=$("#panel-segs"), cr=c.getBoundingClientRect(), pr=cont.getBoundingClientRect();
+  if(cr.top < pr.top+8 || cr.bottom > pr.bottom-8) c.scrollIntoView({block:"nearest"}); // só rola se saiu da tela
+}
 function reviewGoto(k){
   const cs=cutList(); if(!cs.length) return;
   reviewIdx=(k+cs.length)%cs.length;       // circula

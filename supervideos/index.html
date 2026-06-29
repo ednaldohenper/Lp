@@ -1131,15 +1131,33 @@ $("#expEdl").onclick=()=>{
   download(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}), "reel-decisoes-corte.json");
 };
 
-// --- MP4 via ffmpeg.wasm (corte limpo, sem legenda) ---
+// escolhe o melhor formato de gravação do navegador (prioriza MP4, que o Instagram aceita)
+function pickRecMime(){
+  const MR=window.MediaRecorder;
+  if(!MR||!MR.isTypeSupported) return {mime:"",mp4:false};
+  const mp4=["video/mp4;codecs=avc1.42E01E,mp4a.40.2","video/mp4;codecs=avc1,mp4a","video/mp4;codecs=h264,aac","video/mp4"];
+  const webm=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"];
+  for(const t of mp4) if(MR.isTypeSupported(t)) return {mime:t,mp4:true};
+  for(const t of webm) if(MR.isTypeSupported(t)) return {mime:t,mp4:false};
+  return {mime:"",mp4:false};
+}
+// --- ffmpeg.wasm (corte limpo + conversão WebM→MP4) — carrega de vários CDNs ---
 let ff=null;
 async function getFF(){
   if(ff) return ff;
-  ff=new FFmpeg();
-  ff.on("progress",({progress})=> setStatus(`Renderizando MP4… ${Math.round((progress||0)*100)}%`, true));
-  const base="https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd";
-  await ff.load({ coreURL:`${base}/ffmpeg-core.js`, wasmURL:`${base}/ffmpeg-core.wasm` });
-  return ff;
+  const inst=new FFmpeg();
+  inst.on("progress",({progress})=> setStatus(`Processando vídeo… ${Math.round((progress||0)*100)}%`, true));
+  const bases=[
+    "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd",
+    "https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd",
+    "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd"
+  ];
+  let lastErr;
+  for(const base of bases){
+    try{ await inst.load({ coreURL:`${base}/ffmpeg-core.js`, wasmURL:`${base}/ffmpeg-core.wasm` }); ff=inst; return ff; }
+    catch(e){ lastErr=e; console.warn("ffmpeg load falhou em",base,e); }
+  }
+  throw lastErr||new Error("não carregou o ffmpeg");
 }
 $("#expMp4").onclick=async ()=>{
   stopPreview();
@@ -1168,7 +1186,12 @@ $("#expMp4").onclick=async ()=>{
     const data=await f.readFile("out.mp4");
     download(new Blob([data.buffer],{type:"video/mp4"}), "reel-cortado.mp4");
     setStatus("✅ MP4 exportado"+(moving?" — atenção: quadro móvel/zoom-animado e meia-tela NÃO entram no MP4; pra isso use o WebM com legenda.":". (Legenda? Use o WebM ou suba o .srt.)"));
-  }catch(err){ console.error(err); setStatus("⚠️ Falha ao exportar MP4. Vídeos muito grandes podem estourar a memória — tente um trecho menor ou use o WebM."); }
+  }catch(err){ console.error(err);
+    const net=/load|fetch|network|import|core/i.test(String(err&&err.message));
+    setStatus(net
+      ? "⚠️ Não consegui carregar o motor de vídeo (ffmpeg) — parece bloqueio de internet/CDN. Tente recarregar a página com internet, ou use o export 'MP4 completo' (grava direto, sem ffmpeg). Detalhe no console (F12)."
+      : "⚠️ Falha ao exportar MP4. Vídeo muito grande pode estourar a memória — corte em pedaços, ou use 'MP4 completo'. Detalhe no console (F12).");
+  }
 };
 
 // --- WebM com legenda queimada (canvas + MediaRecorder, tempo real) ---
@@ -1194,10 +1217,9 @@ $("#expBurn").onclick=async ()=>{
   }}
   dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
   // grava direto em MP4 quando o navegador suporta (Instagram aceita); senão WebM e converte no fim
-  const mp4ok = window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported("video/mp4;codecs=h264,aac");
-  const mime = mp4ok ? "video/mp4;codecs=h264,aac"
-             : (MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus") ? "video/webm;codecs=vp9,opus" : "video/webm");
-  const rec=new MediaRecorder(stream,{mimeType:mime, videoBitsPerSecond:8_000_000});
+  const pick=pickRecMime(); const mp4ok=pick.mp4; const mime=pick.mime;
+  const rec = mime ? new MediaRecorder(stream,{mimeType:mime, videoBitsPerSecond:8_000_000})
+                   : new MediaRecorder(stream,{videoBitsPerSecond:8_000_000});
   const chunks=[]; rec.ondataavailable=e=>e.data.size&&chunks.push(e.data);
   const done=new Promise(r=>rec.onstop=r);
 
@@ -1262,7 +1284,7 @@ $("#expBurn").onclick=async ()=>{
       setStatus("✅ MP4 exportado — pronto pro Instagram (com legenda" + (OV.length?", meia-tela e áudio do vídeo de cima":"") + ").");
     }catch(e){ console.error(e);
       download(blob, "reel-final.webm");
-      setStatus("⚠️ Gerei WebM mas falhei ao converter pra MP4. Instagram não aceita WebM — converta no CapCut/site, ou me avise.");
+      setStatus("⚠️ Gravei o vídeo mas não consegui converter pra MP4 (provável bloqueio de internet pro motor ffmpeg). Baixei em WebM — o Instagram não aceita WebM; converta no CapCut/site, ou tente de novo com internet. Detalhe no console (F12).");
     }
   }
 };

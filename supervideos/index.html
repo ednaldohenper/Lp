@@ -241,6 +241,7 @@
     <div class="panel" id="panel-segs">
       <div class="review-bar" id="reviewBar">
         <button id="rvAll" disabled>▶︎ Ouvir tudo (revisar)</button>
+        <button id="rvRestart" class="ghost" disabled title="Recomeçar do início">⏮</button>
         <button id="undoBtn" class="ghost" disabled title="Desfaz a última ação (devolve o que você removeu).">↶ Desfazer</button>
         <button id="rvPrev" class="ghost" disabled>‹ corte</button>
         <span id="rvCount" class="lbl">—</span>
@@ -586,11 +587,12 @@ function renderTimeline(){
 // ---------- player ----------
 vid.onplay =()=> $("#play").textContent="❚❚";
 vid.onpause=()=>{ $("#play").textContent="▶︎"; if(typeof refreshStage==="function") refreshStage(); };
-$("#play").onclick=()=>{ stopPreview(); vid.paused?vid.play():vid.pause(); };
+$("#play").onclick=()=>{ stopPreview(); if(vid.ended && lastPos<S.duration-0.1) vid.currentTime=lastPos; vid.paused?vid.play():vid.pause(); };
 
 // atualiza overlay/destaque/timeline para um tempo (no relógio ORIGINAL do vídeo)
-let lastPlayIdx=-1;
+let lastPlayIdx=-1, lastPos=0;
 function updateUIAt(t, moving){
+  lastPos=t; // memoriza a posição pra "continuar"
   $("#ph").style.left=(t/S.duration*100)+"%";
   $("#time").textContent=`${fmt(t)} / ${fmt(S.duration)}`;
   renderStage(t, preview.on || !vid.paused);
@@ -780,7 +782,7 @@ function cutList(){ return S.segs.map((s,i)=>({s,i})).filter(o=>!o.s.keep); }
 function updateReviewBar(){
   const cs=cutList(), has=S.segs.length>0, hasCuts=cs.length>0;
   $("#rvAll").disabled=!has; $("#rvFinal").disabled=!has; $("#mkCut").disabled=!has; $("#togPauses").disabled=!has;
-  $("#undoBtn").disabled=!undoStack.length;
+  $("#undoBtn").disabled=!undoStack.length; $("#rvRestart").disabled=!has;
   $("#rvPrev").disabled=!hasCuts; $("#rvNext").disabled=!hasCuts;
   $("#rvCount").textContent = hasCuts ? (reviewIdx>=0?`corte ${Math.min(reviewIdx+1,cs.length)} de ${cs.length}`:`${cs.length} corte(s)`) : (has?"sem cortes":"—");
 }
@@ -810,13 +812,16 @@ function ensureTab(name){ const t=document.querySelector(`.tab[data-tab="${name}
 $("#rvAll").onclick=()=>{
   if(preview.on){ pausePreview(); return; }          // mesmo botão pausa
   ensureTab("segs");
-  const resuming = preview.paused;
-  const from = resuming ? preview.posOrig : (keptRanges()[0]?.start || 0);
+  // continua de onde você parou (mesmo depois de editar); só recomeça se chegou ao fim
+  const cont = preview.paused ? preview.posOrig : lastPos;
+  const from = (cont>0.05 && cont<S.duration-0.15) ? cont : (keptRanges()[0]?.start || 0);
   startPreview(from, null);
-  setStatus(resuming
-    ? `▶︎ Continuando de ${fmt(from)}…`
-    : "Ouvindo SÓ o conteúdo útil — pausas e repetições puladas. Clique de novo (ou aperte ESPAÇO) pra PAUSAR onde quiser e cortar o que faltou.");
+  setStatus((cont>0.05)
+    ? `▶︎ Continuando de ${fmt(from)}… (⏮ recomeça do início; ESPAÇO pausa)`
+    : "Ouvindo SÓ o conteúdo útil — pausas e repetições puladas. ESPAÇO pausa; clique no trecho pra cortar.");
 };
+$("#rvRestart").onclick=()=>{ stopPreview(); lastPos=0; preview.paused=false; preview.posOrig=0; ensureTab("segs");
+  startPreview(keptRanges()[0]?.start||0, null); };
 // ESPAÇO pausa/retoma o "Ouvir tudo" (sem atrapalhar quando estiver digitando)
 document.addEventListener("keydown",e=>{
   if(e.code!=="Space") return;

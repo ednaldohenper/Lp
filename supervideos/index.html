@@ -122,7 +122,19 @@
   .toggle{flex:none; border-radius:8px; padding:6px 10px; font-size:11px; font-weight:700}
   .toggle.keep{color:var(--verde); border-color:rgba(63,174,122,.4)}
   .toggle.cut{color:var(--verm); border-color:rgba(215,99,79,.4)}
+  .seg-card .num{flex:none; width:26px; height:26px; border-radius:50%; background:var(--preto3); border:1px solid var(--linha); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--suave)}
+  .seg-card.playing .num{background:var(--ouro); color:#1a1306; border-color:var(--ouro)}
   .seg-card .del{flex:none; border-radius:8px; padding:6px 9px; font-size:12px; color:var(--suave)}
+  /* mini-cortador no trecho */
+  .trim{margin-top:8px; padding-top:8px; border-top:1px dashed var(--linha)}
+  .trim-bar{position:relative; height:38px; background:#000 center/cover no-repeat; border:1px solid var(--linha); border-radius:8px; overflow:hidden; cursor:pointer}
+  .trim-rm{position:absolute; top:0; bottom:0; background:repeating-linear-gradient(45deg,rgba(215,99,79,.55),rgba(215,99,79,.55) 6px,rgba(215,99,79,.3) 6px,rgba(215,99,79,.3) 12px); border-left:2px solid var(--verm); border-right:2px solid var(--verm)}
+  .trim-h{position:absolute; top:0; bottom:0; width:16px; margin-left:-8px; cursor:ew-resize; display:flex; align-items:center; justify-content:center; touch-action:none; z-index:2}
+  .trim-h::after{content:""; width:3px; height:65%; background:var(--ouro); border-radius:2px; box-shadow:0 0 4px rgba(0,0,0,.6)}
+  .trim-ph{position:absolute; top:-2px; bottom:-2px; width:2px; background:#fff; box-shadow:0 0 6px #fff; z-index:1}
+  .trim-ctl{display:flex; align-items:center; gap:8px; margin-top:6px; flex-wrap:wrap}
+  .trim-ctl .lbl{font-size:11px; color:var(--ouro); font-variant-numeric:tabular-nums}
+  .trim-ctl button{padding:5px 10px; font-size:11px}
   .seg-card .del:hover{color:var(--verm); border-color:rgba(215,99,79,.5)}
 
   .cap-row{display:flex; gap:8px; align-items:flex-start; margin-bottom:6px}
@@ -454,6 +466,7 @@ function renderSummary(){
 }
 
 function renderSegs(){
+  if(typeof closeTrims==="function") closeTrims();
   updateReviewBar();
   const el=$("#segList");
   if(!S.segs.length){ el.innerHTML='<div class="empty">Sem trechos ainda. Clique em "Detectar pausas".</div>'; return; }
@@ -481,7 +494,8 @@ function renderSegs(){
       </div>` : "";
     card.innerHTML=`
       <div class="seg-main">
-        <div class="thumb" title="ir pra esse trecho" ${seg.thumb?`style="background-image:url(${seg.thumb})"`:""}>
+        <div class="num">${shown}</div>
+        <div class="thumb" title="abrir o cortador deste trecho" ${seg.thumb?`style="background-image:url(${seg.thumb})"`:""}>
           <span class="dur">${fmtMs(dur)}</span>
         </div>
         <div class="meta">
@@ -492,7 +506,7 @@ function renderSegs(){
         <button class="toggle ${seg.keep?"keep":"cut"}">${seg.keep?"✓ manter":"✕ cortar"}</button>
         <button class="del" title="Excluir este trecho da lista (limpa a tela). Some do resultado.">🗑</button>
       </div>${tools}`;
-    card.querySelector(".thumb").onclick=()=>{ stopPreview(); vid.currentTime=seg.start; vid.play(); };
+    card.querySelector(".thumb").onclick=()=>{ openTrim(seg, card); };
     card.querySelector(".toggle").onclick=()=>{ seg.keep=!seg.keep; renderAll(); };
     card.querySelector(".del").onclick=()=>{ S.segs=S.segs.filter(x=>x!==seg); reviewIdx=-1; renderAll();
       setStatus("Trecho excluído da lista. (Ele sai do resultado; o resto continua.)"); };
@@ -508,6 +522,51 @@ function renderSegs(){
     el.appendChild(card);
   });
   if(!shown) el.innerHTML='<div class="empty">Nada mantido ainda. Clique em "👁 Ver tudo" pra mostrar os trechos removidos.</div>';
+}
+
+// ---------- mini-cortador de um trecho (remove só um pedacinho) ----------
+let trimRAF=null;
+function closeTrims(){ if(trimRAF){cancelAnimationFrame(trimRAF);trimRAF=null;} document.querySelectorAll(".trim").forEach(n=>n.remove()); }
+function openTrim(seg, card){
+  stopPreview(); closeTrims();
+  const dur=seg.end-seg.start; if(dur<0.2){ setStatus("Trecho curto demais pra cortar dentro dele."); return; }
+  let a=0.0, b=Math.min(1, 0.35); // por padrão marca o começo (pedaço grudado no anterior)
+  const wrap=document.createElement("div"); wrap.className="trim";
+  wrap.innerHTML=`
+    <div class="trim-bar" ${seg.thumb?`style="background-image:url(${seg.thumb})"`:""}>
+      <div class="trim-rm"></div><div class="trim-h trim-a"></div><div class="trim-h trim-b"></div><div class="trim-ph" style="left:0"></div>
+    </div>
+    <div class="trim-ctl">
+      <button data-t="play" class="ghost">▶ ouvir</button>
+      <span class="lbl" data-t="lab"></span><span class="grow"></span>
+      <button data-t="apply" class="primary">✂︎ remover pedaço</button>
+      <button data-t="cancel" class="ghost">fechar</button>
+    </div>
+    <div class="hint" style="margin-top:4px">Arraste as duas alças douradas pra cercar só o pedaço a remover (o vermelho). Ouça com ▶. Depois "remover pedaço".</div>`;
+  card.appendChild(wrap);
+  const bar=wrap.querySelector(".trim-bar"), rm=wrap.querySelector(".trim-rm"),
+        ha=wrap.querySelector(".trim-a"), hb=wrap.querySelector(".trim-b"),
+        ph=wrap.querySelector(".trim-ph"), lab=wrap.querySelector('[data-t="lab"]');
+  const draw=()=>{ rm.style.left=(a*100)+"%"; rm.style.width=((b-a)*100)+"%"; ha.style.left=(a*100)+"%"; hb.style.left=(b*100)+"%";
+    lab.textContent=`remover ${fmt(seg.start+a*dur)}–${fmt(seg.start+b*dur)} · ${((b-a)*dur).toFixed(1)}s`; };
+  draw();
+  const xFrac=e=>{ const r=bar.getBoundingClientRect(); return Math.min(1,Math.max(0,(e.clientX-r.left)/r.width)); };
+  let drag=null;
+  ha.addEventListener("pointerdown",e=>{e.preventDefault();ha.setPointerCapture(e.pointerId);drag="a";});
+  hb.addEventListener("pointerdown",e=>{e.preventDefault();hb.setPointerCapture(e.pointerId);drag="b";});
+  const mv=e=>{ if(!drag)return; const f=xFrac(e); if(drag==="a")a=Math.min(f,b-0.02); else b=Math.max(f,a+0.02); draw(); };
+  ha.addEventListener("pointermove",mv); hb.addEventListener("pointermove",mv);
+  const up=()=>{drag=null;}; ha.addEventListener("pointerup",up); hb.addEventListener("pointerup",up);
+  bar.addEventListener("click",e=>{ if(drag)return; if(e.target===ha||e.target===hb)return; vid.currentTime=seg.start+xFrac(e)*dur; ph.style.left=(xFrac(e)*100)+"%"; });
+  wrap.querySelector('[data-t="play"]').onclick=()=>{ stopPreview(); vid.currentTime=seg.start; vid.play();
+    const loop=()=>{ if(vid.paused) return; const f=(vid.currentTime-seg.start)/dur; ph.style.left=(Math.min(1,Math.max(0,f))*100)+"%";
+      if(vid.currentTime>=seg.end-0.02){ vid.pause(); return; } trimRAF=requestAnimationFrame(loop); };
+    trimRAF=requestAnimationFrame(loop); };
+  wrap.querySelector('[data-t="apply"]').onclick=()=>{ const s=seg.start+a*dur, e=seg.start+b*dur; closeTrims(); vid.pause();
+    if(e-s<0.05){ setStatus("Pedaço curto demais."); return; }
+    cutTimeRange(s,e,"manual"); reviewIdx=-1; renderAll(); makeThumbs();
+    setStatus(`✂︎ Removido ${fmt(s)}–${fmt(e)} (${(e-s).toFixed(1)}s) de dentro do trecho. O resto continua.`); };
+  wrap.querySelector('[data-t="cancel"]').onclick=()=>{ vid.pause(); closeTrims(); };
 }
 
 function renderTimeline(){
@@ -675,7 +734,8 @@ function pausePreview(){
   vid.pause(); vid.muted=false;
   $("#previewResult").style.color=""; $("#play").textContent="▶︎"; setRvLabel(false);
   refreshStage();
-  setStatus(`⏸ Pausado em ${fmt(preview.posOrig||0)}. O trecho em destaque (ou o logo acima) é o que tocava — corte/ajuste e clique em "Ouvir tudo" pra continuar de onde parou.`);
+  const n=document.querySelector(".seg-card.playing .num")?.textContent;
+  setStatus(`⏸ Pausado em ${fmt(preview.posOrig||0)}${n?` — trecho ${n} (em destaque)`:""}. Clique no trecho pra abrir o cortador, ou corte/exclua. "Ouvir tudo" continua daqui.`);
 }
 // PARAR de vez (zera a posição) — usado por play normal, timeline, export
 function stopPreview(){

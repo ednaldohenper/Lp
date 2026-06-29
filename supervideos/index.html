@@ -232,7 +232,7 @@
         <span id="rvCount" class="lbl">—</span>
         <button id="rvNext" class="ghost" disabled>corte ›</button>
         <button id="mkCut" class="ghost" disabled title="Corta um pedaço qualquer: clique pra marcar o início, avance/ouça e clique pra cortar até ali.">✂︎ Cortar parte</button>
-        <button id="togPauses" class="ghost" disabled title="Some com os cartões de pausa pra limpar a lista (elas continuam cortadas).">👁 Pausas: ocultas</button>
+        <button id="togPauses" class="ghost" disabled title="A lista mostra só o que FICA no vídeo (o resultado). Clique pra ver também os trechos removidos (pausas/repetições/cortes) e poder restaurar.">👁 Ver: só resultado</button>
         <span class="grow"></span>
         <button id="rvFinal" class="ghost" disabled title="As pausas/cortes já estão aplicados. Aqui você só vai pra aba Exportar — o vídeo só é gerado quando você escolher um export.">Ir para Exportar ⬇︎</button>
       </div>
@@ -402,7 +402,7 @@ function detectSilence(){
   if(!segs.length) segs.push({start:0,end:S.duration,type:"speech",keep:true,thumb:null});
   S.segs=segs; reviewIdx=-1;
   renderAll();
-  setStatus(`Achei ${cuts.length} pausa(s) — já removidas e ocultas da lista pra deixar limpo. A lista mostra só falas/repetições/cortes. Use "▶︎ Ouvir tudo" pra conferir; o vídeo só é gerado quando você exportar.`);
+  setStatus(`Achei ${cuts.length} pausa(s) — já removidas. A lista mostra só o que FICA (o resultado); o que você cortar/excluir sai da lista. Use "▶︎ Ouvir tudo" pra conferir. O vídeo só é gerado ao exportar.`);
   makeThumbs();
 }
 
@@ -460,7 +460,7 @@ function renderSegs(){
   el.innerHTML="";
   let shown=0;
   S.segs.forEach((seg,i)=>{
-    if(seg.type==="silence" && !showPauses) return; // lista enxuta: pausas ocultas (continuam cortadas)
+    if(!seg.keep && !showRemoved) return; // lista = só o RESULTADO (o que fica). Removidos saem da lista.
     shown++;
     const card=document.createElement("div");
     card.className="seg-card"+(seg.keep?"":" cut");
@@ -507,7 +507,7 @@ function renderSegs(){
     });
     el.appendChild(card);
   });
-  if(!shown) el.innerHTML='<div class="empty">Só há pausas — clique em "👁 Pausas" pra mostrá-las.</div>';
+  if(!shown) el.innerHTML='<div class="empty">Nada mantido ainda. Clique em "👁 Ver tudo" pra mostrar os trechos removidos.</div>';
 }
 
 function renderTimeline(){
@@ -704,8 +704,8 @@ function nudge(i, side, delta){
 
 // ---------- revisão guiada (ouvir tudo / corte a corte / excluir pausas) ----------
 let reviewIdx=-1;
-let showPauses=false; // lista enxuta por padrão: pausas ocultas
-$("#togPauses").onclick=()=>{ showPauses=!showPauses; $("#togPauses").textContent = showPauses?"👁 Pausas: visíveis":"👁 Pausas: ocultas"; renderSegs(); };
+let showRemoved=false; // lista mostra só o RESULTADO (trechos mantidos); removidos ocultos
+$("#togPauses").onclick=()=>{ showRemoved=!showRemoved; $("#togPauses").textContent = showRemoved?"👁 Ver: tudo":"👁 Ver: só resultado"; renderSegs(); };
 function cutList(){ return S.segs.map((s,i)=>({s,i})).filter(o=>!o.s.keep); }
 function updateReviewBar(){
   const cs=cutList(), has=S.segs.length>0, hasCuts=cs.length>0;

@@ -159,6 +159,8 @@
   <h1>Editor de <span>Reels</span> — corte por pausa, com revisão</h1>
   <span class="hint">o vídeo fica só no seu navegador · nada é enviado pra internet</span>
   <span class="grow"></span>
+  <button id="btnSave" class="ghost" disabled title="Guarda tudo (vídeo + edições) no seu navegador. Depois de salvar, ele passa a auto-salvar.">💾 Salvar</button>
+  <button id="btnRestore" class="ghost" disabled title="Recarrega o último projeto salvo neste navegador.">↺ Restaurar</button>
   <button id="btnOpen" class="ghost">📁 Abrir vídeo</button>
   <input type="file" id="file" accept="video/*" hidden />
 </header>
@@ -355,7 +357,7 @@ async function loadVideo(file){
   S.duration=vid.duration;
   $("#play").disabled=false; $("#detect").disabled=false; $("#keepAll").disabled=false; $("#genCaps").disabled=false;
   $("#expEdl").disabled=false; $("#fmt").disabled=false; $("#findReps").disabled=false;
-  $("#zoom").disabled=false; $("#addOvVid").disabled=false; $("#addOvImg").disabled=false;
+  $("#zoom").disabled=false; $("#addOvVid").disabled=false; $("#addOvImg").disabled=false; $("#btnSave").disabled=false;
   refreshStage(); updateKeyUI();
   updateTime();
   setStatus("Lendo o áudio pra achar as pausas…", true);
@@ -936,10 +938,10 @@ $("#addOvVid").onclick=()=>{ ovType="video"; $("#ovFile").accept="video/*"; $("#
 $("#addOvImg").onclick=()=>{ ovType="image"; $("#ovFile").accept="image/*"; $("#ovFile").click(); };
 $("#ovFile").onchange=e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return;
   const url=URL.createObjectURL(f); const t0=curTime();
-  const o={id:++ovSeq, type:f.type.startsWith("image")?"image":"video", name:f.name, url, start:t0, end:Math.min(S.duration||t0+3, t0+3)};
+  const o={id:++ovSeq, type:f.type.startsWith("image")?"image":"video", name:f.name, url, file:f, start:t0, end:Math.min(S.duration||t0+3, t0+3)};
   if(o.type==="image"){ o.img=new Image(); o.img.src=url; o.img.onload=()=>refreshStage(); }
   else { o.vid=document.createElement("video"); o.vid.src=url; o.vid.muted=true; o.vid.playsInline=true; o.vid.preload="auto"; }
-  OV.push(o); renderOvList(); refreshStage();
+  OV.push(o); renderOvList(); refreshStage(); if(autosaveOn) saveMedia();
   setStatus(`Meia-tela adicionada (${o.type==="image"?"imagem":"vídeo"}). Ajuste "início aqui / fim aqui" no trecho que quiser.`);
 };
 function renderOvList(){
@@ -957,7 +959,7 @@ function renderOvList(){
       if(a==="si") o.start=Math.min(t, o.end-0.2);
       if(a==="fi") o.end=Math.max(t, o.start+0.2);
       if(a==="go"){ stopPreview(); vid.currentTime=o.start; updateUIAt(o.start,false); }
-      if(a==="rm"){ if(o.vid) o.vid.pause(); OV=OV.filter(x=>x!==o); }
+      if(a==="rm"){ if(o.vid) o.vid.pause(); OV=OV.filter(x=>x!==o); if(autosaveOn) saveMedia(); }
       renderOvList(); refreshStage();
     });
     el.appendChild(card);
@@ -1393,7 +1395,61 @@ function drawWordCaption(cx,cv,a,b,posY){
   clearShadow(cx);
 }
 
-setStatus("Abra um vídeo pra começar.");
+// ===== SALVAR / RESTAURAR (IndexedDB, no próprio navegador) =====
+let autosaveOn=false, autosaveTimer=null;
+function idb(){ return new Promise((res,rej)=>{ const r=indexedDB.open("reels-editor",1);
+  r.onupgradeneeded=()=>r.result.createObjectStore("kv"); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+async function idbSet(k,v){ const db=await idb(); return new Promise((res,rej)=>{ const tx=db.transaction("kv","readwrite"); tx.objectStore("kv").put(v,k); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
+async function idbGet(k){ const db=await idb(); return new Promise((res,rej)=>{ const tx=db.transaction("kv","readonly"); const rq=tx.objectStore("kv").get(k); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error); }); }
+
+async function saveMedia(){ if(!S.file) return;
+  await idbSet("media",{ videoName:S.file.name, videoBlob:S.file,
+    overlays:OV.map(o=>({id:o.id,type:o.type,name:o.name,blob:o.file||null})) }); }
+async function saveState(){ if(!S.file) return;
+  await idbSet("state",{ duration:S.duration,
+    segs:S.segs.map(s=>({start:s.start,end:s.end,type:s.type,keep:s.keep})),
+    caps:S.caps, capStyle:S.capStyle, capSize:S.capSize, capPos:S.capPos, capKeys:S.capKeys, params:S.params,
+    crop:{ar:crop.ar,fx:crop.fx,fy:crop.fy,zoom:crop.zoom,fillHeight:crop.fillHeight,keys:crop.keys},
+    overlays:OV.map(o=>({id:o.id,start:o.start,end:o.end})) }); }
+async function saveProject(){ if(!S.file){ setStatus("Abra um vídeo antes de salvar."); return; }
+  try{ setStatus("💾 Salvando…",true); await saveMedia(); await saveState();
+    autosaveOn=true; if(!autosaveTimer) autosaveTimer=setInterval(()=>{ if(autosaveOn) saveState().catch(()=>{}); }, 4000);
+    $("#btnRestore").disabled=false;
+    setStatus("💾 Salvo no navegador (auto-salvando a cada poucos segundos). Pode recarregar — depois clique em ↺ Restaurar.");
+  }catch(e){ console.error(e); setStatus("⚠️ Não consegui salvar: "+(e.message||e)+". (Pode ser falta de espaço/modo anônimo.)"); } }
+$("#btnSave").onclick=saveProject;
+
+async function restoreProject(){
+  let media,state; try{ media=await idbGet("media"); state=await idbGet("state"); }catch(e){}
+  if(!media||!media.videoBlob){ setStatus("Nada salvo pra restaurar."); return; }
+  setStatus("↺ Restaurando projeto…",true);
+  const file=new File([media.videoBlob], media.videoName||"video.mp4", {type:media.videoBlob.type||"video/mp4"});
+  await loadVideo(file);
+  if(state){
+    S.segs=(state.segs||[]).map(s=>({...s,thumb:null}));
+    S.caps=state.caps||[]; S.capStyle=state.capStyle||"word"; S.capSize=state.capSize||1;
+    S.capPos=state.capPos||{x:.5,y:.5}; S.capKeys=state.capKeys||[]; if(state.params) S.params=state.params;
+    if(state.crop) Object.assign(crop,{ar:state.crop.ar||0,fx:state.crop.fx??.5,fy:state.crop.fy??.5,zoom:state.crop.zoom||1,fillHeight:!!state.crop.fillHeight,keys:state.crop.keys||[]});
+  }
+  // overlays: recria elementos a partir dos blobs guardados
+  OV=[]; ovSeq=0; const meta=new Map((state&&state.overlays||[]).map(o=>[o.id,o]));
+  for(const om of (media.overlays||[])){ if(!om.blob) continue; const url=URL.createObjectURL(om.blob); const t=meta.get(om.id)||{};
+    const ov={id:++ovSeq,type:om.type,name:om.name,url,file:om.blob,start:t.start||0,end:t.end||Math.min(S.duration,(t.start||0)+3)};
+    if(om.type==="image"){ ov.img=new Image(); ov.img.src=url; } else { ov.vid=document.createElement("video"); ov.vid.src=url; ov.vid.muted=true; ov.vid.playsInline=true; ov.vid.preload="auto"; }
+    OV.push(ov); }
+  // reflete nos controles
+  $("#fmt").value=String(crop.ar||0); $("#zoom").value=crop.zoom; $("#vZoom").textContent=crop.zoom.toFixed(1)+"×"; $("#fillH").checked=crop.fillHeight;
+  $("#capSize").value=S.capSize; $("#vCapSize").textContent=Math.round(S.capSize*100)+"%"; $("#capStyle").value=S.capStyle;
+  buildWords(); renderAll(); makeThumbs(); renderCaps(); renderOvList(); updateKeyUI(); updateCapKeyUI(); refreshExportButtons(); refreshStage();
+  autosaveOn=true; if(!autosaveTimer) autosaveTimer=setInterval(()=>{ if(autosaveOn) saveState().catch(()=>{}); }, 4000);
+  setStatus("↺ Projeto restaurado. (Continua auto-salvando.)");
+}
+$("#btnRestore").onclick=restoreProject;
+// na abertura, se houver projeto salvo, habilita Restaurar
+(async()=>{ try{ const media=await idbGet("media"); if(media&&media.videoBlob){ $("#btnRestore").disabled=false;
+  setStatus(`↺ Há um projeto salvo ("${media.videoName||"vídeo"}"). Clique em "Restaurar" pra continuar de onde parou.`); } }catch(e){} })();
+
+setStatus("Abra um vídeo pra começar (ou ↺ Restaurar, se já salvou algo).");
 </script>
 </body>
 </html>

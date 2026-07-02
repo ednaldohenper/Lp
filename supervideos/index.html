@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Editor de Reels — corte por pausa, com revisão</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Playfair+Display:ital,wght@1,500;1,600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --preto:#0a0a0b; --preto2:#121214; --preto3:#1b1b1f;
+    --linha:#2a2a30; --texto:#ECECEC; --suave:#9a9aa3;
+    --ouro:#D9A85B; --ouro2:#caa15a; --verde:#3fae7a; --verm:#d7634f;
+    --azul:#5b8def;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:radial-gradient(1200px 600px at 70% -10%, #16130c 0%, var(--preto) 55%);
+    color:var(--texto); font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    display:flex; flex-direction:column; height:100vh; overflow:hidden;
+  }
+  header{
+    padding:12px 18px; border-bottom:1px solid var(--linha);
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    background:linear-gradient(180deg,rgba(217,168,91,.06),transparent);
+  }
+  header h1{font-size:15px; margin:0; font-weight:600; letter-spacing:.2px}
+  header h1 span{color:var(--ouro)}
+  .hint{color:var(--suave); font-size:12px}
+  .grow{flex:1}
+  button{
+    background:var(--preto3); color:var(--texto); border:1px solid var(--linha);
+    padding:8px 13px; border-radius:9px; cursor:pointer; font-size:13px; font-weight:500;
+    transition:.15s; white-space:nowrap;
+  }
+  button:hover:not(:disabled){border-color:var(--ouro); color:#fff}
+  button:disabled{opacity:.4; cursor:not-allowed}
+  button.primary{background:linear-gradient(180deg,var(--ouro),var(--ouro2)); color:#1a1306; border:none; font-weight:700}
+  button.primary:hover:not(:disabled){filter:brightness(1.08)}
+  button.ghost{background:transparent}
+
+  main{flex:1; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:0; min-height:0}
+  .pane{min-height:0; display:flex; flex-direction:column; overflow:hidden}
+  .pane.left{border-right:1px solid var(--linha)}
+
+  /* PREVIEW */
+  .stage{flex:1; display:flex; align-items:center; justify-content:center; position:relative; background:#000; min-height:0; overflow:hidden}
+  video{max-width:100%; max-height:100%; display:block}
+  #previewCanvas{position:absolute; display:none; z-index:3; pointer-events:none}
+  #cropBox{position:absolute; border:2px solid var(--ouro); box-shadow:0 0 0 9999px rgba(0,0,0,.55); cursor:grab; z-index:4; touch-action:none}
+  .ov-card{display:flex; gap:10px; align-items:center; padding:8px; border:1px solid var(--linha); border-radius:10px; margin-bottom:8px; background:var(--preto2)}
+  .ov-card .thumb{width:60px;height:60px;border-radius:6px;background:#000 center/cover no-repeat;flex:none;border:1px solid var(--linha)}
+  .ov-card .meta{flex:1;min-width:0}
+  .ov-card .meta .nm{font-size:12px;color:var(--texto);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ov-card .meta .t{font-size:11px;color:var(--suave);font-variant-numeric:tabular-nums;margin-top:3px}
+  .ov-card .meta button{padding:3px 7px;font-size:10px;margin-right:4px;margin-top:4px}
+  #cropBox.drag{cursor:grabbing}
+  #cropBox::after{content:attr(data-fmt); position:absolute; top:4px; left:6px; font-size:11px; font-weight:700; color:var(--ouro); text-shadow:0 1px 2px #000}
+  .cropbar{display:flex; align-items:center; gap:10px; padding:8px 14px; border-top:1px solid var(--linha); background:var(--preto2); flex-wrap:wrap}
+  .cropbar .lbl{font-size:12px; color:var(--suave)}
+  #drop{position:absolute; inset:0; display:flex; flex-direction:column; gap:8px; align-items:center; justify-content:center; text-align:center; color:var(--suave); border:2px dashed var(--linha); margin:18px; border-radius:14px; cursor:pointer}
+  #drop.hover{border-color:var(--ouro); color:var(--texto); background:rgba(217,168,91,.05)}
+  #drop b{color:var(--texto); font-size:15px}
+  #capOverlay{
+    position:absolute; left:6%; right:6%; bottom:8%; text-align:center; pointer-events:none;
+    font-family:'Inter',system-ui,-apple-system,sans-serif; font-weight:700; font-size:clamp(16px,3.2vw,30px);
+    line-height:1.15; letter-spacing:-.01em; text-transform:lowercase;
+    color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.5), 0 1px 2px rgba(0,0,0,.55); z-index:5;
+  }
+  #capOverlay .w-on{color:#fff}
+  #capOverlay .w-em{color:#fff; font-style:italic; font-weight:600; font-family:'Playfair Display',Georgia,serif; letter-spacing:0}
+  #capOverlay .capbox{display:inline}
+  .transport{display:flex; align-items:center; gap:10px; padding:10px 14px; border-top:1px solid var(--linha); background:var(--preto2)}
+  .time{font-variant-numeric:tabular-nums; color:var(--suave); font-size:12px; min-width:96px}
+  /* timeline */
+  #tl{flex:1; height:46px; position:relative; background:var(--preto3); border-radius:8px; overflow:hidden; cursor:pointer; border:1px solid var(--linha)}
+  #tl .seg{position:absolute; top:0; bottom:0}
+  #tl .seg.keep{background:linear-gradient(180deg,rgba(63,174,122,.5),rgba(63,174,122,.22))}
+  #tl .seg.cut{background:repeating-linear-gradient(45deg,rgba(215,99,79,.45),rgba(215,99,79,.45) 6px,rgba(215,99,79,.25) 6px,rgba(215,99,79,.25) 12px)}
+  #tl #ph{position:absolute; top:-2px; bottom:-2px; width:2px; background:var(--ouro); box-shadow:0 0 8px var(--ouro)}
+
+  /* RIGHT */
+  .controls{padding:12px 14px; border-bottom:1px solid var(--linha); background:var(--preto2)}
+  .row{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+  .row + .row{margin-top:10px}
+  .ctl{display:flex; flex-direction:column; gap:3px; min-width:130px; flex:1}
+  .ctl label{font-size:11px; color:var(--suave); display:flex; justify-content:space-between}
+  .ctl label b{color:var(--ouro); font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%; accent-color:var(--ouro)}
+  .summary{display:flex; gap:16px; padding:10px 14px; border-bottom:1px solid var(--linha); font-size:12px; flex-wrap:wrap; align-items:center}
+  .summary b{font-size:16px; color:#fff; font-variant-numeric:tabular-nums}
+  .summary .arrow{color:var(--ouro)}
+  .summary .chip{color:var(--suave)}
+
+  .tabs{display:flex; gap:4px; padding:8px 14px 0}
+  .tab{padding:7px 12px; border-radius:8px 8px 0 0; cursor:pointer; color:var(--suave); font-size:12px; border:1px solid transparent}
+  .tab.active{color:var(--texto); background:var(--preto2); border-color:var(--linha); border-bottom-color:var(--preto2)}
+  .panel{flex:1; overflow:auto; padding:10px 14px}
+  .panel.hidden{display:none}
+
+  /* filmstrip / segment list */
+  .seg-card{display:flex; flex-direction:column; align-items:stretch; gap:0; padding:8px; border:1px solid var(--linha); border-radius:10px; margin-bottom:8px; background:var(--preto2)}
+  .seg-main{display:flex; gap:10px; align-items:center}
+  .seg-card.cut{opacity:.62}
+  .seg-card.cut.playing{opacity:1}
+  .seg-tools{display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:8px; padding-top:8px; border-top:1px dashed var(--linha)}
+  .seg-tools .lbl{font-size:11px; color:var(--suave)}
+  .seg-tools button{padding:4px 8px; font-size:11px; border-radius:7px}
+  .seg-tools .hear{color:var(--azul); border-color:rgba(91,141,239,.4)}
+  .seg-card .thumb{width:74px; height:46px; border-radius:6px; background:#000 center/cover no-repeat; flex:none; border:1px solid var(--linha); position:relative; cursor:pointer}
+  .seg-card .thumb .dur{position:absolute; right:2px; bottom:2px; font-size:9px; background:rgba(0,0,0,.7); padding:0 3px; border-radius:3px}
+  .seg-card .meta{flex:1; min-width:0}
+  .seg-card .meta .t{font-variant-numeric:tabular-nums; font-size:11px; color:var(--suave)}
+  .seg-card .meta .txt{font-size:12px; color:var(--texto); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .seg-card .meta .badge{font-size:10px; padding:1px 6px; border-radius:5px; font-weight:700}
+  .seg-card .badge.silence{background:rgba(215,99,79,.18); color:var(--verm)}
+  .seg-card .badge.speech{background:rgba(63,174,122,.16); color:var(--verde)}
+  .seg-card .badge.repeat{background:rgba(91,141,239,.18); color:var(--azul)}
+  .seg-card .badge.manual{background:rgba(217,168,91,.18); color:var(--ouro)}
+  .toggle{flex:none; border-radius:8px; padding:6px 10px; font-size:11px; font-weight:700}
+  .toggle.keep{color:var(--verde); border-color:rgba(63,174,122,.4)}
+  .toggle.cut{color:var(--verm); border-color:rgba(215,99,79,.4)}
+  .seg-card .num{flex:none; width:26px; height:26px; border-radius:50%; background:var(--preto3); border:1px solid var(--linha); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--suave)}
+  .seg-card.playing .num{background:var(--ouro); color:#1a1306; border-color:var(--ouro)}
+  .seg-card .del{flex:none; border-radius:8px; padding:6px 9px; font-size:12px; color:var(--suave)}
+  /* mini-cortador no trecho */
+  .trim{margin-top:8px; padding-top:8px; border-top:1px dashed var(--linha)}
+  .trim-bar{position:relative; height:38px; background:#000 center/cover no-repeat; border:1px solid var(--linha); border-radius:8px; overflow:hidden; cursor:pointer}
+  .trim-rm{position:absolute; top:0; bottom:0; background:repeating-linear-gradient(45deg,rgba(215,99,79,.6),rgba(215,99,79,.6) 6px,rgba(215,99,79,.35) 6px,rgba(215,99,79,.35) 12px); border-left:2px solid var(--verm); border-right:2px solid var(--verm); display:flex; align-items:center; justify-content:center; overflow:hidden}
+  .trim-rm::after{content:"✕ SAI"; font-size:11px; font-weight:800; color:#fff; text-shadow:0 1px 3px #000; letter-spacing:.05em}
+  .trim-h{position:absolute; top:0; bottom:0; width:16px; margin-left:-8px; cursor:ew-resize; display:flex; align-items:center; justify-content:center; touch-action:none; z-index:2}
+  .trim-h::after{content:""; width:3px; height:65%; background:var(--ouro); border-radius:2px; box-shadow:0 0 4px rgba(0,0,0,.6)}
+  .trim-ph{position:absolute; top:-2px; bottom:-2px; width:2px; background:#fff; box-shadow:0 0 6px #fff; z-index:1}
+  .trim-ctl{display:flex; align-items:center; gap:8px; margin-top:6px; flex-wrap:wrap}
+  .trim-ctl .lbl{font-size:11px; color:var(--ouro); font-variant-numeric:tabular-nums}
+  .trim-ctl button{padding:5px 10px; font-size:11px}
+  .seg-card .del:hover{color:var(--verm); border-color:rgba(215,99,79,.5)}
+
+  .cap-row{display:flex; gap:8px; align-items:flex-start; margin-bottom:6px}
+  .cap-row .ct{font-variant-numeric:tabular-nums; font-size:11px; color:var(--suave); width:92px; flex:none; padding-top:7px}
+  .cap-row textarea{flex:1; background:var(--preto3); color:var(--texto); border:1px solid var(--linha); border-radius:8px; padding:6px 8px; font:13px inherit; resize:vertical; min-height:34px}
+
+  .status{padding:8px 14px; border-top:1px solid var(--linha); font-size:12px; color:var(--suave); background:var(--preto2); min-height:34px; display:flex; align-items:center; gap:8px}
+  .status.work{color:var(--ouro)}
+  .spin{width:13px;height:13px;border:2px solid var(--linha); border-top-color:var(--ouro); border-radius:50%; animation:s 1s linear infinite}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .empty{color:var(--suave); text-align:center; padding:30px 10px; font-size:13px}
+  select{background:var(--preto3); color:var(--texto); border:1px solid var(--linha); border-radius:8px; padding:6px}
+  a.dl{color:var(--ouro)}
+  .seg-card.playing{border-color:var(--ouro); box-shadow:0 0 0 1px var(--ouro)}
+  .review-bar{position:sticky; top:0; z-index:2; display:flex; align-items:center; gap:8px; padding:0 0 10px; margin-bottom:6px; border-bottom:1px solid var(--linha); background:var(--preto); flex-wrap:wrap}
+  .review-bar #rvCount{min-width:96px; text-align:center; font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<header>
+  <h1>Editor de <span>Reels</span> — corte por pausa, com revisão</h1>
+  <span class="hint">o vídeo fica só no seu navegador · nada é enviado pra internet</span>
+  <span class="grow"></span>
+  <button id="btnSave" class="ghost" disabled title="Guarda tudo (vídeo + edições) no seu navegador. Depois de salvar, ele passa a auto-salvar.">💾 Salvar</button>
+  <button id="btnRestore" class="ghost" disabled title="Recarrega o último projeto salvo neste navegador.">↺ Restaurar</button>
+  <button id="btnOpen" class="ghost">📁 Abrir vídeo</button>
+  <input type="file" id="file" accept="video/*" hidden />
+</header>
+
+<main>
+  <!-- ESQUERDA: preview -->
+  <section class="pane left">
+    <div class="stage" id="stage">
+      <video id="vid" playsinline></video>
+      <canvas id="previewCanvas"></canvas>
+      <div id="cropBox" hidden></div>
+      <div id="capOverlay"></div>
+      <div id="drop">
+        <b>Arraste seu reel aqui</b>
+        <span>ou clique pra escolher o arquivo (.mp4 / .mov)</span>
+        <span class="hint">funciona melhor no Chrome · vídeos de até ~2–3 min</span>
+      </div>
+    </div>
+    <div class="transport">
+      <button id="play" disabled>▶︎</button>
+      <button id="previewResult" class="ghost" disabled title="Tocar pulando os trechos cortados">▶︎ só o resultado</button>
+      <div id="tl"><div id="ph"></div></div>
+      <span class="time" id="time">0:00 / 0:00</span>
+    </div>
+    <div class="cropbar">
+      <span class="lbl">Formato de saída:</span>
+      <select id="fmt" disabled>
+        <option value="0">Original (sem corte)</option>
+        <option value="0.5625">9:16 — Reels / Stories (vertical)</option>
+        <option value="0.8">4:5 — Feed (vertical)</option>
+        <option value="1">1:1 — Quadrado</option>
+        <option value="1.7778">16:9 — Horizontal (YouTube)</option>
+      </select>
+      <label class="lbl" style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--suave)" title="Mantém 100% da altura do vídeo e corta só os lados (bom pra vídeo de celular mais alto que 9:16)">
+        <input type="checkbox" id="fillH"> altura cheia</label>
+      <label class="lbl" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--suave)">Zoom <b id="vZoom" style="color:var(--ouro)">1.0×</b>
+        <input type="range" id="zoom" min="0.5" max="3" step="0.05" value="1" disabled style="width:90px;accent-color:var(--ouro)"></label>
+      <button id="mkKey" class="ghost" disabled title="Grava posição e zoom do quadro neste instante. Marque em vários momentos pra ele te acompanhar/dar zoom.">📍 Marcar posição</button>
+      <span class="lbl" id="keyCount" style="font-size:12px;color:var(--suave)"></span>
+      <button id="clrKeys" class="ghost" disabled>limpar pontos</button>
+      <span class="hint" id="cropHint">arraste o quadro; ajuste o zoom; marque a posição em vários momentos pra ele seguir/ampliar</span>
+    </div>
+  </section>
+
+  <!-- DIREITA: controle e revisão -->
+  <section class="pane">
+    <div class="controls">
+      <div class="row">
+        <div class="ctl">
+          <label>Sensibilidade do silêncio <b id="vThr">-38 dB</b></label>
+          <input type="range" id="thr" min="-60" max="-20" value="-38" />
+        </div>
+        <div class="ctl">
+          <label>Pausa mínima pra cortar <b id="vMin">600 ms</b></label>
+          <input type="range" id="min" min="150" max="2000" step="50" value="600" />
+        </div>
+        <div class="ctl">
+          <label>Folga (respiro nas pontas) <b id="vPad">140 ms</b></label>
+          <input type="range" id="pad" min="0" max="400" step="10" value="140" />
+        </div>
+      </div>
+      <div class="row">
+        <button id="detect" class="primary" disabled>✂︎ Detectar pausas</button>
+        <button id="keepAll" class="ghost" disabled>Manter tudo</button>
+        <span class="hint">menos sensível = corta só pausas longas (mais seguro). A folga evita o "picotado".</span>
+      </div>
+    </div>
+
+    <div class="summary" id="summary">
+      <span class="empty" style="padding:6px">Abra um vídeo e clique em <b style="font-size:inherit">Detectar pausas</b> pra começar.</span>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="segs">🎞️ Trechos</div>
+      <div class="tab" data-tab="caps">💬 Legendas</div>
+      <div class="tab" data-tab="split">🖼️ Meia-tela</div>
+      <div class="tab" data-tab="export">⬇︎ Exportar</div>
+    </div>
+
+    <div class="panel" id="panel-segs">
+      <div class="review-bar" id="reviewBar">
+        <button id="rvAll" disabled>▶︎ Ouvir tudo (revisar)</button>
+        <button id="rvRestart" class="ghost" disabled title="Recomeçar do início">⏮</button>
+        <button id="undoBtn" class="ghost" disabled title="Desfaz a última ação (devolve o que você removeu).">↶ Desfazer</button>
+        <button id="rvPrev" class="ghost" disabled>‹ corte</button>
+        <span id="rvCount" class="lbl">—</span>
+        <button id="rvNext" class="ghost" disabled>corte ›</button>
+        <button id="mkCut" class="ghost" disabled title="Corta um pedaço qualquer: clique pra marcar o início, avance/ouça e clique pra cortar até ali.">✂︎ Cortar parte</button>
+        <button id="togPauses" class="ghost" disabled title="A lista mostra só o que FICA no vídeo (o resultado). Clique pra ver também os trechos removidos (pausas/repetições/cortes) e poder restaurar.">👁 Ver: só resultado</button>
+        <span class="grow"></span>
+        <button id="rvFinal" class="ghost" disabled title="As pausas/cortes já estão aplicados. Aqui você só vai pra aba Exportar — o vídeo só é gerado quando você escolher um export.">Ir para Exportar ⬇︎</button>
+      </div>
+      <div id="segList"><div class="empty">Sem trechos ainda.</div></div>
+    </div>
+
+    <div class="panel hidden" id="panel-caps">
+      <div class="row" style="margin-bottom:10px">
+        <button id="genCaps" class="ghost" disabled>✨ Gerar legendas (automático)</button>
+        <button id="importSrt" class="ghost">Importar .srt</button>
+        <input type="file" id="srtFile" accept=".srt,.vtt,.txt" hidden />
+        <button id="findReps" class="ghost" disabled title="Acha falas repetidas (erro + refez) e marca o take anterior pra cortar">🔁 Marcar repetições</button>
+        <span class="lbl" style="font-size:12px;color:var(--suave)">Estilo:</span>
+        <select id="capStyle">
+          <option value="word">Palavra a palavra (estilo Reels)</option>
+          <option value="box">Frase inteira</option>
+        </select>
+        <label class="lbl" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--suave)">Tamanho <b id="vCapSize" style="color:var(--ouro)">100%</b>
+          <input type="range" id="capSize" min="0.6" max="2" step="0.05" value="1" style="width:90px;accent-color:var(--ouro)"></label>
+      </div>
+      <div class="row" style="margin-bottom:8px">
+        <button id="mkCapKey" class="ghost">📍 Fixar posição aqui</button>
+        <span class="lbl" id="capKeyCount" style="font-size:12px;color:var(--suave)"></span>
+        <button id="clrCapKeys" class="ghost" disabled>limpar posições</button>
+      </div>
+      <div class="hint" style="margin-bottom:8px">💡 <b>Itálico nas palavras‑chave:</b> escreva entre asteriscos — ex.: <b>do *medo*</b> deixa só "medo" no itálico serifado. &nbsp;·&nbsp; <b>Posição:</b> arraste a legenda na tela (vídeo pausado). Pra ela ficar em <b>lugares diferentes por trecho</b>, posicione e clique <b>📍 Fixar posição aqui</b> em vários momentos. Sem fixar, vale uma posição só.</div>
+      <div id="capList" class="empty">Nenhuma legenda. Gere automaticamente ou importe um .srt.</div>
+    </div>
+
+    <div class="panel hidden" id="panel-split">
+      <div class="row" style="margin-bottom:8px">
+        <button id="addOvVid" class="ghost" disabled>＋ Vídeo em cima</button>
+        <button id="addOvImg" class="ghost" disabled>＋ Imagem em cima</button>
+        <input type="file" id="ovFile" accept="video/*,image/*" hidden />
+      </div>
+      <div class="hint" style="margin-bottom:8px">A meia-tela aparece só nos trechos que você criar: <b>vai até o ponto do vídeo</b>, adicione o vídeo/imagem, e use <b>“início aqui”/“fim aqui”</b> pra marcar quando ele aparece. Em cima fica o conteúdo; embaixo, você. (Sai no export <b>WebM com legenda</b>.)</div>
+      <div id="ovList" class="empty">Nenhuma meia-tela. Adicione um vídeo ou imagem.</div>
+    </div>
+
+    <div class="panel hidden" id="panel-export">
+      <p class="hint" style="margin-top:0">As pausas, repetições e cortes <b>já estão aplicados</b> no resultado. O vídeo só é <b>gerado quando você clica num export aqui embaixo</b> — então faça todos os ajustes antes (zoom, legenda, meia-tela). Dica: confira no <b>“▶︎ Ouvir tudo”</b> primeiro.</p>
+      <div class="seg-card" style="flex-direction:column; align-items:stretch; gap:10px">
+        <div><b>1. Completo — MP4 pronto pro Instagram</b><div class="hint">Legenda queimada, meia-tela, zoom e quadro que te acompanha. Grava em tempo real (~a duração do vídeo) e entrega <b>MP4 (H.264/AAC)</b> que o Instagram aceita. Inclui o áudio do vídeo de cima na meia-tela.</div></div>
+        <button id="expBurn" class="primary" disabled>Exportar MP4 completo (com legenda)</button>
+      </div>
+      <div class="seg-card" style="flex-direction:column; align-items:stretch; gap:10px">
+        <div><b>2. Corte limpo — MP4 (rápido, sem legenda)</b><div class="hint">Só junta os trechos mantidos (+ recorte/zoom fixos). Rápido. Sem legenda nem meia-tela — exporte o .srt junto se quiser.</div></div>
+        <button id="expMp4" class="ghost" disabled>Exportar MP4 (corte limpo)</button>
+      </div>
+      <div class="seg-card" style="flex-direction:column; align-items:stretch; gap:10px">
+        <div><b>3. Só a legenda (.srt)</b><div class="hint">Tempos já remapeados pro vídeo cortado. Sobe no Instagram/CapCut junto do MP4.</div></div>
+        <button id="expSrt" class="ghost" disabled>Baixar .srt</button>
+        <button id="expEdl" class="ghost">Baixar decisões de corte (.json)</button>
+      </div>
+    </div>
+
+    <div class="status" id="status">Pronto.</div>
+  </section>
+</main>
+
+<canvas id="work" hidden></canvas>
+<script type="module">
+import { FFmpeg } from "https://esm.sh/@ffmpeg/ffmpeg@0.12.10";
+import { fetchFile } from "https://esm.sh/@ffmpeg/util@0.12.1";
+
+const $ = s => document.querySelector(s);
+const fmt = t => { t=Math.max(0,t||0); const m=Math.floor(t/60), s=Math.floor(t%60); return m+":"+String(s).padStart(2,"0"); };
+const fmtMs = t => (t).toFixed(t<10?2:1)+"s";
+const setStatus = (msg, work=false) => { const el=$("#status"); el.className="status"+(work?" work":""); el.innerHTML=(work?'<span class="spin"></span>':"")+msg; };
+
+// ---------- estado ----------
+const S = {
+  file:null, url:null, duration:0,
+  audio:null,            // AudioBuffer decodificado
+  segs:[],               // [{start,end,type:'silence'|'speech',keep,thumb}]
+  caps:[],               // [{start,end,text}]  em tempo ORIGINAL
+  words:[],              // palavras com tempo (derivadas das caps) p/ legenda animada
+  capStyle:"word",       // "word" (palavra a palavra) | "box" (frase)
+  capSize:1,             // multiplicador do tamanho da legenda
+  capPos:{x:0.5, y:0.5}, // posição de trabalho (fração do quadro) — arrastável
+  capKeys:[],            // posições por trecho [{t,x,y}] (vazio = fixa em capPos)
+  params:{thr:-38, min:600, pad:140},
+};
+const esc = s => (s||"").replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+const vid = $("#vid");
+
+// ---------- abrir vídeo ----------
+$("#btnOpen").onclick = ()=> $("#file").click();
+$("#drop").onclick = ()=> $("#file").click();
+$("#file").onchange = e => { if(e.target.files[0]) loadVideo(e.target.files[0]); };
+["dragover","dragenter"].forEach(ev=>$("#stage").addEventListener(ev,e=>{e.preventDefault(); $("#drop").classList.add("hover");}));
+["dragleave","drop"].forEach(ev=>$("#stage").addEventListener(ev,e=>{e.preventDefault(); $("#drop").classList.remove("hover");}));
+$("#stage").addEventListener("drop", e=>{ const f=e.dataTransfer.files[0]; if(f && f.type.startsWith("video")) loadVideo(f); });
+
+async function loadVideo(file){
+  S.file=file;
+  if(S.url) URL.revokeObjectURL(S.url);
+  S.url=URL.createObjectURL(file);
+  vid.src=S.url;
+  $("#drop").style.display="none";
+  S.segs=[]; S.caps=[]; renderSegs(); renderCaps(); renderSummary(); renderTimeline();
+  setStatus("Carregando vídeo…", true);
+  await new Promise(r=> vid.onloadedmetadata=r);
+  S.duration=vid.duration;
+  $("#play").disabled=false; $("#detect").disabled=false; $("#keepAll").disabled=false; $("#genCaps").disabled=false;
+  $("#expEdl").disabled=false; $("#fmt").disabled=false; $("#findReps").disabled=false;
+  $("#zoom").disabled=false; $("#addOvVid").disabled=false; $("#addOvImg").disabled=false; $("#btnSave").disabled=false;
+  refreshStage(); updateKeyUI();
+  updateTime();
+  setStatus("Lendo o áudio pra achar as pausas…", true);
+  try{ await decodeAudio(file); setStatus('Vídeo pronto. Clique em "Detectar pausas".'); }
+  catch(err){ console.error(err); setStatus("⚠️ Não consegui ler o áudio desse arquivo. Tente um .mp4 (H.264/AAC) ou use o Chrome."); }
+}
+
+async function decodeAudio(file){
+  const buf = await file.arrayBuffer();
+  const ac = new (window.AudioContext||window.webkitAudioContext)();
+  S.audio = await ac.decodeAudioData(buf.slice(0));
+  ac.close();
+}
+
+// ---------- detecção de pausas ----------
+$("#thr").oninput = e=>{ S.params.thr=+e.target.value; $("#vThr").textContent=e.target.value+" dB"; };
+$("#min").oninput = e=>{ S.params.min=+e.target.value; $("#vMin").textContent=e.target.value+" ms"; };
+$("#pad").oninput = e=>{ S.params.pad=+e.target.value; $("#vPad").textContent=e.target.value+" ms"; };
+$("#detect").onclick = detectSilence;
+$("#keepAll").onclick = ()=>{ S.segs.forEach(s=>s.keep=true); renderAll(); };
+
+function detectSilence(){
+  if(!S.audio){ setStatus("⚠️ Áudio não carregado."); return; }
+  setStatus("Analisando o áudio…", true);
+  // mistura canais em mono
+  const ch = S.audio.numberOfChannels, sr = S.audio.sampleRate, len = S.audio.length;
+  const data = new Float32Array(len);
+  for(let c=0;c<ch;c++){ const d=S.audio.getChannelData(c); for(let i=0;i<len;i++) data[i]+=d[i]/ch; }
+  // RMS por janela de 20ms
+  const win = Math.floor(sr*0.02);
+  const thrLin = Math.pow(10, S.params.thr/20);
+  const flags=[]; // true = silêncio
+  for(let i=0;i<len;i+=win){
+    let sum=0, n=0;
+    for(let j=i;j<i+win && j<len;j++){ sum+=data[j]*data[j]; n++; }
+    flags.push(Math.sqrt(sum/n) < thrLin);
+  }
+  const winSec = win/sr;
+  // agrupa silêncios contíguos
+  const minSil = S.params.min/1000, pad = S.params.pad/1000;
+  const sil=[]; let i=0;
+  while(i<flags.length){
+    if(flags[i]){ let j=i; while(j<flags.length && flags[j]) j++;
+      const st=i*winSec, en=j*winSec;
+      if(en-st >= minSil) sil.push([st,en]);
+      i=j;
+    } else i++;
+  }
+  // encolhe cada silêncio pela folga (mantém respiro nas pontas da fala)
+  const cuts = sil.map(([s,e])=>{ const a=s+pad, b=e-pad; return (b-a>0.05)?[a,b]:null; }).filter(Boolean);
+  // monta segmentos alternando fala/silêncio cobrindo a duração inteira
+  const segs=[]; let cur=0;
+  for(const [s,e] of cuts){
+    if(s>cur+0.01) segs.push({start:cur,end:s,type:"speech",keep:true,thumb:null});
+    segs.push({start:s,end:e,type:"silence",keep:false,thumb:null});
+    cur=e;
+  }
+  if(cur < S.duration-0.01) segs.push({start:cur,end:S.duration,type:"speech",keep:true,thumb:null});
+  if(!segs.length) segs.push({start:0,end:S.duration,type:"speech",keep:true,thumb:null});
+  S.segs=segs; reviewIdx=-1;
+  renderAll();
+  setStatus(`Achei ${cuts.length} pausa(s) — já removidas. A lista mostra só o que FICA (o resultado); o que você cortar/excluir sai da lista. Use "▶︎ Ouvir tudo" pra conferir. O vídeo só é gerado ao exportar.`);
+  makeThumbs();
+}
+
+// ---------- thumbnails ----------
+async function makeThumbs(){
+  const cv=$("#work"), cx=cv.getContext("2d");
+  const w=120, h=Math.round(120*(vid.videoHeight/vid.videoWidth||0.56));
+  cv.width=w; cv.height=h;
+  const v=document.createElement("video"); v.src=S.url; v.muted=true;
+  await new Promise(r=>v.onloadedmetadata=r);
+  for(const seg of S.segs){
+    const t=(seg.start+seg.end)/2;
+    try{
+      await new Promise((res)=>{ v.onseeked=res; v.currentTime=Math.min(t, S.duration-0.05); });
+      cx.drawImage(v,0,0,w,h);
+      seg.thumb=cv.toDataURL("image/jpeg",0.6);
+      const card=document.querySelector(`.seg-card[data-i="${S.segs.indexOf(seg)}"] .thumb`);
+      if(card) card.style.backgroundImage=`url(${seg.thumb})`;
+    }catch(e){/* ignora seek falho */}
+  }
+}
+
+// ---------- render ----------
+function renderAll(){ if(S.caps.length) buildWords(); renderSummary(); renderSegs(); renderTimeline(); refreshExportButtons(); }
+
+function keptRanges(){
+  // funde trechos mantidos contíguos em faixas
+  const kept=S.segs.filter(s=>s.keep).sort((a,b)=>a.start-b.start);
+  const r=[];
+  for(const s of kept){
+    const last=r[r.length-1];
+    if(last && s.start-last.end < 0.02) last.end=s.end;
+    else r.push({start:s.start,end:s.end});
+  }
+  return r;
+}
+function finalDuration(){ return keptRanges().reduce((a,r)=>a+(r.end-r.start),0); }
+
+function renderSummary(){
+  const el=$("#summary");
+  if(!S.segs.length){ el.innerHTML='<span class="empty" style="padding:6px">Abra um vídeo e clique em <b style="font-size:inherit">Detectar pausas</b>.</span>'; return; }
+  const cuts=S.segs.filter(s=>!s.keep).length;
+  el.innerHTML=`
+    <span class="chip">Original <b>${fmt(S.duration)}</b></span>
+    <span class="arrow">→</span>
+    <span class="chip">Final <b>${fmt(finalDuration())}</b></span>
+    <span class="chip">· <b>${cuts}</b> corte(s)</span>
+    <span class="chip">· economiza <b>${fmt(S.duration-finalDuration())}</b></span>`;
+}
+
+function renderSegs(){
+  if(typeof closeTrims==="function") closeTrims();
+  updateReviewBar();
+  const el=$("#segList");
+  if(!S.segs.length){ el.innerHTML='<div class="empty">Sem trechos ainda. Clique em "Detectar pausas".</div>'; return; }
+  el.innerHTML="";
+  let shown=0;
+  S.segs.forEach((seg,i)=>{
+    if(!seg.keep && !showRemoved) return; // lista = só o RESULTADO (o que fica). Removidos saem da lista.
+    shown++;
+    const card=document.createElement("div");
+    card.className="seg-card"+(seg.keep?"":" cut");
+    card.dataset.i=i;
+    const dur=seg.end-seg.start;
+    const cap=S.caps.find(c=>c.start>=seg.start-0.2 && c.start<seg.end);
+    const badgeTxt = seg.type==="silence"?"pausa": seg.type==="repeat"?"repetição": seg.type==="manual"?"corte":"fala";
+    // qualquer trecho cortado ganha controles de "ouvir junção" e ajuste fino do respiro
+    const tools = !seg.keep ? `
+      <div class="seg-tools">
+        <button class="hear" data-act="hear" title="Ouvir como esse corte soa no resultado">▶︎ ouvir junção</button>
+        <span class="lbl">fala antes</span>
+        <button data-act="L+" title="manter mais fala antes do corte">＋</button>
+        <button data-act="L-" title="cortar mais cedo">－</button>
+        <span class="lbl">fala depois</span>
+        <button data-act="R+" title="manter mais fala depois do corte">＋</button>
+        <button data-act="R-" title="começar o corte mais tarde">－</button>
+      </div>` : "";
+    card.innerHTML=`
+      <div class="seg-main">
+        <div class="num">${shown}</div>
+        <div class="thumb" title="abrir o cortador deste trecho" ${seg.thumb?`style="background-image:url(${seg.thumb})"`:""}>
+          <span class="dur">${fmtMs(dur)}</span>
+        </div>
+        <div class="meta">
+          <div class="t">${fmt(seg.start)} → ${fmt(seg.end)}
+            <span class="badge ${seg.type}">${badgeTxt}</span></div>
+          <div class="txt">${cap?cap.text:(seg.type==="silence"?"— silêncio —":"…")}</div>
+        </div>
+        <button class="toggle ${seg.keep?"keep":"cut"}">${seg.keep?"✓ manter":"✕ cortar"}</button>
+        <button class="del" title="Excluir este trecho da lista (limpa a tela). Some do resultado.">🗑</button>
+      </div>${tools}`;
+    card.querySelector(".thumb").onclick=()=>{ openTrim(seg, card); };
+    card.querySelector(".toggle").onclick=()=>{ pushUndo(); seg.keep=!seg.keep; renderAll(); };
+    card.querySelector(".del").onclick=()=>{ pushUndo(); S.segs=S.segs.filter(x=>x!==seg); reviewIdx=-1; renderAll();
+      setStatus("Trecho excluído. (↶ Desfazer devolve.)"); };
+    card.querySelectorAll(".seg-tools button").forEach(b=> b.onclick=()=>{
+      const a=b.dataset.act;
+      if(a==="hear") return hearJoin(i);
+      const step=0.06; // 60 ms por clique
+      if(a==="L+") nudge(i,"start", step);   // mais fala antes  (atrasa o início do corte)
+      if(a==="L-") nudge(i,"start",-step);   // corta mais cedo
+      if(a==="R+") nudge(i,"end",  -step);   // mais fala depois (adianta o fim do corte)
+      if(a==="R-") nudge(i,"end",   step);   // começa o corte mais tarde
+    });
+    el.appendChild(card);
+  });
+  if(!shown) el.innerHTML='<div class="empty">Nada mantido ainda. Clique em "👁 Ver tudo" pra mostrar os trechos removidos.</div>';
+}
+
+// ---------- mini-cortador de um trecho (remove só um pedacinho) ----------
+let trimRAF=null;
+function closeTrims(){ if(trimRAF){cancelAnimationFrame(trimRAF);trimRAF=null;} document.querySelectorAll(".trim").forEach(n=>n.remove()); }
+function openTrim(seg, card){
+  stopPreview(); closeTrims();
+  const dur=seg.end-seg.start; if(dur<0.2){ setStatus("Trecho curto demais pra cortar dentro dele."); return; }
+  let a=0.0, b=Math.min(1, 0.35); // por padrão marca o começo (pedaço grudado no anterior)
+  const wrap=document.createElement("div"); wrap.className="trim";
+  wrap.innerHTML=`
+    <div class="trim-bar" ${seg.thumb?`style="background-image:url(${seg.thumb})"`:""}>
+      <div class="trim-rm"></div><div class="trim-h trim-a"></div><div class="trim-h trim-b"></div><div class="trim-ph" style="left:0"></div>
+    </div>
+    <div class="trim-ctl">
+      <button data-t="play" class="ghost">▶ ouvir</button>
+      <span class="lbl" data-t="lab"></span><span class="grow"></span>
+      <button data-t="apply" class="primary">✂︎ remover o vermelho</button>
+      <button data-t="cancel" class="ghost">fechar</button>
+    </div>
+    <div class="hint" style="margin-top:4px">⚠️ O <b style="color:var(--verm)">vermelho (✕ SAI)</b> é o que será removido — o resto <b>fica</b>. Arraste as alças douradas pra cercar só o pedaço ruim, ouça com ▶, e clique "remover o vermelho".</div>`;
+  card.appendChild(wrap);
+  const bar=wrap.querySelector(".trim-bar"), rm=wrap.querySelector(".trim-rm"),
+        ha=wrap.querySelector(".trim-a"), hb=wrap.querySelector(".trim-b"),
+        ph=wrap.querySelector(".trim-ph"), lab=wrap.querySelector('[data-t="lab"]');
+  const draw=()=>{ rm.style.left=(a*100)+"%"; rm.style.width=((b-a)*100)+"%"; ha.style.left=(a*100)+"%"; hb.style.left=(b*100)+"%";
+    lab.textContent=`remover ${fmt(seg.start+a*dur)}–${fmt(seg.start+b*dur)} · ${((b-a)*dur).toFixed(1)}s`; };
+  draw();
+  const xFrac=e=>{ const r=bar.getBoundingClientRect(); return Math.min(1,Math.max(0,(e.clientX-r.left)/r.width)); };
+  let drag=null;
+  ha.addEventListener("pointerdown",e=>{e.preventDefault();ha.setPointerCapture(e.pointerId);drag="a";});
+  hb.addEventListener("pointerdown",e=>{e.preventDefault();hb.setPointerCapture(e.pointerId);drag="b";});
+  const mv=e=>{ if(!drag)return; const f=xFrac(e); if(drag==="a")a=Math.min(f,b-0.02); else b=Math.max(f,a+0.02); draw(); };
+  ha.addEventListener("pointermove",mv); hb.addEventListener("pointermove",mv);
+  const up=()=>{drag=null;}; ha.addEventListener("pointerup",up); hb.addEventListener("pointerup",up);
+  bar.addEventListener("click",e=>{ if(drag)return; if(e.target===ha||e.target===hb)return; vid.currentTime=seg.start+xFrac(e)*dur; ph.style.left=(xFrac(e)*100)+"%"; });
+  wrap.querySelector('[data-t="play"]').onclick=()=>{ stopPreview(); vid.currentTime=seg.start; vid.play();
+    const loop=()=>{ if(vid.paused) return; const f=(vid.currentTime-seg.start)/dur; ph.style.left=(Math.min(1,Math.max(0,f))*100)+"%";
+      if(vid.currentTime>=seg.end-0.02){ vid.pause(); return; } trimRAF=requestAnimationFrame(loop); };
+    trimRAF=requestAnimationFrame(loop); };
+  wrap.querySelector('[data-t="apply"]').onclick=()=>{ const s=seg.start+a*dur, e=seg.start+b*dur; closeTrims(); vid.pause();
+    if(e-s<0.05){ setStatus("Pedaço curto demais."); return; }
+    pushUndo(); cutTimeRange(s,e,"manual"); reviewIdx=-1; renderAll(); makeThumbs();
+    setStatus(`✂︎ Removido ${fmt(s)}–${fmt(e)} (${(e-s).toFixed(1)}s) de dentro do trecho. O resto continua.`); };
+  wrap.querySelector('[data-t="cancel"]').onclick=()=>{ vid.pause(); closeTrims(); };
+}
+
+function renderTimeline(){
+  const tl=$("#tl"); [...tl.querySelectorAll(".seg")].forEach(n=>n.remove());
+  if(!S.duration) return;
+  for(const seg of S.segs){
+    const d=document.createElement("div");
+    d.className="seg "+(seg.keep?"keep":"cut");
+    d.style.left=(seg.start/S.duration*100)+"%";
+    d.style.width=((seg.end-seg.start)/S.duration*100)+"%";
+    tl.insertBefore(d, $("#ph"));
+  }
+}
+
+// ---------- player ----------
+vid.onplay =()=> $("#play").textContent="❚❚";
+vid.onpause=()=>{ $("#play").textContent="▶︎"; if(typeof refreshStage==="function") refreshStage(); };
+$("#play").onclick=()=>{ stopPreview(); if(vid.ended && lastPos<S.duration-0.1) vid.currentTime=lastPos; vid.paused?vid.play():vid.pause(); };
+
+// atualiza overlay/destaque/timeline para um tempo (no relógio ORIGINAL do vídeo)
+let lastPlayIdx=-1, lastPos=0;
+function updateUIAt(t, moving){
+  lastPos=t; // memoriza a posição pra "continuar"
+  $("#ph").style.left=(t/S.duration*100)+"%";
+  $("#time").textContent=`${fmt(t)} / ${fmt(S.duration)}`;
+  renderStage(t, preview.on || !vid.paused);
+  renderCaption(t);
+  document.querySelectorAll(".seg-card.playing").forEach(n=>n.classList.remove("playing"));
+  const idx=S.segs.findIndex(s=>t>=s.start && t<s.end);
+  if(idx>=0){ const c2=document.querySelector(`.seg-card[data-i="${idx}"]`); if(c2){ c2.classList.add("playing"); if(moving && idx!==lastPlayIdx) scrollToCard(idx); } }
+  lastPlayIdx=idx;
+}
+// reprodução normal (com pausas): só reflete na UI
+vid.ontimeupdate=()=>{ if(!preview.on) updateUIAt(vid.currentTime, false); };
+
+// ===== LEGENDAS (dentro do quadro + estilo palavra a palavra) =====
+// tokeniza marcando destaque: palavras entre *asteriscos* viram itálico (emph)
+function tokenize(text){
+  const out=[]; let emph=false;
+  for(let tok of (text||"").trim().split(/\s+/).filter(Boolean)){
+    let here=emph;
+    if(tok.startsWith("*")){ here=true; emph=true; tok=tok.replace(/^\*+/,""); }
+    let close=false;
+    if(tok.endsWith("*")){ close=true; tok=tok.replace(/\*+$/,""); }
+    if(tok) out.push({text:tok, emph:here||emph});
+    if(close) emph=false;
+  }
+  return out;
+}
+function buildWordsFrom(caps){
+  const out=[];
+  caps.forEach((c,ci)=>{
+    const toks=tokenize(c.text); if(!toks.length) return;
+    const dur=Math.max(0.24, c.end-c.start), per=dur/toks.length;
+    toks.forEach((tk,k)=> out.push({text:tk.text, emph:tk.emph, start:c.start+k*per, end:c.start+(k+1)*per, capId:ci}));
+  });
+  return out;
+}
+function buildWords(){
+  const R=keptRanges();
+  const kept=t=> R.some(r=> t>=r.start-0.001 && t<r.end+0.001);
+  S.words=buildWordsFrom(S.caps).map(w=>({...w, keep: kept((w.start+w.end)/2)}));
+}
+// retângulo (em coords do palco) do que vai aparecer no vídeo final — segue o crop 9:16 se houver
+function frameDisplayRect(){
+  const vr=vid.getBoundingClientRect(), st=$("#stage").getBoundingClientRect();
+  if(!vr.width) return null;
+  const base={left:vr.left-st.left, top:vr.top-st.top, w:vr.width, h:vr.height};
+  const r=cropRect(); if(!r) return base;
+  const sc=vr.width/vid.videoWidth;
+  return {left:base.left+r.cx*sc, top:base.top+r.cy*sc, w:r.cw*sc, h:r.ch*sc};
+}
+let capDragging=false;
+function capPosAt(t){ const K=S.capKeys; if(!K.length) return S.capPos; let cur=K[0]; for(const k of K){ if(t>=k.t) cur=k; else break; } return cur; }
+function positionCaption(ov){
+  const fr=(typeof frameRect!=="undefined" && frameRect) ? frameRect : frameDisplayRect(); if(!fr) return;
+  const pos = capDragging ? S.capPos : capPosAt(curTime());
+  ov.style.left=(fr.left+fr.w*0.06)+"px"; ov.style.right="auto";
+  ov.style.width=(fr.w*0.88)+"px";
+  ov.style.top=(fr.top+fr.h*pos.y)+"px"; ov.style.bottom="auto";
+  ov.style.transform="translateY(-50%)";
+  ov.style.fontSize=Math.max(11, fr.w*0.085*S.capSize)+"px";
+}
+$("#capSize").oninput=e=>{ S.capSize=parseFloat(e.target.value)||1; $("#vCapSize").textContent=Math.round(S.capSize*100)+"%"; positionCaption($("#capOverlay")); };
+function updateCapKeyUI(){ const n=S.capKeys.length; const el=$("#capKeyCount"); if(el) el.textContent=n?`📍 ${n} posição(ões)`:""; const c=$("#clrCapKeys"); if(c) c.disabled=!n; }
+function setCapKeyAt(t){ S.capKeys=S.capKeys.filter(k=>Math.abs(k.t-t)>0.25); S.capKeys.push({t,x:S.capPos.x,y:S.capPos.y}); S.capKeys.sort((a,b)=>a.t-b.t); updateCapKeyUI(); }
+$("#mkCapKey").onclick=()=>{ setCapKeyAt(curTime()); positionCaption($("#capOverlay"));
+  setStatus(`📍 Posição da legenda fixada em ${fmt(curTime())} (${S.capKeys.length}). Vá a outro ponto, arraste a legenda e fixe de novo — ela muda de lugar por trecho.`); };
+$("#clrCapKeys").onclick=()=>{ S.capKeys=[]; updateCapKeyUI(); positionCaption($("#capOverlay")); setStatus("Posições da legenda limpas — volta a ser uma posição fixa."); };
+(function(){ const ov=$("#capOverlay"); let d=null;
+  ov.style.pointerEvents="auto"; ov.style.cursor="grab";
+  ov.addEventListener("pointerdown",e=>{ if(!frameRect) return; e.preventDefault(); ov.setPointerCapture(e.pointerId); ov.style.cursor="grabbing";
+    capDragging=true; const base=capPosAt(curTime()); S.capPos={x:base.x,y:base.y}; d={y:e.clientY, py:S.capPos.y}; });
+  ov.addEventListener("pointermove",e=>{ if(!d||!frameRect) return;
+    S.capPos.y=Math.min(0.95, Math.max(0.05, d.py+(e.clientY-d.y)/frameRect.h)); positionCaption(ov); });
+  const end=()=>{ if(!d) return; d=null; capDragging=false; ov.style.cursor="grab";
+    if(S.capKeys.length) setCapKeyAt(curTime()); positionCaption(ov); };
+  ov.addEventListener("pointerup",end); ov.addEventListener("pointercancel",end);
+})();
+function renderCaption(t){
+  const ov=$("#capOverlay"); positionCaption(ov);
+  const span=w=> w? `<span class="${w.emph?"w-em":"w-on"}">${esc(w.text)}</span>` : "";
+  if(S.capStyle==="box"){
+    // só mostra a frase se o instante atual NÃO está num trecho cortado
+    const inCut = S.segs.some(s=>!s.keep && t>=s.start && t<s.end);
+    const c = inCut ? null : S.caps.find(c=>t>=c.start && t<c.end);
+    ov.innerHTML = c ? `<span class="capbox">${esc(c.text)}</span>` : "";
+    return;
+  }
+  // palavra a palavra — só palavras de trechos MANTIDOS (some nas pausas/repetições)
+  const W=S.words.filter(w=>w.keep);
+  let ai=-1; for(let k=0;k<W.length;k++){ if(t>=W[k].start && t<W[k].end){ ai=k; break; } }
+  if(ai<0){ ov.innerHTML=""; return; }
+  const a=W[ai], b=(W[ai+1] && W[ai+1].capId===a.capId) ? W[ai+1] : null;
+  ov.innerHTML = span(a) + (b? " "+span(b) : "");
+}
+$("#capStyle").onchange=()=>{ S.capStyle=$("#capStyle").value; renderCaption(preview.posOrig||vid.currentTime||0); };
+
+// ===== MOTOR "OUVIR SÓ O ÚTIL" =====
+// Toca o ÁUDIO apenas dos trechos mantidos, colado e SEM emenda audível (Web Audio).
+// O vídeo (mudo) só acompanha a imagem. Resultado: a pausa nunca é ouvida, sem engasgo de seek.
+const preview={on:false, paused:false, posOrig:0, ac:null, node:null, ranges:[], t0:0, total:0, raf:0, stopCut:Infinity};
+function setRvLabel(playing){ const b=$("#rvAll"); if(b) b.textContent = playing ? "❚❚ Pausar" : "▶︎ Ouvir tudo (revisar)"; }
+function origToCut(t, R){ let acc=0; for(const r of R){ if(t<r.start) return acc; if(t<=r.end) return acc+(t-r.start); acc+=r.end-r.start; } return acc; }
+function cutToOrig(ct, R){ let acc=0; for(const r of R){ const d=r.end-r.start; if(ct<=acc+d) return r.start+(ct-acc); acc+=d; } return S.duration; }
+
+function startPreview(fromOrig, stopOrig){
+  stopPreview();
+  if(!S.audio){ setStatus("⚠️ Áudio não carregado pra pré-escuta."); return; }
+  const R=keptRanges(); if(!R.length){ setStatus("Tudo está cortado — não há conteúdo pra ouvir."); return; }
+  const sr=S.audio.sampleRate, ch=S.audio.numberOfChannels;
+  let total=0; R.forEach(r=> total+=Math.max(0, Math.floor(r.end*sr)-Math.floor(r.start*sr)));
+  const ac=new (window.AudioContext||window.webkitAudioContext)();
+  const buf=ac.createBuffer(ch, total, sr);
+  for(let c=0;c<ch;c++){ const dst=buf.getChannelData(c), src=S.audio.getChannelData(c); let off=0;
+    for(const r of R){ const s=Math.max(0,Math.floor(r.start*sr)), e=Math.min(src.length,Math.floor(r.end*sr)); if(e>s){ dst.set(src.subarray(s,e), off); off+=e-s; } } }
+  const node=ac.createBufferSource(); node.buffer=buf; node.connect(ac.destination);
+  const offCut=origToCut(Math.max(0, fromOrig||0), R);
+  preview.on=true; preview.paused=false; preview.posOrig=Math.max(0,fromOrig||0);
+  preview.ac=ac; preview.node=node; preview.ranges=R; preview.total=total/sr;
+  preview.stopCut=(stopOrig!=null)? origToCut(stopOrig,R)+0.8 : Infinity;
+  preview.t0=ac.currentTime-offCut;
+  node.onended=()=>{ if(preview.on) stopPreview(); };
+  node.start(0, offCut);
+  vid.muted=true; vid.play().catch(()=>{});
+  $("#play").textContent="❚❚"; $("#previewResult").style.color="var(--ouro)"; setRvLabel(true);
+  loopPreview();
+}
+function loopPreview(){
+  if(!preview.on) return;
+  const ct=preview.ac.currentTime-preview.t0;
+  if(ct>=preview.total-0.02 || ct>=preview.stopCut){ stopPreview(); return; }
+  const target=cutToOrig(ct, preview.ranges);
+  preview.posOrig=target;
+  if(Math.abs(vid.currentTime-target)>0.08){ try{ vid.currentTime=target; }catch(e){} }
+  updateUIAt(target, true);
+  preview.raf=requestAnimationFrame(loopPreview);
+}
+// PAUSAR mantendo a posição (pra retomar de onde parou) — usado pelo botão "Ouvir tudo"
+function pausePreview(){
+  if(!preview.on) return;
+  if(preview.raf) cancelAnimationFrame(preview.raf);
+  if(preview.node){ try{ preview.node.onended=null; preview.node.stop(); }catch(e){} }
+  if(preview.ac){ try{ preview.ac.close(); }catch(e){} }
+  preview.on=false; preview.paused=true; preview.node=null; preview.ac=null;
+  vid.pause(); vid.muted=false;
+  $("#previewResult").style.color=""; $("#play").textContent="▶︎"; setRvLabel(false);
+  refreshStage();
+  const n=document.querySelector(".seg-card.playing .num")?.textContent;
+  setStatus(`⏸ Pausado em ${fmt(preview.posOrig||0)}${n?` — trecho ${n} (em destaque)`:""}. Clique no trecho pra abrir o cortador, ou corte/exclua. "Ouvir tudo" continua daqui.`);
+}
+// PARAR de vez (zera a posição) — usado por play normal, timeline, export
+function stopPreview(){
+  if(preview.raf) cancelAnimationFrame(preview.raf);
+  if(preview.node){ try{ preview.node.onended=null; preview.node.stop(); }catch(e){} }
+  if(preview.ac){ try{ preview.ac.close(); }catch(e){} }
+  const was=preview.on; preview.on=false; preview.paused=false; preview.posOrig=0; preview.node=null; preview.ac=null;
+  $("#previewResult").style.color=""; $("#play").textContent="▶︎"; setRvLabel(false);
+  if(was){ vid.pause(); vid.muted=false; }
+  if(typeof refreshStage==="function") refreshStage();
+}
+
+// "só o resultado" no player: liga/desliga a pré-escuta a partir de onde está
+$("#previewResult").onclick=()=>{ if(preview.on) stopPreview(); else startPreview(vid.currentTime,null); };
+
+// ouvir SÓ a junção de um corte (entra um pouco antes, pula a pausa, para sozinho)
+function hearJoin(i){ const seg=S.segs[i]; startPreview(Math.max(0, seg.start-0.8), seg.start); }
+
+// ajuste fino do respiro de um corte, sem afetar o resto (move a fronteira com o vizinho)
+function nudge(i, side, delta){
+  pushUndo();
+  const seg=S.segs[i];
+  if(side==="start"){ const prev=S.segs[i-1], min=prev?prev.start+0.05:0, max=seg.end-0.05; const v=Math.min(max,Math.max(min,seg.start+delta)); seg.start=v; if(prev) prev.end=v; }
+  else{ const next=S.segs[i+1], max=next?next.end-0.05:S.duration, min=seg.start+0.05; const v=Math.max(min,Math.min(max,seg.end+delta)); seg.end=v; if(next) next.start=v; }
+  renderAll(); hearJoin(i); // re-toca a junção pra conferir o ajuste
+}
+
+// ---------- revisão guiada (ouvir tudo / corte a corte / excluir pausas) ----------
+let reviewIdx=-1;
+// histórico pra desfazer (devolve o que foi removido)
+const undoStack=[];
+function pushUndo(){ undoStack.push(S.segs.map(s=>({...s}))); if(undoStack.length>40) undoStack.shift(); }
+function undo(){ if(!undoStack.length){ setStatus("Nada pra desfazer."); return; }
+  if(typeof closeTrims==="function") closeTrims(); stopPreview();
+  S.segs=undoStack.pop(); reviewIdx=-1; renderAll(); setStatus("↶ Desfeito — trecho devolvido."); }
+$("#undoBtn").onclick=undo;
+let showRemoved=false; // lista mostra só o RESULTADO (trechos mantidos); removidos ocultos
+$("#togPauses").onclick=()=>{ showRemoved=!showRemoved; $("#togPauses").textContent = showRemoved?"👁 Ver: tudo":"👁 Ver: só resultado"; renderSegs(); };
+function cutList(){ return S.segs.map((s,i)=>({s,i})).filter(o=>!o.s.keep); }
+function updateReviewBar(){
+  const cs=cutList(), has=S.segs.length>0, hasCuts=cs.length>0;
+  $("#rvAll").disabled=!has; $("#rvFinal").disabled=!has; $("#mkCut").disabled=!has; $("#togPauses").disabled=!has;
+  $("#undoBtn").disabled=!undoStack.length; $("#rvRestart").disabled=!has;
+  $("#rvPrev").disabled=!hasCuts; $("#rvNext").disabled=!hasCuts;
+  $("#rvCount").textContent = hasCuts ? (reviewIdx>=0?`corte ${Math.min(reviewIdx+1,cs.length)} de ${cs.length}`:`${cs.length} corte(s)`) : (has?"sem cortes":"—");
+}
+// corte manual de um PEDAÇO qualquer: 1º clique marca início, 2º clique corta até o ponto atual
+let cutMark=null;
+$("#mkCut").onclick=()=>{
+  const t=curTime();
+  if(cutMark==null){ cutMark=t; $("#mkCut").textContent="✂︎ cortar até aqui"; $("#mkCut").style.color="var(--ouro)";
+    setStatus(`Início do corte em ${fmt(t)}. Use o player (▶︎) ou a timeline pra ouvir, e clique de novo no FIM do pedaço a remover.`); return; }
+  const s=Math.min(cutMark,t), e=Math.max(cutMark,t); cutMark=null; $("#mkCut").textContent="✂︎ Cortar parte"; $("#mkCut").style.color="";
+  if(e-s<0.05){ setStatus("Trecho curto demais — cancelado."); return; }
+  pushUndo(); cutTimeRange(s,e,"manual"); reviewIdx=-1; renderAll(); makeThumbs();
+  setStatus(`✂︎ Cortei ${fmt(s)}–${fmt(e)} (${(e-s).toFixed(1)}s). Confira nos Trechos (etiqueta "corte") — dá pra ouvir a junção e ajustar.`);
+};
+function scrollToCard(i){
+  const c=document.querySelector(`.seg-card[data-i="${i}"]`); if(!c) return;
+  const cont=$("#panel-segs"), cr=c.getBoundingClientRect(), pr=cont.getBoundingClientRect();
+  if(cr.top < pr.top+8 || cr.bottom > pr.bottom-8) c.scrollIntoView({block:"nearest"}); // só rola se saiu da tela
+}
+function reviewGoto(k){
+  const cs=cutList(); if(!cs.length) return;
+  reviewIdx=(k+cs.length)%cs.length;       // circula
+  const seg=cs[reviewIdx];
+  ensureTab("segs"); scrollToCard(seg.i); hearJoin(seg.i); updateReviewBar();
+}
+function ensureTab(name){ const t=document.querySelector(`.tab[data-tab="${name}"]`); if(t && !t.classList.contains("active")) t.click(); }
+$("#rvAll").onclick=()=>{
+  if(preview.on){ pausePreview(); return; }          // mesmo botão pausa
+  ensureTab("segs");
+  // continua de onde você parou (mesmo depois de editar); só recomeça se chegou ao fim
+  const cont = preview.paused ? preview.posOrig : lastPos;
+  const from = (cont>0.05 && cont<S.duration-0.15) ? cont : (keptRanges()[0]?.start || 0);
+  startPreview(from, null);
+  setStatus((cont>0.05)
+    ? `▶︎ Continuando de ${fmt(from)}… (⏮ recomeça do início; ESPAÇO pausa)`
+    : "Ouvindo SÓ o conteúdo útil — pausas e repetições puladas. ESPAÇO pausa; clique no trecho pra cortar.");
+};
+$("#rvRestart").onclick=()=>{ stopPreview(); lastPos=0; preview.paused=false; preview.posOrig=0; ensureTab("segs");
+  startPreview(keptRanges()[0]?.start||0, null); };
+// ESPAÇO pausa/retoma o "Ouvir tudo" (sem atrapalhar quando estiver digitando)
+document.addEventListener("keydown",e=>{
+  if(e.code!=="Space") return;
+  const t=e.target; if(t && /^(input|textarea|select)$/i.test(t.tagName)) return;
+  if($("#rvAll").disabled) return;
+  e.preventDefault(); $("#rvAll").click();
+});
+$("#rvNext").onclick=()=> reviewGoto(reviewIdx+1);
+$("#rvPrev").onclick=()=> reviewGoto(reviewIdx-1);
+$("#rvFinal").onclick=()=>{ stopPreview(); ensureTab("export"); setStatus("Faça os ajustes que quiser (zoom, legenda, meia-tela, cortes). Quando estiver pronto, gere o vídeo num dos exports abaixo."); };
+
+$("#tl").onclick=e=>{
+  const r=$("#tl").getBoundingClientRect();
+  const t=Math.min(S.duration, Math.max(0,(e.clientX-r.left)/r.width*S.duration));
+  const wasListening=preview.on;
+  stopPreview();
+  vid.currentTime=t; updateUIAt(t,false);
+  preview.paused=true; preview.posOrig=t; setRvLabel(false);   // permite "Ouvir tudo" continuar daqui
+  if(wasListening) startPreview(t,null);                        // estava ouvindo → continua ouvindo daqui
+};
+function updateTime(){ $("#time").textContent=`${fmt(vid.currentTime)} / ${fmt(S.duration)}`; }
+
+// ---------- reenquadrar / crop com pontos no tempo (keyframes) + zoom ----------
+const crop={ ar:0, fx:0.5, fy:0.5, zoom:1, fillHeight:false, keys:[] }; // keys:[{t,fx,fy,zoom}] em tempo ORIGINAL
+let cropDragging=false;
+function curTime(){ return (preview.on||preview.paused) ? (preview.posOrig||0) : (vid.currentTime||0); }
+function cropActive(){ return !!(crop.ar || Math.abs(crop.zoom-1)>0.001 || crop.keys.length); }
+function cropFXY(t){
+  const K=crop.keys; if(!K.length || t==null) return {fx:crop.fx, fy:crop.fy, zoom:crop.zoom};
+  if(t<=K[0].t) return {fx:K[0].fx, fy:K[0].fy, zoom:K[0].zoom};
+  if(t>=K[K.length-1].t){ const k=K[K.length-1]; return {fx:k.fx, fy:k.fy, zoom:k.zoom}; }
+  for(let i=0;i<K.length-1;i++){ if(t>=K[i].t && t<K[i+1].t){ const a=K[i],b=K[i+1],u=(t-a.t)/((b.t-a.t)||1);
+    return {fx:a.fx+(b.fx-a.fx)*u, fy:a.fy+(b.fy-a.fy)*u, zoom:a.zoom+(b.zoom-a.zoom)*u}; } }
+  return {fx:crop.fx, fy:crop.fy, zoom:crop.zoom};
+}
+// retorna o sub-retângulo de origem (cx,cy,cw,ch) + o tamanho de SAÍDA (cw0,ch0, zoom=1)
+function cropRect(t){
+  if(!vid.videoWidth || !cropActive()) return null;
+  const W=vid.videoWidth, H=vid.videoHeight;
+  let cw0, ch0;
+  if(crop.ar){
+    if(crop.fillHeight){ ch0=H; cw0=Math.min(W, H*crop.ar); }   // mantém 100% da altura, corta só os lados
+    else if(H*crop.ar<=W){ ch0=H; cw0=H*crop.ar; }
+    else { cw0=W; ch0=W/crop.ar; }
+  } else { cw0=W; ch0=H; }
+  cw0=Math.min(W,Math.max(2,Math.round(cw0/2)*2)); ch0=Math.min(H,Math.max(2,Math.round(ch0/2)*2));
+  const f=cropFXY(t); const z=Math.min(3, Math.max(0.4, f.zoom||1));
+  let cw, ch;
+  if(z>=1){ cw=Math.max(2,Math.round((cw0/z)/2)*2); ch=Math.max(2,Math.round((ch0/z)/2)*2); }
+  else { cw=cw0; ch=ch0; } // z<1 (afastar): amostra a fatia base e encolhe no desenho
+  cw=Math.min(W,cw); ch=Math.min(H,ch);
+  const panX=W-cw, panY=H-ch;
+  return {W,H,cw,ch,cw0,ch0,z,cx:Math.round(panX*f.fx),cy:Math.round(panY*f.fy),panX,panY};
+}
+// resolução PADRÃO de saída (1080 no lado curto → qualidade certa pro Instagram)
+function outputSize(){
+  const r=cropRect();
+  let sw = r?r.cw0:(vid.videoWidth||1080), sh = r?r.ch0:(vid.videoHeight||1920);
+  const ar = sw/sh; let w,h;
+  if(ar<=1){ w=1080; h=Math.round(w/ar); } else { h=1080; w=Math.round(h*ar); }
+  // nunca menor que o nativo (não perder detalhe), mas garante 1080 no lado curto
+  w=Math.max(w, sw); h=Math.max(h, sh);
+  return { w:Math.round(w/2)*2, h:Math.round(h/2)*2 };
+}
+function renderCropOverlay(){
+  const box=$("#cropBox");
+  const r = cropDragging ? cropRect() : cropRect(curTime());
+  if(!r){ box.hidden=true; return; }
+  const vr=vid.getBoundingClientRect(), st=$("#stage").getBoundingClientRect();
+  if(!vr.width){ box.hidden=true; return; }
+  const sc=vr.width/vid.videoWidth;
+  box.hidden=false;
+  box.dataset.fmt=($("#fmt").selectedOptions[0]?.textContent||"").split(" — ")[0];
+  box.style.left  =((vr.left-st.left)+r.cx*sc)+"px";
+  box.style.top   =((vr.top -st.top )+r.cy*sc)+"px";
+  box.style.width =(r.cw*sc)+"px";
+  box.style.height=(r.ch*sc)+"px";
+}
+function updateKeyUI(){
+  const n=crop.keys.length;
+  $("#keyCount").textContent = cropActive() ? (n? `📍 ${n} ponto(s)` : "fixo") : "";
+  $("#mkKey").disabled=false; $("#clrKeys").disabled=!n;
+}
+function setKeyAt(t){ // grava/atualiza ponto no instante t com posição+zoom atuais
+  crop.keys=crop.keys.filter(k=>Math.abs(k.t-t)>0.25);
+  crop.keys.push({t, fx:crop.fx, fy:crop.fy, zoom:crop.zoom});
+  crop.keys.sort((a,b)=>a.t-b.t); updateKeyUI();
+}
+$("#fmt").onchange=()=>{ crop.ar=parseFloat($("#fmt").value)||0; crop.fx=0.5; crop.fy=0.5; crop.keys=[]; refreshStage(); updateKeyUI();
+  setStatus(crop.ar?'Arraste o quadro pra enquadrar. Pra te acompanhar/dar zoom ao longo do vídeo, posicione e clique "📍 Marcar posição" em vários momentos.':'Saída no formato original.'); };
+$("#zoom").oninput=e=>{ crop.zoom=parseFloat(e.target.value)||1; $("#vZoom").textContent=crop.zoom.toFixed(1)+"×"; if(crop.keys.length) setKeyAt(curTime()); refreshStage(); };
+$("#fillH").onchange=e=>{ crop.fillHeight=e.target.checked; refreshStage();
+  setStatus(crop.fillHeight?'Altura cheia: mantém 100% da altura e corta só os lados.':'Recorte normal pelo formato escolhido.'); };
+$("#mkKey").onclick=()=>{ const t=curTime(); setKeyAt(t); refreshStage();
+  setStatus(`📍 Ponto em ${fmt(t)} (${crop.keys.length} no total) — posição e zoom gravados. Avance, ajuste e marque de novo: move/amplia suave entre os pontos.`); };
+$("#clrKeys").onclick=()=>{ crop.keys=[]; updateKeyUI(); refreshStage(); setStatus("Pontos limpos."); };
+function refreshStage(){ renderStage(curTime(), preview.on || !vid.paused); }
+window.addEventListener("resize", refreshStage);
+if(window.ResizeObserver) new ResizeObserver(refreshStage).observe(vid);
+(function(){
+  const box=$("#cropBox"); let d=null;
+  box.addEventListener("pointerdown",e=>{ if(!cropActive()) return; e.preventDefault();
+    const f=cropFXY(curTime()); crop.fx=f.fx; crop.fy=f.fy; crop.zoom=f.zoom;
+    const r=cropRect(); if(!r) return;
+    cropDragging=true; box.classList.add("drag"); box.setPointerCapture(e.pointerId);
+    d={x:e.clientX,y:e.clientY,fx:crop.fx,fy:crop.fy,r,sc:vid.getBoundingClientRect().width/vid.videoWidth}; });
+  box.addEventListener("pointermove",e=>{ if(!d) return;
+    if(d.r.panX>0) crop.fx=Math.min(1,Math.max(0, d.fx+(e.clientX-d.x)/(d.r.panX*d.sc)));
+    if(d.r.panY>0) crop.fy=Math.min(1,Math.max(0, d.fy+(e.clientY-d.y)/(d.r.panY*d.sc)));
+    renderCropOverlay(); });
+  const end=()=>{ if(!d) return; d=null; cropDragging=false; box.classList.remove("drag");
+    if(crop.keys.length) setKeyAt(curTime());
+    refreshStage();
+  };
+  box.addEventListener("pointerup",end); box.addEventListener("pointercancel",end);
+})();
+
+// ---------- #4 meia-tela (overlay vídeo/imagem por trecho) ----------
+let OV=[], ovSeq=0, ovType="video";
+function activeOverlay(t){ return OV.find(o=> t>=o.start && t<o.end) || null; }
+$("#addOvVid").onclick=()=>{ ovType="video"; $("#ovFile").accept="video/*"; $("#ovFile").click(); };
+$("#addOvImg").onclick=()=>{ ovType="image"; $("#ovFile").accept="image/*"; $("#ovFile").click(); };
+$("#ovFile").onchange=e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return;
+  const url=URL.createObjectURL(f); const t0=curTime();
+  const o={id:++ovSeq, type:f.type.startsWith("image")?"image":"video", name:f.name, url, file:f, start:t0, end:Math.min(S.duration||t0+3, t0+3)};
+  if(o.type==="image"){ o.img=new Image(); o.img.src=url; o.img.onload=()=>refreshStage(); }
+  else { o.vid=document.createElement("video"); o.vid.src=url; o.vid.muted=true; o.vid.playsInline=true; o.vid.preload="auto"; }
+  OV.push(o); renderOvList(); refreshStage(); if(autosaveOn) saveMedia();
+  setStatus(`Meia-tela adicionada (${o.type==="image"?"imagem":"vídeo"}). Ajuste "início aqui / fim aqui" no trecho que quiser.`);
+};
+function renderOvList(){
+  const el=$("#ovList");
+  if(!OV.length){ el.className="empty"; el.textContent="Nenhuma meia-tela. Adicione um vídeo ou imagem."; return; }
+  el.className=""; el.innerHTML=""; OV.sort((a,b)=>a.start-b.start);
+  OV.forEach(o=>{
+    const card=document.createElement("div"); card.className="ov-card";
+    card.innerHTML=`<div class="thumb" ${o.type==="image"?`style="background-image:url(${o.url})"`:""}>${o.type==="video"?"▶":""}</div>
+      <div class="meta"><div class="nm">${esc(o.name)} <span style="color:var(--suave)">(${o.type==="image"?"imagem":"vídeo"})</span></div>
+      <div class="t">${fmt(o.start)} → ${fmt(o.end)}</div>
+      <div><button data-a="si" class="ghost">início aqui</button><button data-a="fi" class="ghost">fim aqui</button><button data-a="go" class="ghost">ir ao início</button><button data-a="rm" class="ghost">remover</button></div></div>`;
+    card.querySelectorAll("button").forEach(b=> b.onclick=()=>{
+      const a=b.dataset.a, t=curTime();
+      if(a==="si") o.start=Math.min(t, o.end-0.2);
+      if(a==="fi") o.end=Math.max(t, o.start+0.2);
+      if(a==="go"){ stopPreview(); vid.currentTime=o.start; updateUIAt(o.start,false); }
+      if(a==="rm"){ if(o.vid) o.vid.pause(); OV=OV.filter(x=>x!==o); if(autosaveOn) saveMedia(); }
+      renderOvList(); refreshStage();
+    });
+    el.appendChild(card);
+  });
+}
+function drawCover(ctx, el, sx,sy,sw,sh, dx,dy,dw,dh){
+  const scale=Math.max(dw/sw, dh/sh), vw=dw/scale, vh=dh/scale;
+  ctx.drawImage(el, sx+(sw-vw)/2, sy+(sh-vh)/2, vw, vh, dx,dy,dw,dh);
+}
+let _scr=null;
+function getScratch(w,h){ if(!_scr) _scr=document.createElement("canvas"); if(_scr.width!==w)_scr.width=w; if(_scr.height!==h)_scr.height=h; return _scr; }
+function drawOverlayMedia(ctx, o, x,y,w,h){
+  if(o.type==="image"){ if(o.img&&o.img.naturalWidth) drawCover(ctx,o.img,0,0,o.img.naturalWidth,o.img.naturalHeight,x,y,w,h); else {ctx.fillStyle="#000";ctx.fillRect(x,y,w,h);} }
+  else { if(o.vid&&o.vid.readyState>=2) drawCover(ctx,o.vid,0,0,o.vid.videoWidth,o.vid.videoHeight,x,y,w,h); else {ctx.fillStyle="#000";ctx.fillRect(x,y,w,h);} }
+}
+// desenha o frame composto (crop + zoom in/out + meia-tela com fusão), SEM legenda
+function drawComposite(ctx, W, H, t){
+  const r=cropRect(t), m=r||{cx:0,cy:0,cw:vid.videoWidth,ch:vid.videoHeight,z:1};
+  const o=activeOverlay(t);
+  if(!o){
+    if(m.z!=null && m.z<0.999){ // AFASTAR: fundo desfocado + vídeo menor centralizado
+      ctx.save(); ctx.filter=`blur(${Math.max(4,Math.round(W*0.05))}px)`;
+      drawCover(ctx, vid, 0,0,vid.videoWidth,vid.videoHeight, 0,0,W,H);
+      ctx.filter="none"; ctx.restore();
+      ctx.fillStyle="rgba(0,0,0,.22)"; ctx.fillRect(0,0,W,H);
+      const dw=W*m.z, dh=H*m.z, dx=(W-dw)/2, dy=(H-dh)/2;
+      ctx.drawImage(vid, m.cx,m.cy,m.cw,m.ch, dx,dy,dw,dh);
+    } else {
+      ctx.drawImage(vid, m.cx,m.cy,m.cw,m.ch, 0,0,W,H);
+    }
+    return;
+  }
+  // MEIA-TELA: você embaixo, conteúdo em cima, com a base do de cima fundindo no de baixo
+  const halfH=Math.round(H/2), feather=Math.round(H*0.06);
+  drawCover(ctx, vid, m.cx,m.cy,m.cw,m.ch, 0, halfH-feather, W, H-(halfH-feather)); // você (sobe um pouco pra receber a fusão)
+  const sc=getScratch(W,halfH), sx=sc.getContext("2d"); sx.imageSmoothingQuality="high"; sx.clearRect(0,0,W,halfH);
+  drawOverlayMedia(sx, o, 0,0,W,halfH);
+  const g=sx.createLinearGradient(0,halfH-feather,0,halfH); g.addColorStop(0,"rgba(0,0,0,0)"); g.addColorStop(1,"rgba(0,0,0,1)");
+  sx.globalCompositeOperation="destination-out"; sx.fillStyle=g; sx.fillRect(0,halfH-feather,W,feather); sx.globalCompositeOperation="source-over";
+  ctx.drawImage(sc, 0,0);
+}
+function syncOverlays(t, playing){
+  for(const o of OV){ if(o.type!=="video"||!o.vid) continue;
+    const active=t>=o.start && t<o.end;
+    if(active){ const rel=Math.max(0,t-o.start);
+      if(o.vid.readyState>=1 && Math.abs(o.vid.currentTime-rel)>0.35){ try{o.vid.currentTime=rel;}catch(e){} }
+      if(playing && o.vid.paused) o.vid.play().catch(()=>{}); if(!playing && !o.vid.paused) o.vid.pause();
+    } else if(!o.vid.paused) o.vid.pause();
+  }
+}
+// área (em coords do palco) onde o frame final é mostrado — usada pra posicionar a legenda
+let frameRect=null;
+function renderStage(t, playing){
+  const cvp=$("#previewCanvas"), st=$("#stage").getBoundingClientRect();
+  syncOverlays(t, playing);
+  const useCanvas = playing && (cropActive() || activeOverlay(t)) && vid.videoWidth;
+  if(useCanvas){
+    const base=cropRect(t); const W=base?base.cw0:vid.videoWidth, H=base?base.ch0:vid.videoHeight;
+    if(cvp.width!==W) cvp.width=W; if(cvp.height!==H) cvp.height=H;
+    drawComposite(cvp.getContext("2d"), W, H, t);
+    const ar=W/H; let dw=st.width, dh=dw/ar; if(dh>st.height){ dh=st.height; dw=dh*ar; }
+    const left=(st.width-dw)/2, top=(st.height-dh)/2;
+    cvp.style.display="block"; cvp.style.left=left+"px"; cvp.style.top=top+"px"; cvp.style.width=dw+"px"; cvp.style.height=dh+"px";
+    vid.style.visibility="hidden"; $("#cropBox").hidden=true;
+    frameRect={left,top,w:dw,h:dh};
+  }else{
+    cvp.style.display="none"; vid.style.visibility="";
+    if(cropActive()){ renderCropOverlay(); } else { $("#cropBox").hidden=true; }
+    frameRect=frameDisplayRect();
+  }
+  positionCaption($("#capOverlay"));
+}
+
+// ---------- tabs ----------
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+  t.classList.add("active");
+  ["segs","caps","split","export"].forEach(n=>$("#panel-"+n).classList.toggle("hidden", n!==t.dataset.tab));
+});
+
+// ---------- legendas ----------
+$("#importSrt").onclick=()=>$("#srtFile").click();
+$("#srtFile").onchange=e=>{ const f=e.target.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ S.caps=parseSrt(rd.result); renderCaps(); renderSegs(); refreshExportButtons(); setStatus(`Importei ${S.caps.length} legenda(s).`); }; rd.readAsText(f); };
+
+function parseSrt(txt){
+  const out=[]; const blocks=txt.replace(/\r/g,"").split(/\n\n+/);
+  for(const b of blocks){
+    const m=b.match(/(\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})\s*-->\s*(\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})/);
+    if(!m) continue;
+    const lines=b.split("\n").slice(b.split("\n").findIndex(l=>l.includes("-->"))+1).join(" ").trim();
+    out.push({start:srtT(m[1]), end:srtT(m[2]), text:lines});
+  }
+  return out;
+}
+const srtT=s=>{ const [h,m,rest]=s.replace(",",".").split(":"); return +h*3600+ +m*60+ parseFloat(rest); };
+const toSrtT=t=>{ const h=Math.floor(t/3600), m=Math.floor(t%3600/60), s=Math.floor(t%60), ms=Math.round((t%1)*1000); return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")},${String(ms).padStart(3,"0")}`; };
+
+function renderCaps(){
+  buildWords();
+  const el=$("#capList");
+  if(!S.caps.length){ el.className="empty"; el.textContent="Nenhuma legenda. Gere automaticamente ou importe um .srt."; return; }
+  el.className=""; el.innerHTML="";
+  S.caps.forEach((c,i)=>{
+    const row=document.createElement("div"); row.className="cap-row";
+    row.innerHTML=`<div class="ct">${fmt(c.start)}–${fmt(c.end)}</div><textarea>${c.text}</textarea>`;
+    const ta=row.querySelector("textarea");
+    ta.oninput=()=>{ c.text=ta.value; buildWords(); };
+    ta.onfocus=()=>{ stopPreview(); vid.currentTime=c.start; };
+    el.appendChild(row);
+  });
+}
+
+// transcrição automática (transformers.js / Whisper) — carregada sob demanda
+let transcriber=null;
+async function genCaptions(){
+  if(!S.audio){ setStatus("⚠️ Áudio não carregado."); return false; }
+  setStatus("Baixando o modelo de transcrição (1ª vez, ~70 MB)…", true);
+  if(!transcriber){
+    const { pipeline } = await import("https://esm.sh/@xenova/transformers@2.17.2");
+    transcriber = await pipeline("automatic-speech-recognition","Xenova/whisper-base",{
+      progress_callback:p=>{ if(p.status==="progress") setStatus(`Baixando modelo… ${Math.round(p.progress||0)}%`, true); }
+    });
+  }
+  setStatus("Transcrevendo o áudio (roda no seu navegador, pode levar alguns minutos)…", true);
+  const mono = await to16kMono(S.audio);
+  const out = await transcriber(mono, { language:"portuguese", task:"transcribe", return_timestamps:true, chunk_length_s:30, stride_length_s:5 });
+  const chunks = out.chunks || [];
+  S.caps = chunks.filter(c=>c.text && c.text.trim()).map(c=>({
+    start:c.timestamp[0]||0, end:c.timestamp[1]||((c.timestamp[0]||0)+2), text:c.text.trim()
+  }));
+  renderCaps(); renderSegs(); refreshExportButtons();
+  return S.caps.length>0;
+}
+$("#genCaps").onclick=async ()=>{
+  try{ const ok=await genCaptions(); setStatus(ok?`Pronto: ${S.caps.length} legenda(s). Revise os textos na aba Legendas.`:"Não encontrei fala pra transcrever."); }
+  catch(err){ console.error(err); setStatus("⚠️ Falha na transcrição automática. Você pode importar um .srt feito em outro lugar."); }
+};
+async function to16kMono(ab){
+  const off=new OfflineAudioContext(1, Math.ceil(ab.duration*16000), 16000);
+  const src=off.createBufferSource(); src.buffer=ab; src.connect(off.destination); src.start();
+  const r=await off.startRendering(); return r.getChannelData(0);
+}
+
+// remapeia tempos das legendas pro vídeo CORTADO
+function capsForCut(){
+  const ranges=keptRanges(); const out=[];
+  const mapT=t=>{ let acc=0; for(const r of ranges){ if(t<r.start) return null; if(t<=r.end) return acc+(t-r.start); acc+=r.end-r.start; } return null; };
+  for(const c of S.caps){
+    const a=mapT(Math.max(c.start, firstKeptAt(c.start)));
+    const b=mapT(Math.min(c.end, lastKeptAt(c.end)));
+    if(a!=null && b!=null && b>a) out.push({start:a,end:b,text:c.text});
+  }
+  return out;
+}
+function firstKeptAt(t){ const r=keptRanges().find(x=>x.end>t); return r?Math.max(t,r.start):t; }
+function lastKeptAt(t){ const rs=keptRanges().filter(x=>x.start<t); const r=rs[rs.length-1]; return r?Math.min(t,r.end):t; }
+
+// ---------- detecção de REPETIÇÕES (take errado + refez) ----------
+// usa a transcrição: acha falas seguidas quase iguais e marca o take ANTERIOR pra cortar (fica o último).
+const DIACRITICS=new RegExp("[\\u0300-\\u036f]","g");
+function normWords(t){
+  return (t||"").toLowerCase().normalize("NFD").replace(DIACRITICS,"")
+    .replace(/[^a-z0-9\s]/g," ").split(/\s+/).filter(Boolean);
+}
+function lev(a,b){ // distância de edição em PALAVRAS
+  const m=a.length, n=b.length; if(!m) return n; if(!n) return m;
+  let prev=Array.from({length:n+1},(_,j)=>j), cur=new Array(n+1);
+  for(let i=1;i<=m;i++){ cur[0]=i;
+    for(let j=1;j<=n;j++){ const c=a[i-1]===b[j-1]?0:1; cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+c); }
+    [prev,cur]=[cur,prev];
+  }
+  return prev[n];
+}
+function wordSim(t1,t2){ const a=normWords(t1), b=normWords(t2); if(!a.length||!b.length) return 0; return 1 - lev(a,b)/Math.max(a.length,b.length); }
+function lcs(a,b){ // maior subsequência comum (em palavras)
+  const n=b.length; const dp=new Array(n+1).fill(0);
+  for(let i=1;i<=a.length;i++){ let prev=0; for(let j=1;j<=n;j++){ const tmp=dp[j]; dp[j]= a[i-1]===b[j-1]? prev+1 : Math.max(dp[j],dp[j-1]); prev=tmp; } }
+  return dp[n];
+}
+// quanto da fala MENOR está contida na maior (pega recomeço parcial: "hoje eu vou..." dentro de "hoje eu vou falar sobre gestão")
+function containment(t1,t2){ const a=normWords(t1), b=normWords(t2); if(!a.length||!b.length) return 0; return lcs(a,b)/Math.min(a.length,b.length); }
+
+// corta um intervalo de tempo qualquer (divide os segmentos que ele cruza)
+function cutTimeRange(s,e,type){
+  const out=[];
+  for(const seg of S.segs){
+    if(e<=seg.start+0.001 || s>=seg.end-0.001){ out.push(seg); continue; }
+    if(s>seg.start+0.001) out.push({start:seg.start,end:s,type:seg.type,keep:seg.keep,thumb:seg.thumb});
+    out.push({start:Math.max(s,seg.start),end:Math.min(e,seg.end),type:type,keep:false,thumb:null});
+    if(e<seg.end-0.001) out.push({start:e,end:seg.end,type:seg.type,keep:seg.keep,thumb:null});
+  }
+  S.segs=out;
+}
+
+const REP={ thr:0.6, contain:0.8, maxGapS:5, window:5, minWords:2 };
+function markRepeats(){
+  const caps=S.caps.slice().sort((a,b)=>a.start-b.start);
+  const cutRanges=[];
+  for(let i=0;i<caps.length;i++){
+    const wi=normWords(caps[i].text); if(wi.length<REP.minWords) continue;
+    for(let j=i+1; j<=i+REP.window && j<caps.length; j++){
+      if(caps[j].start - caps[i].end > REP.maxGapS) break;
+      const wj=normWords(caps[j].text); if(wj.length<REP.minWords) continue;
+      const sim=wordSim(caps[i].text, caps[j].text);
+      const con=containment(caps[i].text, caps[j].text);
+      // refez quase igual (sim) OU o take anterior é um pedaço/recomeço do seguinte (con)
+      if(sim>=REP.thr || con>=REP.contain){
+        cutRanges.push([caps[i].start, caps[i].end]); // corta o take ANTERIOR (fica o último)
+        break;
+      }
+    }
+  }
+  if(cutRanges.length) pushUndo();
+  for(const [s,e] of cutRanges) cutTimeRange(s,e,"repeat");
+  if(cutRanges.length){ reviewIdx=-1; renderAll(); makeThumbs(); }
+  return cutRanges.length;
+}
+$("#findReps").onclick=async ()=>{
+  try{
+    if(!S.caps.length){
+      if(!S.audio){ setStatus("⚠️ Abra um vídeo primeiro."); return; }
+      setStatus("Pra achar as repetições eu preciso transcrever a fala — fazendo isso agora…", true);
+      const ok=await genCaptions();
+      if(!ok){ setStatus("Não consegui transcrever. Importe um .srt na aba Legendas e tente de novo."); return; }
+    }
+    const n=markRepeats();
+    ensureTab("segs");
+    setStatus(n? `Marquei ${n} repetição(ões) em AZUL nos Trechos. Clique no cartão pra ouvir, e mantenha/corte. "Excluir pausas" gera tudo junto.`
+              : "Não achei repetição clara. Confira a transcrição na aba Legendas — se você sabe onde repetiu, me diz que eu afino a sensibilidade.");
+  }catch(err){ console.error(err); setStatus("⚠️ Deu erro ao procurar repetições. Veja o console (F12)."); }
+};
+
+// ---------- exportar ----------
+function refreshExportButtons(){
+  const ok=S.segs.length>0;
+  $("#expMp4").disabled=!ok; $("#expBurn").disabled=!ok;
+  $("#expSrt").disabled=!S.caps.length;
+}
+const download=(blob,name)=>{ const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); };
+
+$("#expSrt").onclick=()=>{
+  const caps=capsForCut(); let out="";
+  caps.forEach((c,i)=> out+=`${i+1}\n${toSrtT(c.start)} --> ${toSrtT(c.end)}\n${(c.text||"").replace(/\*/g,"")}\n\n`);
+  download(new Blob([out],{type:"text/plain"}), "reel-legendas.srt");
+};
+$("#expEdl").onclick=()=>{
+  const data={duracaoOriginal:S.duration, parametros:S.params, faixasMantidas:keptRanges(), segmentos:S.segs.map(s=>({start:s.start,end:s.end,tipo:s.type,manter:s.keep})), legendas:S.caps};
+  download(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}), "reel-decisoes-corte.json");
+};
+
+// escolhe o melhor formato de gravação do navegador (prioriza MP4, que o Instagram aceita)
+function pickRecMime(){
+  const MR=window.MediaRecorder;
+  if(!MR||!MR.isTypeSupported) return {mime:"",mp4:false};
+  const mp4=["video/mp4;codecs=avc1.42E01E,mp4a.40.2","video/mp4;codecs=avc1,mp4a","video/mp4;codecs=h264,aac","video/mp4"];
+  const webm=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"];
+  for(const t of mp4) if(MR.isTypeSupported(t)) return {mime:t,mp4:true};
+  for(const t of webm) if(MR.isTypeSupported(t)) return {mime:t,mp4:false};
+  return {mime:"",mp4:false};
+}
+// --- ffmpeg.wasm (corte limpo + conversão WebM→MP4) — carrega de vários CDNs ---
+let ff=null;
+async function getFF(){
+  if(ff) return ff;
+  const inst=new FFmpeg();
+  inst.on("progress",({progress})=> setStatus(`Processando vídeo… ${Math.round((progress||0)*100)}%`, true));
+  const bases=[
+    "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd",
+    "https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd",
+    "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd"
+  ];
+  let lastErr;
+  for(const base of bases){
+    try{ await inst.load({ coreURL:`${base}/ffmpeg-core.js`, wasmURL:`${base}/ffmpeg-core.wasm` }); ff=inst; return ff; }
+    catch(e){ lastErr=e; console.warn("ffmpeg load falhou em",base,e); }
+  }
+  throw lastErr||new Error("não carregou o ffmpeg");
+}
+$("#expMp4").onclick=async ()=>{
+  stopPreview();
+  const ranges=keptRanges(); if(!ranges.length){ setStatus("Nada pra exportar — todos os trechos estão cortados."); return; }
+  try{
+    setStatus("Carregando o motor de vídeo (ffmpeg)…", true);
+    const f=await getFF();
+    const ext=(S.file.name.split(".").pop()||"mp4").toLowerCase();
+    const inName="in."+ext;
+    await f.writeFile(inName, await fetchFile(S.file));
+    // monta filtergraph: trim+concat com micro-fade de áudio (anti-clique)
+    let fg="", vlab="", alab="";
+    ranges.forEach((r,i)=>{
+      const d=(r.end-r.start);
+      fg+=`[0:v]trim=start=${r.start.toFixed(3)}:end=${r.end.toFixed(3)},setpts=PTS-STARTPTS[v${i}];`;
+      fg+=`[0:a]atrim=start=${r.start.toFixed(3)}:end=${r.end.toFixed(3)},asetpts=PTS-STARTPTS,afade=t=in:st=0:d=0.008,afade=t=out:st=${Math.max(0,d-0.008).toFixed(3)}:d=0.008[a${i}];`;
+      vlab+=`[v${i}]`; alab+=`[a${i}]`;
+    });
+    fg+=`${vlab}${alab}concat=n=${ranges.length}:v=1:a=1[vc][outa]`;
+    const cr=cropRect(curTime()); // crop ESTÁTICO (posição/zoom do instante atual)
+    if(cr){ const os=outputSize(); fg+=`;[vc]crop=${cr.cw}:${cr.ch}:${cr.cx}:${cr.cy},scale=${os.w}:${os.h}:flags=lanczos,setsar=1[outv]`; }
+    else   fg+=`;[vc]null[outv]`;
+    const moving = crop.keys.length>1 || OV.length;
+    setStatus("Renderizando MP4"+(cr?" (recortado)":"")+"…", true);
+    await f.exec(["-i",inName,"-filter_complex",fg,"-map","[outv]","-map","[outa]","-c:v","libx264","-preset","medium","-crf","18","-pix_fmt","yuv420p","-c:a","aac","-b:a","192k","-movflags","+faststart","out.mp4"]);
+    const data=await f.readFile("out.mp4");
+    download(new Blob([data.buffer],{type:"video/mp4"}), "reel-cortado.mp4");
+    setStatus("✅ MP4 exportado"+(moving?" — atenção: quadro móvel/zoom-animado e meia-tela NÃO entram no MP4; pra isso use o WebM com legenda.":". (Legenda? Use o WebM ou suba o .srt.)"));
+  }catch(err){ console.error(err);
+    const net=/load|fetch|network|import|core/i.test(String(err&&err.message));
+    setStatus(net
+      ? "⚠️ Não consegui carregar o motor de vídeo (ffmpeg) — parece bloqueio de internet/CDN. Tente recarregar a página com internet, ou use o export 'MP4 completo' (grava direto, sem ffmpeg). Detalhe no console (F12)."
+      : "⚠️ Falha ao exportar MP4. Vídeo muito grande pode estourar a memória — corte em pedaços, ou use 'MP4 completo'. Detalhe no console (F12).");
+  }
+};
+
+// --- WebM com legenda queimada (canvas + MediaRecorder, tempo real) ---
+let burnAC=null, burnSrc=null; // createMediaElementSource só pode ser criado 1x por elemento — cacheia
+$("#expBurn").onclick=async ()=>{
+  stopPreview();
+  const ranges=keptRanges(); if(!ranges.length){ setStatus("Nada pra exportar."); return; }
+  const caps=capsForCut();
+  const os=outputSize(); // resolução padrão (1080 no lado curto)
+  const cv=document.createElement("canvas");
+  cv.width=os.w; cv.height=os.h;
+  const cx=cv.getContext("2d"); cx.imageSmoothingEnabled=true; cx.imageSmoothingQuality="high";
+  const stream=cv.captureStream(30);
+  // áudio: sua voz (vídeo principal) + o áudio do(s) vídeo(s) da meia-tela
+  if(!burnAC){ burnAC=new AudioContext(); burnSrc=burnAC.createMediaElementSource(vid); }
+  const ac=burnAC; const srcN=burnSrc; const dest=ac.createMediaStreamDestination();
+  if(ac.state==="suspended") await ac.resume();
+  srcN.connect(dest); srcN.connect(ac.destination);
+  const ovNodes=[];
+  for(const o of OV){ if(o.type==="video"&&o.vid){
+    if(!o.srcNode){ try{ o.srcNode=ac.createMediaElementSource(o.vid); }catch(e){ o.srcNode=null; } }
+    if(o.srcNode){ o.vid.muted=false; try{ o.srcNode.connect(dest); o.srcNode.connect(ac.destination); }catch(e){} ovNodes.push(o.srcNode); }
+  }}
+  dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
+  // grava direto em MP4 quando o navegador suporta (Instagram aceita); senão WebM e converte no fim
+  const pick=pickRecMime(); const mp4ok=pick.mp4; const mime=pick.mime;
+  const vbps = Math.min(24_000_000, Math.max(10_000_000, Math.round(os.w*os.h*30*0.18))); // ~0.18 bit/pixel/frame
+  const opts = { videoBitsPerSecond:vbps, audioBitsPerSecond:192_000 }; if(mime) opts.mimeType=mime;
+  const rec = new MediaRecorder(stream, opts);
+  const chunks=[]; rec.ondataavailable=e=>e.data.size&&chunks.push(e.data);
+  const done=new Promise(r=>rec.onstop=r);
+
+  // palavras só dos trechos MANTIDOS, remapeadas pro tempo do corte (some pausas/repetições)
+  buildWords();
+  const words=S.words.filter(w=>w.keep).map(w=>({text:w.text,emph:w.emph,capId:w.capId,start:origToCut(w.start,ranges),end:origToCut(w.end,ranges)}));
+  try{ await document.fonts.load('700 40px Inter'); await document.fonts.load('italic 600 40px "Playfair Display"'); await document.fonts.ready; }catch(e){}
+  let ri=0, cutClock=0; // relógio do tempo final
+  vid.pause(); vid.currentTime=ranges[0].start; await new Promise(r=>vid.onseeked=r);
+  rec.start();
+  setStatus("Gravando com legenda (tempo real)… deixe a aba aberta.", true);
+  let raf;
+  const draw=()=>{
+    syncOverlays(vid.currentTime, true);
+    drawComposite(cx, cv.width, cv.height, vid.currentTime); // crop + zoom + meia-tela neste instante
+    const posY=capPosAt(vid.currentTime).y;
+    if(S.capStyle==="box"){
+      const c=caps.find(c=>cutClock>=c.start && cutClock<c.end);
+      if(c) drawCaption(cx,cv,c.text,posY);
+    }else{
+      const ci=caps.findIndex(c=> cutClock>=c.start-0.05 && cutClock<c.end+0.05);
+      if(ci>=0){ const ws=words.filter(w=>w.capId===ci);
+        if(ws.length){ let ai=ws.findIndex(w=>cutClock<w.end); if(ai<0) ai=ws.length-1; if(cutClock<ws[0].start) ai=0;
+          drawWordCaption(cx,cv, ws[ai], ws[ai+1], posY); } }
+    }
+    raf=requestAnimationFrame(draw);
+  };
+  draw();
+  await vid.play();
+  let last=vid.currentTime;
+  const tick=()=>{
+    cutClock += Math.max(0, vid.currentTime-last); last=vid.currentTime;
+    if(vid.currentTime>=ranges[ri].end-0.03){
+      ri++;
+      if(ri>=ranges.length){ finish(); return; }
+      vid.currentTime=ranges[ri].start; last=ranges[ri].start;
+    }
+    if(!vid.paused) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+  async function finish(){
+    vid.pause(); cancelAnimationFrame(raf);
+    OV.forEach(o=>{ if(o.vid){ o.vid.pause(); o.vid.muted=true; } });
+    rec.stop(); await done;
+    try{ srcN.disconnect(); }catch(e){}
+    ovNodes.forEach(n=>{ try{ n.disconnect(); }catch(e){} });
+    vid.muted=false;
+    const blob=new Blob(chunks,{type:mime});
+    if(mp4ok){
+      download(blob, "reel-final.mp4");
+      setStatus("✅ MP4 exportado — pronto pro Instagram (com legenda" + (OV.length?", meia-tela e áudio do vídeo de cima":"") + ").");
+      return;
+    }
+    // navegador não grava MP4 → converte WebM→MP4 (Instagram não aceita WebM)
+    try{
+      setStatus("Convertendo pra MP4 (Instagram não aceita WebM)…", true);
+      const f=await getFF();
+      await f.writeFile("cap.webm", new Uint8Array(await blob.arrayBuffer()));
+      await f.exec(["-i","cap.webm","-c:v","libx264","-preset","medium","-crf","18","-pix_fmt","yuv420p","-c:a","aac","-b:a","192k","-movflags","+faststart","capout.mp4"]);
+      const d=await f.readFile("capout.mp4");
+      download(new Blob([d.buffer],{type:"video/mp4"}), "reel-final.mp4");
+      setStatus("✅ MP4 exportado — pronto pro Instagram (com legenda" + (OV.length?", meia-tela e áudio do vídeo de cima":"") + ").");
+    }catch(e){ console.error(e);
+      download(blob, "reel-final.webm");
+      setStatus("⚠️ Gravei o vídeo mas não consegui converter pra MP4 (provável bloqueio de internet pro motor ffmpeg). Baixei em WebM — o Instagram não aceita WebM; converta no CapCut/site, ou tente de novo com internet. Detalhe no console (F12).");
+    }
+  }
+};
+function softShadow(cx,fs){ cx.shadowColor="rgba(0,0,0,.5)"; cx.shadowBlur=fs*0.22; cx.shadowOffsetX=0; cx.shadowOffsetY=fs*0.04; }
+function clearShadow(cx){ cx.shadowColor="transparent"; cx.shadowBlur=0; cx.shadowOffsetY=0; }
+function drawCaption(cx,cv,text,posY){
+  posY=posY!=null?posY:S.capPos.y;
+  const fs=Math.round(cv.width*0.058*S.capSize); cx.font=`700 ${fs}px Inter,system-ui,sans-serif`;
+  cx.textAlign="center"; cx.textBaseline="alphabetic";
+  const words=text.toLowerCase().split(" "); const lines=[]; let cur="";
+  const maxW=cv.width*0.86;
+  for(const w of words){ const t=cur?cur+" "+w:w; if(cx.measureText(t).width>maxW && cur){ lines.push(cur); cur=w; } else cur=t; }
+  if(cur) lines.push(cur); const L=lines.slice(-2);
+  const lh=fs*1.15, total=L.length*lh, top=cv.height*posY - total/2;
+  softShadow(cx,fs); cx.fillStyle="#fff";
+  L.forEach((ln,i)=> cx.fillText(ln, cv.width/2, top+(i+1)*lh - lh*0.25));
+  clearShadow(cx);
+}
+// estilo Reels: 2 palavras; destaque (emph) em itálico serifado (Playfair)
+function drawWordCaption(cx,cv,a,b,posY){
+  const fs=Math.round(cv.width*0.078*S.capSize), y=cv.height*(posY!=null?posY:S.capPos.y);
+  cx.textAlign="left"; cx.textBaseline="middle";
+  const fontOf=w=> w.emph ? `italic 600 ${fs}px "Playfair Display",Georgia,serif` : `700 ${fs}px Inter,system-ui,sans-serif`;
+  const items=[a]; if(b) items.push(b);
+  const parts=items.map((w,i)=>{ const txt=w.text.toLowerCase()+(i<items.length-1?" ":""); cx.font=fontOf(w); return {txt,font:fontOf(w),wdt:cx.measureText(txt).width}; });
+  let x=(cv.width - parts.reduce((s,p)=>s+p.wdt,0))/2;
+  softShadow(cx,fs); cx.fillStyle="#fff";
+  for(const p of parts){ cx.font=p.font; cx.fillText(p.txt,x,y); x+=p.wdt; }
+  clearShadow(cx);
+}
+
+// ===== SALVAR / RESTAURAR (IndexedDB, no próprio navegador) =====
+let autosaveOn=false, autosaveTimer=null;
+function idb(){ return new Promise((res,rej)=>{ const r=indexedDB.open("reels-editor",1);
+  r.onupgradeneeded=()=>r.result.createObjectStore("kv"); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+async function idbSet(k,v){ const db=await idb(); return new Promise((res,rej)=>{ const tx=db.transaction("kv","readwrite"); tx.objectStore("kv").put(v,k); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
+async function idbGet(k){ const db=await idb(); return new Promise((res,rej)=>{ const tx=db.transaction("kv","readonly"); const rq=tx.objectStore("kv").get(k); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error); }); }
+
+async function saveMedia(){ if(!S.file) return;
+  await idbSet("media",{ videoName:S.file.name, videoBlob:S.file,
+    overlays:OV.map(o=>({id:o.id,type:o.type,name:o.name,blob:o.file||null})) }); }
+async function saveState(){ if(!S.file) return;
+  await idbSet("state",{ duration:S.duration,
+    segs:S.segs.map(s=>({start:s.start,end:s.end,type:s.type,keep:s.keep})),
+    caps:S.caps, capStyle:S.capStyle, capSize:S.capSize, capPos:S.capPos, capKeys:S.capKeys, params:S.params,
+    crop:{ar:crop.ar,fx:crop.fx,fy:crop.fy,zoom:crop.zoom,fillHeight:crop.fillHeight,keys:crop.keys},
+    overlays:OV.map(o=>({id:o.id,start:o.start,end:o.end})) }); }
+async function saveProject(){ if(!S.file){ setStatus("Abra um vídeo antes de salvar."); return; }
+  try{ setStatus("💾 Salvando…",true); await saveMedia(); await saveState();
+    autosaveOn=true; if(!autosaveTimer) autosaveTimer=setInterval(()=>{ if(autosaveOn) saveState().catch(()=>{}); }, 4000);
+    $("#btnRestore").disabled=false;
+    setStatus("💾 Salvo no navegador (auto-salvando a cada poucos segundos). Pode recarregar — depois clique em ↺ Restaurar.");
+  }catch(e){ console.error(e); setStatus("⚠️ Não consegui salvar: "+(e.message||e)+". (Pode ser falta de espaço/modo anônimo.)"); } }
+$("#btnSave").onclick=saveProject;
+
+async function restoreProject(){
+  let media,state; try{ media=await idbGet("media"); state=await idbGet("state"); }catch(e){}
+  if(!media||!media.videoBlob){ setStatus("Nada salvo pra restaurar."); return; }
+  setStatus("↺ Restaurando projeto…",true);
+  const file=new File([media.videoBlob], media.videoName||"video.mp4", {type:media.videoBlob.type||"video/mp4"});
+  await loadVideo(file);
+  if(state){
+    S.segs=(state.segs||[]).map(s=>({...s,thumb:null}));
+    S.caps=state.caps||[]; S.capStyle=state.capStyle||"word"; S.capSize=state.capSize||1;
+    S.capPos=state.capPos||{x:.5,y:.5}; S.capKeys=state.capKeys||[]; if(state.params) S.params=state.params;
+    if(state.crop) Object.assign(crop,{ar:state.crop.ar||0,fx:state.crop.fx??.5,fy:state.crop.fy??.5,zoom:state.crop.zoom||1,fillHeight:!!state.crop.fillHeight,keys:state.crop.keys||[]});
+  }
+  // overlays: recria elementos a partir dos blobs guardados
+  OV=[]; ovSeq=0; const meta=new Map((state&&state.overlays||[]).map(o=>[o.id,o]));
+  for(const om of (media.overlays||[])){ if(!om.blob) continue; const url=URL.createObjectURL(om.blob); const t=meta.get(om.id)||{};
+    const ov={id:++ovSeq,type:om.type,name:om.name,url,file:om.blob,start:t.start||0,end:t.end||Math.min(S.duration,(t.start||0)+3)};
+    if(om.type==="image"){ ov.img=new Image(); ov.img.src=url; } else { ov.vid=document.createElement("video"); ov.vid.src=url; ov.vid.muted=true; ov.vid.playsInline=true; ov.vid.preload="auto"; }
+    OV.push(ov); }
+  // reflete nos controles
+  $("#fmt").value=String(crop.ar||0); $("#zoom").value=crop.zoom; $("#vZoom").textContent=crop.zoom.toFixed(1)+"×"; $("#fillH").checked=crop.fillHeight;
+  $("#capSize").value=S.capSize; $("#vCapSize").textContent=Math.round(S.capSize*100)+"%"; $("#capStyle").value=S.capStyle;
+  buildWords(); renderAll(); makeThumbs(); renderCaps(); renderOvList(); updateKeyUI(); updateCapKeyUI(); refreshExportButtons(); refreshStage();
+  autosaveOn=true; if(!autosaveTimer) autosaveTimer=setInterval(()=>{ if(autosaveOn) saveState().catch(()=>{}); }, 4000);
+  setStatus("↺ Projeto restaurado. (Continua auto-salvando.)");
+}
+$("#btnRestore").onclick=restoreProject;
+// na abertura, se houver projeto salvo, habilita Restaurar
+(async()=>{ try{ const media=await idbGet("media"); if(media&&media.videoBlob){ $("#btnRestore").disabled=false;
+  setStatus(`↺ Há um projeto salvo ("${media.videoName||"vídeo"}"). Clique em "Restaurar" pra continuar de onde parou.`); } }catch(e){} })();
+
+setStatus("Abra um vídeo pra começar (ou ↺ Restaurar, se já salvou algo).");
+</script>
+</body>
+</html>

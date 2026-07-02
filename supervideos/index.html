@@ -878,6 +878,16 @@ function cropRect(t){
   const panX=W-cw, panY=H-ch;
   return {W,H,cw,ch,cw0,ch0,z,cx:Math.round(panX*f.fx),cy:Math.round(panY*f.fy),panX,panY};
 }
+// resolução PADRÃO de saída (1080 no lado curto → qualidade certa pro Instagram)
+function outputSize(){
+  const r=cropRect();
+  let sw = r?r.cw0:(vid.videoWidth||1080), sh = r?r.ch0:(vid.videoHeight||1920);
+  const ar = sw/sh; let w,h;
+  if(ar<=1){ w=1080; h=Math.round(w/ar); } else { h=1080; w=Math.round(h*ar); }
+  // nunca menor que o nativo (não perder detalhe), mas garante 1080 no lado curto
+  w=Math.max(w, sw); h=Math.max(h, sh);
+  return { w:Math.round(w/2)*2, h:Math.round(h/2)*2 };
+}
 function renderCropOverlay(){
   const box=$("#cropBox");
   const r = cropDragging ? cropRect() : cropRect(curTime());
@@ -995,7 +1005,7 @@ function drawComposite(ctx, W, H, t){
   // MEIA-TELA: você embaixo, conteúdo em cima, com a base do de cima fundindo no de baixo
   const halfH=Math.round(H/2), feather=Math.round(H*0.06);
   drawCover(ctx, vid, m.cx,m.cy,m.cw,m.ch, 0, halfH-feather, W, H-(halfH-feather)); // você (sobe um pouco pra receber a fusão)
-  const sc=getScratch(W,halfH), sx=sc.getContext("2d"); sx.clearRect(0,0,W,halfH);
+  const sc=getScratch(W,halfH), sx=sc.getContext("2d"); sx.imageSmoothingQuality="high"; sx.clearRect(0,0,W,halfH);
   drawOverlayMedia(sx, o, 0,0,W,halfH);
   const g=sx.createLinearGradient(0,halfH-feather,0,halfH); g.addColorStop(0,"rgba(0,0,0,0)"); g.addColorStop(1,"rgba(0,0,0,1)");
   sx.globalCompositeOperation="destination-out"; sx.fillStyle=g; sx.fillRect(0,halfH-feather,W,feather); sx.globalCompositeOperation="source-over";
@@ -1257,11 +1267,11 @@ $("#expMp4").onclick=async ()=>{
     });
     fg+=`${vlab}${alab}concat=n=${ranges.length}:v=1:a=1[vc][outa]`;
     const cr=cropRect(curTime()); // crop ESTÁTICO (posição/zoom do instante atual)
-    if(cr) fg+=`;[vc]crop=${cr.cw}:${cr.ch}:${cr.cx}:${cr.cy},scale=${cr.cw0}:${cr.ch0},setsar=1[outv]`;
+    if(cr){ const os=outputSize(); fg+=`;[vc]crop=${cr.cw}:${cr.ch}:${cr.cx}:${cr.cy},scale=${os.w}:${os.h}:flags=lanczos,setsar=1[outv]`; }
     else   fg+=`;[vc]null[outv]`;
     const moving = crop.keys.length>1 || OV.length;
     setStatus("Renderizando MP4"+(cr?" (recortado)":"")+"…", true);
-    await f.exec(["-i",inName,"-filter_complex",fg,"-map","[outv]","-map","[outa]","-c:v","libx264","-preset","veryfast","-crf","20","-pix_fmt","yuv420p","-c:a","aac","-b:a","160k","out.mp4"]);
+    await f.exec(["-i",inName,"-filter_complex",fg,"-map","[outv]","-map","[outa]","-c:v","libx264","-preset","medium","-crf","18","-pix_fmt","yuv420p","-c:a","aac","-b:a","192k","-movflags","+faststart","out.mp4"]);
     const data=await f.readFile("out.mp4");
     download(new Blob([data.buffer],{type:"video/mp4"}), "reel-cortado.mp4");
     setStatus("✅ MP4 exportado"+(moving?" — atenção: quadro móvel/zoom-animado e meia-tela NÃO entram no MP4; pra isso use o WebM com legenda.":". (Legenda? Use o WebM ou suba o .srt.)"));
@@ -1279,10 +1289,10 @@ $("#expBurn").onclick=async ()=>{
   stopPreview();
   const ranges=keptRanges(); if(!ranges.length){ setStatus("Nada pra exportar."); return; }
   const caps=capsForCut();
-  const cr0=cropRect(); // tamanho de SAÍDA (cw0/ch0); null = sem corte
+  const os=outputSize(); // resolução padrão (1080 no lado curto)
   const cv=document.createElement("canvas");
-  cv.width = cr0?cr0.cw0:vid.videoWidth; cv.height = cr0?cr0.ch0:vid.videoHeight;
-  const cx=cv.getContext("2d");
+  cv.width=os.w; cv.height=os.h;
+  const cx=cv.getContext("2d"); cx.imageSmoothingEnabled=true; cx.imageSmoothingQuality="high";
   const stream=cv.captureStream(30);
   // áudio: sua voz (vídeo principal) + o áudio do(s) vídeo(s) da meia-tela
   if(!burnAC){ burnAC=new AudioContext(); burnSrc=burnAC.createMediaElementSource(vid); }
@@ -1297,8 +1307,9 @@ $("#expBurn").onclick=async ()=>{
   dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
   // grava direto em MP4 quando o navegador suporta (Instagram aceita); senão WebM e converte no fim
   const pick=pickRecMime(); const mp4ok=pick.mp4; const mime=pick.mime;
-  const rec = mime ? new MediaRecorder(stream,{mimeType:mime, videoBitsPerSecond:8_000_000})
-                   : new MediaRecorder(stream,{videoBitsPerSecond:8_000_000});
+  const vbps = Math.min(24_000_000, Math.max(10_000_000, Math.round(os.w*os.h*30*0.18))); // ~0.18 bit/pixel/frame
+  const opts = { videoBitsPerSecond:vbps, audioBitsPerSecond:192_000 }; if(mime) opts.mimeType=mime;
+  const rec = new MediaRecorder(stream, opts);
   const chunks=[]; rec.ondataavailable=e=>e.data.size&&chunks.push(e.data);
   const done=new Promise(r=>rec.onstop=r);
 
@@ -1357,7 +1368,7 @@ $("#expBurn").onclick=async ()=>{
       setStatus("Convertendo pra MP4 (Instagram não aceita WebM)…", true);
       const f=await getFF();
       await f.writeFile("cap.webm", new Uint8Array(await blob.arrayBuffer()));
-      await f.exec(["-i","cap.webm","-c:v","libx264","-preset","veryfast","-crf","20","-pix_fmt","yuv420p","-c:a","aac","-b:a","160k","capout.mp4"]);
+      await f.exec(["-i","cap.webm","-c:v","libx264","-preset","medium","-crf","18","-pix_fmt","yuv420p","-c:a","aac","-b:a","192k","-movflags","+faststart","capout.mp4"]);
       const d=await f.readFile("capout.mp4");
       download(new Blob([d.buffer],{type:"video/mp4"}), "reel-final.mp4");
       setStatus("✅ MP4 exportado — pronto pro Instagram (com legenda" + (OV.length?", meia-tela e áudio do vídeo de cima":"") + ").");

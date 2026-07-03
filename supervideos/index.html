@@ -1386,13 +1386,20 @@ function getAC(){ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkit
 async function finalizeExport(chunks, pick){
   const blob=new Blob(chunks,{type:pick.mime||"video/webm"});
   if(pick.mp4){ download(blob,"reel-final.mp4"); setStatus("✅ MP4 exportado — pronto pro Instagram."); return; }
-  try{ setStatus("Convertendo pra MP4… (pode demorar)", true);
+  const canMT=(typeof crossOriginIsolated!=="undefined"&&crossOriginIsolated)&&(typeof SharedArrayBuffer!=="undefined");
+  if(!canMT){
+    // sem turbo, converter WebM→MP4 no ffmpeg single-thread trava em vídeo longo — entrega o WebM na hora
+    download(blob,"reel-final.webm");
+    setStatus("✅ Vídeo pronto em WebM (seu navegador não grava MP4 direto, e sem ⚡turbo a conversão travaria). O Instagram não aceita WebM — converta rápido (CapCut / cloudconvert), OU ligue o ⚡turbo (COOP/COEP) que aí sai MP4 direto. Dica: Chrome atualizado grava MP4 nativo.");
+    return;
+  }
+  try{ setStatus("Convertendo pra MP4 (turbo)…", true);
     const f=await getFF();
     await f.writeFile("cap.webm", new Uint8Array(await blob.arrayBuffer()));
-    await f.exec(["-i","cap.webm","-c:v","libx264","-preset","medium","-crf","18","-pix_fmt","yuv420p","-c:a","aac","-b:a","192k","-movflags","+faststart","capout.mp4"]);
+    await f.exec(["-i","cap.webm","-c:v","libx264","-preset","veryfast","-crf","20","-pix_fmt","yuv420p","-c:a","aac","-b:a","192k","-movflags","+faststart","capout.mp4"]);
     download(new Blob([(await f.readFile("capout.mp4")).buffer],{type:"video/mp4"}), "reel-final.mp4");
     setStatus("✅ MP4 exportado — pronto pro Instagram.");
-  }catch(e){ console.error(e); download(blob,"reel-final.webm"); setStatus("⚠️ Gravei em WebM mas não converti pra MP4 (seu navegador não grava MP4 direto). Converta no CapCut, ou use o Chrome atualizado."); }
+  }catch(e){ console.error(e); download(blob,"reel-final.webm"); setStatus("⚠️ Gravei em WebM mas a conversão falhou. Converta no CapCut."); }
 }
 function buildCutWords(ranges){ buildWords(); return S.words.filter(w=>w.keep).map(w=>({text:w.text,emph:w.emph,capId:w.capId,start:origToCut(w.start,ranges),end:origToCut(w.end,ranges)})); }
 function drawCaptionsAt(cx,cv,caps,words,cutT){
@@ -1426,24 +1433,30 @@ async function exportRealtime(ranges){
   const caps=capsForCut(); const words=buildCutWords(ranges);
   try{ await document.fonts.load('700 40px Inter'); await document.fonts.load('italic 600 40px "Playfair Display"'); await document.fonts.ready; }catch(e){}
   const wasMuted=vid.muted; vid.muted=true; // áudio pelo nó de WebAudio
-  let ri=0, cutClock=0, last;
+  const totalCut=Math.max(0.1, finalDuration()); const fmtLbl = pick.mp4?"MP4":"WebM";
+  let ri=0, cutClock=0, last, ended=false, lastPct=-1;
   vid.pause(); vid.currentTime=ranges[0].start; await new Promise(r=>{ vid.onseeked=r; });
   last=vid.currentTime;
   let raf;
   const draw=()=>{ const to=vid.currentTime; syncOverlays(to, true); drawComposite(cx, cv.width, cv.height, to, vid); drawCaptionsAt(cx,cv,caps,words,cutClock); raf=requestAnimationFrame(draw); };
   rec.start(); await vid.play(); draw();
+  vid.onended=()=>{ finish(); };
   const tick=()=>{
     cutClock += Math.max(0, vid.currentTime-last); last=vid.currentTime;
+    const pct=Math.min(99, Math.round(cutClock/totalCut*100));
+    if(pct!==lastPct){ lastPct=pct; setStatus(`Gravando ${fmtLbl}… ${pct}% (deixe a aba ABERTA e visível)`, true); }
     if(vid.currentTime>=ranges[ri].end-0.03){ ri++; if(ri>=ranges.length){ finish(); return; } vid.currentTime=ranges[ri].start; last=ranges[ri].start; }
-    if(!vid.paused) requestAnimationFrame(tick);
+    if(!vid.paused && !ended) requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
   async function finish(){
-    vid.pause(); cancelAnimationFrame(raf);
+    if(ended) return; ended=true;
+    vid.onended=null; vid.pause(); cancelAnimationFrame(raf);
     OV.forEach(o=>{ if(o.vid){ o.vid.pause(); o.vid.muted=true; } });
-    rec.stop(); await done;
+    try{ rec.stop(); }catch(e){} await done;
     try{ vidSrc&&vidSrc.disconnect(); }catch(e){} ovNodes.forEach(n=>{ try{ n.disconnect(); }catch(e){} });
     vid.muted=wasMuted;
+    setStatus("Finalizando o arquivo…", true);
     await finalizeExport(chunks, pick);
   }
 }

@@ -1314,6 +1314,14 @@ function pickRecMime(){
 }
 // --- ffmpeg.wasm — usa a versão MULTI-THREAD quando a página está isolada (COOP/COEP), senão single-thread ---
 let ff=null, ffMT=false;
+// worker "same-origin" (blob) que importa o worker do CDN — evita o bloqueio "Failed to construct 'Worker' cross-origin"
+function ffClassWorkerURL(){
+  const candidates=[
+    'import "https://esm.sh/@ffmpeg/ffmpeg@0.12.10/es2022/worker.js";',
+    'import "https://esm.sh/@ffmpeg/ffmpeg@0.12.10/esnext/worker.js";'
+  ];
+  return URL.createObjectURL(new Blob([candidates[0]], {type:"text/javascript"}));
+}
 async function getFF(){
   if(ff) return ff;
   const inst=new FFmpeg();
@@ -1323,7 +1331,11 @@ async function getFF(){
              "https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd" ];
   const mt=[ "https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.10/dist/umd",
              "https://unpkg.com/@ffmpeg/core-mt@0.12.10/dist/umd" ];
-  const tryLoad=async(base)=>{ await inst.load({ coreURL:`${base}/ffmpeg-core.js`, wasmURL:`${base}/ffmpeg-core.wasm` }); };
+  const tryLoad=async(base)=>{
+    // 1ª tentativa: com worker same-origin (necessário quando hospedado). Se falhar, tenta o padrão.
+    try{ await inst.load({ classWorkerURL: ffClassWorkerURL(), coreURL:`${base}/ffmpeg-core.js`, wasmURL:`${base}/ffmpeg-core.wasm` }); return; }
+    catch(e){ await inst.load({ coreURL:`${base}/ffmpeg-core.js`, wasmURL:`${base}/ffmpeg-core.wasm` }); }
+  };
   let lastErr;
   if(canMT){ for(const base of mt){ try{ await tryLoad(base); ff=inst; ffMT=true; return ff; }catch(e){ lastErr=e; console.warn("ffmpeg MT falhou em",base,e); } } }
   for(const base of st){ try{ await tryLoad(base); ff=inst; ffMT=false; return ff; }catch(e){ lastErr=e; console.warn("ffmpeg falhou em",base,e); } }

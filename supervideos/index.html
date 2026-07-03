@@ -1503,8 +1503,9 @@ async function exportTwoPass(ranges){
 $("#expBurn").onclick=async ()=>{
   stopPreview();
   const ranges=keptRanges(); if(!ranges.length){ setStatus("Nada pra exportar."); return; }
-  const canMT=(typeof crossOriginIsolated!=="undefined"&&crossOriginIsolated)&&(typeof SharedArrayBuffer!=="undefined");
-  try{ if(canMT) await exportTwoPass(ranges); else await exportRealtime(ranges); }
+  // Sempre grava em tempo real (canvas+MediaRecorder). O caminho ffmpeg (two-pass) travava
+  // em vídeo longo com muitos cortes — foi aposentado. Turbo agora só acelera a conversão pra MP4 no final.
+  try{ await exportRealtime(ranges); }
   catch(err){ console.error(err);
     const net=/load|fetch|network|import|core|worker/i.test(String(err&&err.message));
     setStatus(net ? "⚠️ Motor de vídeo bloqueado (CDN/worker). Veja o console (F12)." : "⚠️ Falha no export: "+(err&&err.message||err)+". (Console F12.)");

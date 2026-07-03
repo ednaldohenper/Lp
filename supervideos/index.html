@@ -1132,13 +1132,24 @@ function renderCaps(){
 
 // transcrição automática (transformers.js / Whisper) — carregada sob demanda
 let transcriber=null;
+async function loadTransformers(){
+  const cdns=[ "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/+esm",
+               "https://esm.sh/@xenova/transformers@2.17.2",
+               "https://unpkg.com/@xenova/transformers@2.17.2/dist/transformers.min.js" ];
+  let lastErr;
+  for(const url of cdns){ try{ return await import(/* @vite-ignore */ url); }catch(e){ lastErr=e; console.warn("transformers import falhou:",url,e); } }
+  throw lastErr||new Error("não carregou o transformers.js");
+}
 async function genCaptions(){
   if(!S.audio){ setStatus("⚠️ Áudio não carregado."); return false; }
-  setStatus("Baixando o modelo de transcrição (1ª vez, ~70 MB)…", true);
   if(!transcriber){
-    const { pipeline } = await import("https://esm.sh/@xenova/transformers@2.17.2");
+    setStatus("Baixando o modelo de transcrição (1ª vez, ~70 MB)…", true);
+    const T = await loadTransformers();
+    const { pipeline, env } = T;
+    try{ env.allowLocalModels=false; env.useBrowserCache=true; }catch(e){}
+    try{ env.backends.onnx.wasm.numThreads=1; }catch(e){}   // evita conflito de threads (com/sem COI)
     transcriber = await pipeline("automatic-speech-recognition","Xenova/whisper-base",{
-      progress_callback:p=>{ if(p.status==="progress") setStatus(`Baixando modelo… ${Math.round(p.progress||0)}%`, true); }
+      progress_callback:p=>{ if(p&&p.status==="progress") setStatus(`Baixando modelo… ${Math.round(p.progress||0)}%`, true); }
     });
   }
   setStatus("Transcrevendo o áudio (roda no seu navegador, pode levar alguns minutos)…", true);
@@ -1153,7 +1164,7 @@ async function genCaptions(){
 }
 $("#genCaps").onclick=async ()=>{
   try{ const ok=await genCaptions(); setStatus(ok?`Pronto: ${S.caps.length} legenda(s). Revise os textos na aba Legendas.`:"Não encontrei fala pra transcrever."); }
-  catch(err){ console.error(err); setStatus("⚠️ Falha na transcrição automática. Você pode importar um .srt feito em outro lugar."); }
+  catch(err){ console.error(err); setStatus("⚠️ Falha na transcrição: "+(err&&err.message||err)+". (Veja o console F12.) Você também pode importar um .srt."); }
 };
 async function to16kMono(ab){
   const off=new OfflineAudioContext(1, Math.ceil(ab.duration*16000), 16000);
@@ -1247,7 +1258,7 @@ $("#findReps").onclick=async ()=>{
     ensureTab("segs");
     setStatus(n? `Marquei ${n} repetição(ões) em AZUL nos Trechos. Clique no cartão pra ouvir, e mantenha/corte. "Excluir pausas" gera tudo junto.`
               : "Não achei repetição clara. Confira a transcrição na aba Legendas — se você sabe onde repetiu, me diz que eu afino a sensibilidade.");
-  }catch(err){ console.error(err); setStatus("⚠️ Deu erro ao procurar repetições. Veja o console (F12)."); }
+  }catch(err){ console.error(err); setStatus("⚠️ Erro ao procurar repetições: "+(err&&err.message||err)+". (Console F12.)"); }
 };
 
 // ---------- exportar ----------

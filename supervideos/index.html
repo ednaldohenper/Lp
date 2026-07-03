@@ -141,6 +141,8 @@
   .cap-row{display:flex; gap:8px; align-items:flex-start; margin-bottom:6px}
   .cap-row .ct{font-variant-numeric:tabular-nums; font-size:11px; color:var(--suave); width:92px; flex:none; padding-top:7px}
   .cap-row textarea{flex:1; background:var(--preto3); color:var(--texto); border:1px solid var(--linha); border-radius:8px; padding:6px 8px; font:13px inherit; resize:vertical; min-height:34px}
+  .cap-row .del{flex:none; padding:6px 9px; border-radius:8px; color:var(--suave); font-size:12px; align-self:flex-start}
+  .cap-row .del:hover{color:var(--verm); border-color:rgba(215,99,79,.5)}
 
   .status{padding:8px 14px; border-top:1px solid var(--linha); font-size:12px; color:var(--suave); background:var(--preto2); min-height:34px; display:flex; align-items:center; gap:8px}
   .status.work{color:var(--ouro)}
@@ -268,7 +270,11 @@
           <option value="box">Frase inteira</option>
         </select>
         <label class="lbl" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--suave)">Tamanho <b id="vCapSize" style="color:var(--ouro)">100%</b>
-          <input type="range" id="capSize" min="0.6" max="2" step="0.05" value="1" style="width:90px;accent-color:var(--ouro)"></label>
+          <input type="range" id="capSize" min="0.6" max="2" step="0.05" value="1" style="width:80px;accent-color:var(--ouro)"></label>
+        <label class="lbl" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--suave)" title="Se a legenda estiver adiantada, aumente o atraso">Sincronia <b id="vCapOff" style="color:var(--ouro)">0.00s</b>
+          <input type="range" id="capOff" min="-1" max="1.5" step="0.05" value="0" style="width:80px;accent-color:var(--ouro)"></label>
+        <label class="lbl" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--suave)" title="Se as palavras trocam rápido demais, diminua o ritmo">Ritmo <b id="vCapSpd" style="color:var(--ouro)">1.0×</b>
+          <input type="range" id="capSpd" min="0.7" max="1.3" step="0.05" value="1" style="width:80px;accent-color:var(--ouro)"></label>
       </div>
       <div class="row" style="margin-bottom:8px">
         <button id="mkCapKey" class="ghost">📍 Fixar posição aqui</button>
@@ -317,6 +323,7 @@ import { fetchFile } from "https://esm.sh/@ffmpeg/util@0.12.1";
 
 const $ = s => document.querySelector(s);
 const fmt = t => { t=Math.max(0,t||0); const m=Math.floor(t/60), s=Math.floor(t%60); return m+":"+String(s).padStart(2,"0"); };
+const fmtT = t => { t=Math.max(0,t||0); const m=Math.floor(t/60), s=Math.floor(t%60), ms=Math.round((t%1)*1000); return `${m}:${String(s).padStart(2,"0")}.${String(ms).padStart(3,"0")}`; };
 const fmtMs = t => (t).toFixed(t<10?2:1)+"s";
 const setStatus = (msg, work=false) => { const el=$("#status"); el.className="status"+(work?" work":""); el.innerHTML=(work?'<span class="spin"></span>':"")+msg; };
 
@@ -331,6 +338,8 @@ const S = {
   capSize:1,             // multiplicador do tamanho da legenda
   capPos:{x:0.5, y:0.5}, // posição de trabalho (fração do quadro) — arrastável
   capKeys:[],            // posições por trecho [{t,x,y}] (vazio = fixa em capPos)
+  capOffset:0,           // atraso/adianto da legenda (s) — sincronia
+  capSpeed:1,            // ritmo da legenda (1 = normal; <1 mais devagar)
   params:{thr:-38, min:600, pad:140},
 };
 const esc = s => (s||"").replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
@@ -535,7 +544,7 @@ function closeTrims(){ if(trimRAF){cancelAnimationFrame(trimRAF);trimRAF=null;} 
 function openTrim(seg, card){
   stopPreview(); closeTrims();
   const dur=seg.end-seg.start; if(dur<0.2){ setStatus("Trecho curto demais pra cortar dentro dele."); return; }
-  let a=0.0, b=Math.min(1, 0.35); // por padrão marca o começo (pedaço grudado no anterior)
+  let a=0.30, b=0.60; // região vermelha (a remover) começa no meio; arraste as alças
   const wrap=document.createElement("div"); wrap.className="trim";
   wrap.innerHTML=`
     <div class="trim-bar" ${seg.thumb?`style="background-image:url(${seg.thumb})"`:""}>
@@ -553,16 +562,16 @@ function openTrim(seg, card){
         ha=wrap.querySelector(".trim-a"), hb=wrap.querySelector(".trim-b"),
         ph=wrap.querySelector(".trim-ph"), lab=wrap.querySelector('[data-t="lab"]');
   const draw=()=>{ rm.style.left=(a*100)+"%"; rm.style.width=((b-a)*100)+"%"; ha.style.left=(a*100)+"%"; hb.style.left=(b*100)+"%";
-    lab.textContent=`remover ${fmt(seg.start+a*dur)}–${fmt(seg.start+b*dur)} · ${((b-a)*dur).toFixed(1)}s`; };
+    lab.textContent=`remover ${fmtT(seg.start+a*dur)} → ${fmtT(seg.start+b*dur)} · ${((b-a)*dur).toFixed(2)}s`; };
   draw();
   const xFrac=e=>{ const r=bar.getBoundingClientRect(); return Math.min(1,Math.max(0,(e.clientX-r.left)/r.width)); };
+  // arrastar em QUALQUER ponto da barra move a alça mais próxima (robusto)
   let drag=null;
-  ha.addEventListener("pointerdown",e=>{e.preventDefault();ha.setPointerCapture(e.pointerId);drag="a";});
-  hb.addEventListener("pointerdown",e=>{e.preventDefault();hb.setPointerCapture(e.pointerId);drag="b";});
-  const mv=e=>{ if(!drag)return; const f=xFrac(e); if(drag==="a")a=Math.min(f,b-0.02); else b=Math.max(f,a+0.02); draw(); };
-  ha.addEventListener("pointermove",mv); hb.addEventListener("pointermove",mv);
-  const up=()=>{drag=null;}; ha.addEventListener("pointerup",up); hb.addEventListener("pointerup",up);
-  bar.addEventListener("click",e=>{ if(drag)return; if(e.target===ha||e.target===hb)return; vid.currentTime=seg.start+xFrac(e)*dur; ph.style.left=(xFrac(e)*100)+"%"; });
+  bar.addEventListener("pointerdown",e=>{ e.preventDefault(); bar.setPointerCapture(e.pointerId);
+    const f=xFrac(e); drag=(Math.abs(f-a)<=Math.abs(f-b))?"a":"b";
+    if(drag==="a") a=Math.min(f,b-0.02); else b=Math.max(f,a+0.02); draw(); });
+  bar.addEventListener("pointermove",e=>{ if(!drag)return; const f=xFrac(e); if(drag==="a") a=Math.min(f,b-0.02); else b=Math.max(f,a+0.02); draw(); });
+  const up=()=>{ drag=null; }; bar.addEventListener("pointerup",up); bar.addEventListener("pointercancel",up);
   wrap.querySelector('[data-t="play"]').onclick=()=>{ stopPreview(); vid.currentTime=seg.start; vid.play();
     const loop=()=>{ if(vid.paused) return; const f=(vid.currentTime-seg.start)/dur; ph.style.left=(Math.min(1,Math.max(0,f))*100)+"%";
       if(vid.currentTime>=seg.end-0.02){ vid.pause(); return; } trimRAF=requestAnimationFrame(loop); };
@@ -570,7 +579,7 @@ function openTrim(seg, card){
   wrap.querySelector('[data-t="apply"]').onclick=()=>{ const s=seg.start+a*dur, e=seg.start+b*dur; closeTrims(); vid.pause();
     if(e-s<0.05){ setStatus("Pedaço curto demais."); return; }
     pushUndo(); cutTimeRange(s,e,"manual"); reviewIdx=-1; renderAll(); makeThumbs();
-    setStatus(`✂︎ Removido ${fmt(s)}–${fmt(e)} (${(e-s).toFixed(1)}s) de dentro do trecho. O resto continua.`); };
+    setStatus(`✂︎ Removido ${fmtT(s)} → ${fmtT(e)} (${(e-s).toFixed(2)}s) de dentro do trecho. O resto continua.`); };
   wrap.querySelector('[data-t="cancel"]').onclick=()=>{ vid.pause(); closeTrims(); };
 }
 
@@ -596,7 +605,7 @@ let lastPlayIdx=-1, lastPos=0;
 function updateUIAt(t, moving){
   lastPos=t; // memoriza a posição pra "continuar"
   $("#ph").style.left=(t/S.duration*100)+"%";
-  $("#time").textContent=`${fmt(t)} / ${fmt(S.duration)}`;
+  $("#time").textContent=`${fmtT(t)} / ${fmt(S.duration)}`;
   renderStage(t, preview.on || !vid.paused);
   renderCaption(t);
   document.querySelectorAll(".seg-card.playing").forEach(n=>n.classList.remove("playing"));
@@ -622,10 +631,10 @@ function tokenize(text){
   return out;
 }
 function buildWordsFrom(caps){
-  const out=[];
+  const out=[]; const spd=Math.max(0.5, S.capSpeed||1);
   caps.forEach((c,ci)=>{
     const toks=tokenize(c.text); if(!toks.length) return;
-    const dur=Math.max(0.24, c.end-c.start), per=dur/toks.length;
+    const dur=Math.max(0.24, c.end-c.start), per=(dur/toks.length)/spd; // ritmo: <1 alarga cada palavra
     toks.forEach((tk,k)=> out.push({text:tk.text, emph:tk.emph, start:c.start+k*per, end:c.start+(k+1)*per, capId:ci}));
   });
   return out;
@@ -656,6 +665,8 @@ function positionCaption(ov){
   ov.style.fontSize=Math.max(11, fr.w*0.085*S.capSize)+"px";
 }
 $("#capSize").oninput=e=>{ S.capSize=parseFloat(e.target.value)||1; $("#vCapSize").textContent=Math.round(S.capSize*100)+"%"; positionCaption($("#capOverlay")); };
+$("#capOff").oninput=e=>{ S.capOffset=parseFloat(e.target.value)||0; $("#vCapOff").textContent=(S.capOffset>=0?"+":"")+S.capOffset.toFixed(2)+"s"; renderCaption(curTime()); };
+$("#capSpd").oninput=e=>{ S.capSpeed=parseFloat(e.target.value)||1; $("#vCapSpd").textContent=S.capSpeed.toFixed(2)+"×"; buildWords(); renderCaption(curTime()); };
 function updateCapKeyUI(){ const n=S.capKeys.length; const el=$("#capKeyCount"); if(el) el.textContent=n?`📍 ${n} posição(ões)`:""; const c=$("#clrCapKeys"); if(c) c.disabled=!n; }
 function setCapKeyAt(t){ S.capKeys=S.capKeys.filter(k=>Math.abs(k.t-t)>0.25); S.capKeys.push({t,x:S.capPos.x,y:S.capPos.y}); S.capKeys.sort((a,b)=>a.t-b.t); updateCapKeyUI(); }
 $("#mkCapKey").onclick=()=>{ setCapKeyAt(curTime()); positionCaption($("#capOverlay"));
@@ -673,17 +684,19 @@ $("#clrCapKeys").onclick=()=>{ S.capKeys=[]; updateCapKeyUI(); positionCaption($
 })();
 function renderCaption(t){
   const ov=$("#capOverlay"); positionCaption(ov);
+  const tc = t - (S.capOffset||0); // sincronia
   const span=w=> w? `<span class="${w.emph?"w-em":"w-on"}">${esc(w.text)}</span>` : "";
   if(S.capStyle==="box"){
-    // só mostra a frase se o instante atual NÃO está num trecho cortado
-    const inCut = S.segs.some(s=>!s.keep && t>=s.start && t<s.end);
-    const c = inCut ? null : S.caps.find(c=>t>=c.start && t<c.end);
-    ov.innerHTML = c ? `<span class="capbox">${esc(c.text)}</span>` : "";
+    // mostra a frase montada só com as palavras MANTIDAS (some o que foi cortado)
+    const ci=S.caps.findIndex(c=>tc>=c.start && tc<c.end);
+    if(ci<0){ ov.innerHTML=""; return; }
+    const kw=S.words.filter(w=>w.capId===ci && w.keep);
+    ov.innerHTML = kw.length ? `<span class="capbox">${kw.map(w=>esc(w.text)).join(" ")}</span>` : "";
     return;
   }
   // palavra a palavra — só palavras de trechos MANTIDOS (some nas pausas/repetições)
   const W=S.words.filter(w=>w.keep);
-  let ai=-1; for(let k=0;k<W.length;k++){ if(t>=W[k].start && t<W[k].end){ ai=k; break; } }
+  let ai=-1; for(let k=0;k<W.length;k++){ if(tc>=W[k].start && tc<W[k].end){ ai=k; break; } }
   if(ai<0){ ov.innerHTML=""; return; }
   const a=W[ai], b=(W[ai+1] && W[ai+1].capId===a.capId) ? W[ai+1] : null;
   ov.innerHTML = span(a) + (b? " "+span(b) : "");
@@ -948,7 +961,7 @@ $("#addOvVid").onclick=()=>{ ovType="video"; $("#ovFile").accept="video/*"; $("#
 $("#addOvImg").onclick=()=>{ ovType="image"; $("#ovFile").accept="image/*"; $("#ovFile").click(); };
 $("#ovFile").onchange=e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return;
   const url=URL.createObjectURL(f); const t0=curTime();
-  const o={id:++ovSeq, type:f.type.startsWith("image")?"image":"video", name:f.name, url, file:f, start:t0, end:Math.min(S.duration||t0+3, t0+3)};
+  const o={id:++ovSeq, type:f.type.startsWith("image")?"image":"video", name:f.name, url, file:f, sound:false, px:0.5, py:0.5, start:t0, end:Math.min(S.duration||t0+3, t0+3)};
   if(o.type==="image"){ o.img=new Image(); o.img.src=url; o.img.onload=()=>refreshStage(); }
   else { o.vid=document.createElement("video"); o.vid.src=url; o.vid.muted=true; o.vid.playsInline=true; o.vid.preload="auto"; }
   OV.push(o); renderOvList(); refreshStage(); if(autosaveOn) saveMedia();
@@ -963,48 +976,62 @@ function renderOvList(){
     card.innerHTML=`<div class="thumb" ${o.type==="image"?`style="background-image:url(${o.url})"`:""}>${o.type==="video"?"▶":""}</div>
       <div class="meta"><div class="nm">${esc(o.name)} <span style="color:var(--suave)">(${o.type==="image"?"imagem":"vídeo"})</span></div>
       <div class="t">${fmt(o.start)} → ${fmt(o.end)}</div>
-      <div><button data-a="si" class="ghost">início aqui</button><button data-a="fi" class="ghost">fim aqui</button><button data-a="go" class="ghost">ir ao início</button><button data-a="rm" class="ghost">remover</button></div></div>`;
+      <div><button data-a="si" class="ghost">início aqui</button><button data-a="fi" class="ghost">fim aqui</button><button data-a="go" class="ghost">ir ao início</button>${o.type==="video"?`<button data-a="snd" class="ghost">${o.sound?"🔊 com som":"🔇 sem som"}</button>`:""}<button data-a="rm" class="ghost">remover</button></div>
+      <div style="margin-top:5px;display:flex;gap:8px;align-items:center" title="Enquadrar o vídeo de cima (o de baixo você enquadra arrastando o quadro dourado)">
+        <span class="lbl" style="font-size:11px;color:var(--suave)">enquadrar cima ↔</span><input type="range" class="ovx" min="0" max="1" step="0.02" value="${o.px==null?0.5:o.px}" style="width:70px;accent-color:var(--ouro)">
+        <span class="lbl" style="font-size:11px;color:var(--suave)">↕</span><input type="range" class="ovy" min="0" max="1" step="0.02" value="${o.py==null?0.5:o.py}" style="width:70px;accent-color:var(--ouro)">
+      </div></div>`;
     card.querySelectorAll("button").forEach(b=> b.onclick=()=>{
       const a=b.dataset.a, t=curTime();
       if(a==="si") o.start=Math.min(t, o.end-0.2);
       if(a==="fi") o.end=Math.max(t, o.start+0.2);
       if(a==="go"){ stopPreview(); vid.currentTime=o.start; updateUIAt(o.start,false); }
+      if(a==="snd"){ o.sound=!o.sound; }
       if(a==="rm"){ if(o.vid) o.vid.pause(); OV=OV.filter(x=>x!==o); if(autosaveOn) saveMedia(); }
       renderOvList(); refreshStage();
     });
+    card.querySelector(".ovx").oninput=e=>{ o.px=parseFloat(e.target.value); refreshStage(); };
+    card.querySelector(".ovy").oninput=e=>{ o.py=parseFloat(e.target.value); refreshStage(); };
     el.appendChild(card);
   });
 }
-function drawCover(ctx, el, sx,sy,sw,sh, dx,dy,dw,dh){
+function drawCover(ctx, el, sx,sy,sw,sh, dx,dy,dw,dh){ drawCoverB(ctx,el,sx,sy,sw,sh,dx,dy,dw,dh,0.5,0.5); }
+// cover com "bias" (bx,by em 0..1) = qual parte da fonte fica visível (0.5 = centro)
+function drawCoverB(ctx, el, sx,sy,sw,sh, dx,dy,dw,dh, bx,by){
+  bx=bx==null?0.5:bx; by=by==null?0.5:by;
   const scale=Math.max(dw/sw, dh/sh), vw=dw/scale, vh=dh/scale;
-  ctx.drawImage(el, sx+(sw-vw)/2, sy+(sh-vh)/2, vw, vh, dx,dy,dw,dh);
+  ctx.drawImage(el, sx+(sw-vw)*bx, sy+(sh-vh)*by, vw, vh, dx,dy,dw,dh);
 }
 let _scr=null;
 function getScratch(w,h){ if(!_scr) _scr=document.createElement("canvas"); if(_scr.width!==w)_scr.width=w; if(_scr.height!==h)_scr.height=h; return _scr; }
 function drawOverlayMedia(ctx, o, x,y,w,h){
-  if(o.type==="image"){ if(o.img&&o.img.naturalWidth) drawCover(ctx,o.img,0,0,o.img.naturalWidth,o.img.naturalHeight,x,y,w,h); else {ctx.fillStyle="#000";ctx.fillRect(x,y,w,h);} }
-  else { if(o.vid&&o.vid.readyState>=2) drawCover(ctx,o.vid,0,0,o.vid.videoWidth,o.vid.videoHeight,x,y,w,h); else {ctx.fillStyle="#000";ctx.fillRect(x,y,w,h);} }
+  const bx=o.px==null?0.5:o.px, by=o.py==null?0.5:o.py;
+  if(o.type==="image"){ if(o.img&&o.img.naturalWidth) drawCoverB(ctx,o.img,0,0,o.img.naturalWidth,o.img.naturalHeight,x,y,w,h,bx,by); else {ctx.fillStyle="#000";ctx.fillRect(x,y,w,h);} }
+  else { if(o.vid&&o.vid.readyState>=2) drawCoverB(ctx,o.vid,0,0,o.vid.videoWidth,o.vid.videoHeight,x,y,w,h,bx,by); else {ctx.fillStyle="#000";ctx.fillRect(x,y,w,h);} }
 }
 // desenha o frame composto (crop + zoom in/out + meia-tela com fusão), SEM legenda
-function drawComposite(ctx, W, H, t){
-  const r=cropRect(t), m=r||{cx:0,cy:0,cw:vid.videoWidth,ch:vid.videoHeight,z:1};
+// src = vídeo-fonte do frame principal (vid no preview; o vídeo já-cortado no export)
+function drawComposite(ctx, W, H, t, src){
+  src=src||vid;
+  const r=cropRect(t), m=r||{cx:0,cy:0,cw:src.videoWidth,ch:src.videoHeight,z:1};
   const o=activeOverlay(t);
   if(!o){
     if(m.z!=null && m.z<0.999){ // AFASTAR: fundo desfocado + vídeo menor centralizado
       ctx.save(); ctx.filter=`blur(${Math.max(4,Math.round(W*0.05))}px)`;
-      drawCover(ctx, vid, 0,0,vid.videoWidth,vid.videoHeight, 0,0,W,H);
+      drawCover(ctx, src, 0,0,src.videoWidth,src.videoHeight, 0,0,W,H);
       ctx.filter="none"; ctx.restore();
       ctx.fillStyle="rgba(0,0,0,.22)"; ctx.fillRect(0,0,W,H);
       const dw=W*m.z, dh=H*m.z, dx=(W-dw)/2, dy=(H-dh)/2;
-      ctx.drawImage(vid, m.cx,m.cy,m.cw,m.ch, dx,dy,dw,dh);
+      ctx.drawImage(src, m.cx,m.cy,m.cw,m.ch, dx,dy,dw,dh);
     } else {
-      ctx.drawImage(vid, m.cx,m.cy,m.cw,m.ch, 0,0,W,H);
+      ctx.drawImage(src, m.cx,m.cy,m.cw,m.ch, 0,0,W,H);
     }
     return;
   }
   // MEIA-TELA: você embaixo, conteúdo em cima, com a base do de cima fundindo no de baixo
   const halfH=Math.round(H/2), feather=Math.round(H*0.06);
-  drawCover(ctx, vid, m.cx,m.cy,m.cw,m.ch, 0, halfH-feather, W, H-(halfH-feather)); // você (sobe um pouco pra receber a fusão)
+  const fyB=cropFXY(t).fy; // vertical do "você" segue o quadro (arraste o quadro pra enquadrar embaixo)
+  drawCoverB(ctx, src, m.cx,m.cy,m.cw,m.ch, 0, halfH-feather, W, H-(halfH-feather), 0.5, fyB);
   const sc=getScratch(W,halfH), sx=sc.getContext("2d"); sx.imageSmoothingQuality="high"; sx.clearRect(0,0,W,halfH);
   drawOverlayMedia(sx, o, 0,0,W,halfH);
   const g=sx.createLinearGradient(0,halfH-feather,0,halfH); g.addColorStop(0,"rgba(0,0,0,0)"); g.addColorStop(1,"rgba(0,0,0,1)");
@@ -1027,10 +1054,13 @@ function renderStage(t, playing){
   syncOverlays(t, playing);
   const useCanvas = playing && (cropActive() || activeOverlay(t)) && vid.videoWidth;
   if(useCanvas){
-    const base=cropRect(t); const W=base?base.cw0:vid.videoWidth, H=base?base.ch0:vid.videoHeight;
-    if(cvp.width!==W) cvp.width=W; if(cvp.height!==H) cvp.height=H;
-    drawComposite(cvp.getContext("2d"), W, H, t);
-    const ar=W/H; let dw=st.width, dh=dw/ar; if(dh>st.height){ dh=st.height; dw=dh*ar; }
+    // preview desenha na resolução da TELA (não em 1080) — bem mais leve, não trava
+    const base=cropRect(t); const OW=base?base.cw0:vid.videoWidth, OH=base?base.ch0:vid.videoHeight;
+    const ar=OW/OH; let dw=st.width, dh=dw/ar; if(dh>st.height){ dh=st.height; dw=dh*ar; }
+    const cw=Math.max(2,Math.round(dw)), ch=Math.max(2,Math.round(dh));
+    if(cvp.width!==cw) cvp.width=cw; if(cvp.height!==ch) cvp.height=ch;
+    const cctx=cvp.getContext("2d"); cctx.imageSmoothingQuality="high";
+    drawComposite(cctx, cw, ch, t);
     const left=(st.width-dw)/2, top=(st.height-dh)/2;
     cvp.style.display="block"; cvp.style.left=left+"px"; cvp.style.top=top+"px"; cvp.style.width=dw+"px"; cvp.style.height=dh+"px";
     vid.style.visibility="hidden"; $("#cropBox").hidden=true;
@@ -1074,10 +1104,13 @@ function renderCaps(){
   el.className=""; el.innerHTML="";
   S.caps.forEach((c,i)=>{
     const row=document.createElement("div"); row.className="cap-row";
-    row.innerHTML=`<div class="ct">${fmt(c.start)}–${fmt(c.end)}</div><textarea>${c.text}</textarea>`;
+    const cut = S.segs.length && S.segs.some(s=>!s.keep && c.start>=s.start-0.05 && c.end<=s.end+0.05); // legenda dentro de trecho cortado
+    row.innerHTML=`<div class="ct">${fmtT(c.start)}${cut?' <span style="color:var(--verm)">·cortada</span>':''}</div><textarea>${c.text}</textarea><button class="del" title="Excluir esta legenda">🗑</button>`;
+    if(cut) row.style.opacity=".5";
     const ta=row.querySelector("textarea");
     ta.oninput=()=>{ c.text=ta.value; buildWords(); };
     ta.onfocus=()=>{ stopPreview(); vid.currentTime=c.start; };
+    row.querySelector(".del").onclick=()=>{ S.caps.splice(i,1); buildWords(); renderCaps(); refreshExportButtons(); setStatus("Legenda excluída."); };
     el.appendChild(row);
   });
 }
@@ -1283,99 +1316,87 @@ $("#expMp4").onclick=async ()=>{
   }
 };
 
-// --- WebM com legenda queimada (canvas + MediaRecorder, tempo real) ---
-let burnAC=null, burnSrc=null; // createMediaElementSource só pode ser criado 1x por elemento — cacheia
+// --- Export completo em 2 passos: (1) ffmpeg junta os cortes num vídeo CONTÍNUO,
+//     (2) canvas desenha crop/zoom/meia-tela/legenda SEM pulos → sem travar ---
+let audioCtx=null;
+function getAC(){ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
 $("#expBurn").onclick=async ()=>{
   stopPreview();
   const ranges=keptRanges(); if(!ranges.length){ setStatus("Nada pra exportar."); return; }
-  const caps=capsForCut();
-  const os=outputSize(); // resolução padrão (1080 no lado curto)
-  const cv=document.createElement("canvas");
-  cv.width=os.w; cv.height=os.h;
-  const cx=cv.getContext("2d"); cx.imageSmoothingEnabled=true; cx.imageSmoothingQuality="high";
-  const stream=cv.captureStream(30);
-  // áudio: sua voz (vídeo principal) + o áudio do(s) vídeo(s) da meia-tela
-  if(!burnAC){ burnAC=new AudioContext(); burnSrc=burnAC.createMediaElementSource(vid); }
-  const ac=burnAC; const srcN=burnSrc; const dest=ac.createMediaStreamDestination();
-  if(ac.state==="suspended") await ac.resume();
-  srcN.connect(dest); srcN.connect(ac.destination);
-  const ovNodes=[];
-  for(const o of OV){ if(o.type==="video"&&o.vid){
-    if(!o.srcNode){ try{ o.srcNode=ac.createMediaElementSource(o.vid); }catch(e){ o.srcNode=null; } }
-    if(o.srcNode){ o.vid.muted=false; try{ o.srcNode.connect(dest); o.srcNode.connect(ac.destination); }catch(e){} ovNodes.push(o.srcNode); }
-  }}
-  dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
-  // grava direto em MP4 quando o navegador suporta (Instagram aceita); senão WebM e converte no fim
-  const pick=pickRecMime(); const mp4ok=pick.mp4; const mime=pick.mime;
-  const vbps = Math.min(24_000_000, Math.max(10_000_000, Math.round(os.w*os.h*30*0.18))); // ~0.18 bit/pixel/frame
-  const opts = { videoBitsPerSecond:vbps, audioBitsPerSecond:192_000 }; if(mime) opts.mimeType=mime;
-  const rec = new MediaRecorder(stream, opts);
-  const chunks=[]; rec.ondataavailable=e=>e.data.size&&chunks.push(e.data);
-  const done=new Promise(r=>rec.onstop=r);
+  try{
+    // PASSO 1 — corta (concat) sem crop: vídeo contínuo já sem as pausas/repetições
+    setStatus("Passo 1/2: aplicando os cortes (ffmpeg)…", true);
+    const f=await getFF();
+    const ext=(S.file.name.split(".").pop()||"mp4").toLowerCase();
+    await f.writeFile("in."+ext, await fetchFile(S.file));
+    let fg="", vlab="", alab="";
+    ranges.forEach((r,i)=>{ const d=r.end-r.start;
+      fg+=`[0:v]trim=start=${r.start.toFixed(3)}:end=${r.end.toFixed(3)},setpts=PTS-STARTPTS[v${i}];`;
+      fg+=`[0:a]atrim=start=${r.start.toFixed(3)}:end=${r.end.toFixed(3)},asetpts=PTS-STARTPTS,afade=t=in:st=0:d=0.008,afade=t=out:st=${Math.max(0,d-0.008).toFixed(3)}:d=0.008[a${i}];`;
+      vlab+=`[v${i}]`; alab+=`[a${i}]`; });
+    fg+=`${vlab}${alab}concat=n=${ranges.length}:v=1:a=1[cv][ca]`;
+    await f.exec(["-i","in."+ext,"-filter_complex",fg,"-map","[cv]","-map","[ca]","-c:v","libx264","-preset","veryfast","-crf","16","-pix_fmt","yuv420p","-c:a","aac","-b:a","192k","cut.mp4"]);
+    const cutBlob=new Blob([(await f.readFile("cut.mp4")).buffer],{type:"video/mp4"});
+    const cutUrl=URL.createObjectURL(cutBlob);
 
-  // palavras só dos trechos MANTIDOS, remapeadas pro tempo do corte (some pausas/repetições)
-  buildWords();
-  const words=S.words.filter(w=>w.keep).map(w=>({text:w.text,emph:w.emph,capId:w.capId,start:origToCut(w.start,ranges),end:origToCut(w.end,ranges)}));
-  try{ await document.fonts.load('700 40px Inter'); await document.fonts.load('italic 600 40px "Playfair Display"'); await document.fonts.ready; }catch(e){}
-  let ri=0, cutClock=0; // relógio do tempo final
-  vid.pause(); vid.currentTime=ranges[0].start; await new Promise(r=>vid.onseeked=r);
-  rec.start();
-  setStatus("Gravando com legenda (tempo real)… deixe a aba aberta.", true);
-  let raf;
-  const draw=()=>{
-    syncOverlays(vid.currentTime, true);
-    drawComposite(cx, cv.width, cv.height, vid.currentTime); // crop + zoom + meia-tela neste instante
-    const posY=capPosAt(vid.currentTime).y;
-    if(S.capStyle==="box"){
-      const c=caps.find(c=>cutClock>=c.start && cutClock<c.end);
-      if(c) drawCaption(cx,cv,c.text,posY);
-    }else{
-      const ci=caps.findIndex(c=> cutClock>=c.start-0.05 && cutClock<c.end+0.05);
-      if(ci>=0){ const ws=words.filter(w=>w.capId===ci);
-        if(ws.length){ let ai=ws.findIndex(w=>cutClock<w.end); if(ai<0) ai=ws.length-1; if(cutClock<ws[0].start) ai=0;
-          drawWordCaption(cx,cv, ws[ai], ws[ai+1], posY); } }
-    }
-    raf=requestAnimationFrame(draw);
-  };
-  draw();
-  await vid.play();
-  let last=vid.currentTime;
-  const tick=()=>{
-    cutClock += Math.max(0, vid.currentTime-last); last=vid.currentTime;
-    if(vid.currentTime>=ranges[ri].end-0.03){
-      ri++;
-      if(ri>=ranges.length){ finish(); return; }
-      vid.currentTime=ranges[ri].start; last=ranges[ri].start;
-    }
-    if(!vid.paused) requestAnimationFrame(tick);
-  };
-  requestAnimationFrame(tick);
-  async function finish(){
-    vid.pause(); cancelAnimationFrame(raf);
-    OV.forEach(o=>{ if(o.vid){ o.vid.pause(); o.vid.muted=true; } });
-    rec.stop(); await done;
-    try{ srcN.disconnect(); }catch(e){}
-    ovNodes.forEach(n=>{ try{ n.disconnect(); }catch(e){} });
-    vid.muted=false;
-    const blob=new Blob(chunks,{type:mime});
-    if(mp4ok){
-      download(blob, "reel-final.mp4");
-      setStatus("✅ MP4 exportado — pronto pro Instagram (com legenda" + (OV.length?", meia-tela e áudio do vídeo de cima":"") + ").");
-      return;
-    }
-    // navegador não grava MP4 → converte WebM→MP4 (Instagram não aceita WebM)
-    try{
-      setStatus("Convertendo pra MP4 (Instagram não aceita WebM)…", true);
-      const f=await getFF();
-      await f.writeFile("cap.webm", new Uint8Array(await blob.arrayBuffer()));
-      await f.exec(["-i","cap.webm","-c:v","libx264","-preset","medium","-crf","18","-pix_fmt","yuv420p","-c:a","aac","-b:a","192k","-movflags","+faststart","capout.mp4"]);
-      const d=await f.readFile("capout.mp4");
-      download(new Blob([d.buffer],{type:"video/mp4"}), "reel-final.mp4");
-      setStatus("✅ MP4 exportado — pronto pro Instagram (com legenda" + (OV.length?", meia-tela e áudio do vídeo de cima":"") + ").");
-    }catch(e){ console.error(e);
-      download(blob, "reel-final.webm");
-      setStatus("⚠️ Gravei o vídeo mas não consegui converter pra MP4 (provável bloqueio de internet pro motor ffmpeg). Baixei em WebM — o Instagram não aceita WebM; converta no CapCut/site, ou tente de novo com internet. Detalhe no console (F12).");
-    }
+    // PASSO 2 — toca o vídeo cortado CONTÍNUO e desenha os efeitos + legenda (sem seeks)
+    setStatus("Passo 2/2: gravando com legenda e efeitos… deixe a aba aberta.", true);
+    const bvid=document.createElement("video"); bvid.src=cutUrl; bvid.playsInline=true; bvid.muted=false;
+    await new Promise(r=>{ bvid.onloadeddata=r; });
+    const os=outputSize();
+    const cv=document.createElement("canvas"); cv.width=os.w; cv.height=os.h;
+    const cx=cv.getContext("2d"); cx.imageSmoothingEnabled=true; cx.imageSmoothingQuality="high";
+    const stream=cv.captureStream(30);
+    // áudio: voz (vídeo cortado) + overlays com som ligado
+    const ac=getAC(); if(ac.state==="suspended") await ac.resume();
+    const dest=ac.createMediaStreamDestination();
+    const bsrc=ac.createMediaElementSource(bvid); bsrc.connect(dest); bsrc.connect(ac.destination);
+    const ovNodes=[];
+    for(const o of OV){ if(o.type==="video"&&o.vid&&o.sound){
+      if(!o.srcNode){ try{ o.srcNode=ac.createMediaElementSource(o.vid); }catch(e){ o.srcNode=null; } }
+      if(o.srcNode){ o.vid.muted=false; try{ o.srcNode.connect(dest); o.srcNode.connect(ac.destination); }catch(e){} ovNodes.push(o.srcNode); }
+    }}
+    dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
+    const pick=pickRecMime(); const mp4ok=pick.mp4;
+    const vbps=Math.min(24_000_000, Math.max(10_000_000, Math.round(os.w*os.h*30*0.18)));
+    const opts={ videoBitsPerSecond:vbps, audioBitsPerSecond:192_000 }; if(pick.mime) opts.mimeType=pick.mime;
+    const rec=new MediaRecorder(stream, opts);
+    const chunks=[]; rec.ondataavailable=e=>e.data.size&&chunks.push(e.data);
+    const done=new Promise(r=>rec.onstop=r);
+    const caps=capsForCut(); buildWords();
+    const words=S.words.filter(w=>w.keep).map(w=>({text:w.text,emph:w.emph,capId:w.capId,start:origToCut(w.start,ranges),end:origToCut(w.end,ranges)}));
+    try{ await document.fonts.load('700 40px Inter'); await document.fonts.load('italic 600 40px "Playfair Display"'); await document.fonts.ready; }catch(e){}
+    let raf;
+    const draw=()=>{
+      const ct=bvid.currentTime, to=cutToOrig(ct, ranges); // tempo de corte → tempo original (p/ crop/overlay/keyframes)
+      const tcc=ct-(S.capOffset||0); // sincronia da legenda
+      syncOverlays(to, true);
+      drawComposite(cx, cv.width, cv.height, to, bvid);
+      const posY=capPosAt(to).y;
+      if(S.capStyle==="box"){ const c=caps.find(c=>tcc>=c.start && tcc<c.end); if(c) drawCaption(cx,cv,c.text,posY); }
+      else { const ci=caps.findIndex(c=> tcc>=c.start-0.05 && tcc<c.end+0.05);
+        if(ci>=0){ const ws=words.filter(w=>w.capId===ci); if(ws.length){ let ai=ws.findIndex(w=>tcc<w.end); if(ai<0)ai=ws.length-1; if(tcc<ws[0].start)ai=0; drawWordCaption(cx,cv, ws[ai], ws[ai+1], posY); } } }
+      raf=requestAnimationFrame(draw);
+    };
+    rec.start(); await bvid.play(); draw();
+    bvid.onended=async ()=>{
+      cancelAnimationFrame(raf);
+      OV.forEach(o=>{ if(o.vid){ o.vid.pause(); o.vid.muted=true; } });
+      rec.stop(); await done;
+      try{ bsrc.disconnect(); }catch(e){} ovNodes.forEach(n=>{ try{ n.disconnect(); }catch(e){} });
+      URL.revokeObjectURL(cutUrl);
+      const blob=new Blob(chunks,{type:pick.mime||"video/webm"});
+      if(mp4ok){ download(blob,"reel-final.mp4"); setStatus("✅ MP4 exportado — pronto pro Instagram."); return; }
+      try{ setStatus("Convertendo pra MP4…", true);
+        await f.writeFile("cap.webm", new Uint8Array(await blob.arrayBuffer()));
+        await f.exec(["-i","cap.webm","-c:v","libx264","-preset","medium","-crf","18","-pix_fmt","yuv420p","-c:a","aac","-b:a","192k","-movflags","+faststart","capout.mp4"]);
+        download(new Blob([(await f.readFile("capout.mp4")).buffer],{type:"video/mp4"}), "reel-final.mp4");
+        setStatus("✅ MP4 exportado — pronto pro Instagram.");
+      }catch(e){ console.error(e); download(blob,"reel-final.webm"); setStatus("⚠️ Gravei em WebM mas não converti pra MP4. Converta no CapCut, ou tente com internet."); }
+    };
+  }catch(err){ console.error(err);
+    const net=/load|fetch|network|import|core/i.test(String(err&&err.message));
+    setStatus(net ? "⚠️ Não carregou o motor de vídeo (ffmpeg) — bloqueio de internet/CDN. Recarregue com internet." : "⚠️ Falha no export: "+(err&&err.message||err)+". Veja o console (F12).");
   }
 };
 function softShadow(cx,fs){ cx.shadowColor="rgba(0,0,0,.5)"; cx.shadowBlur=fs*0.22; cx.shadowOffsetX=0; cx.shadowOffsetY=fs*0.04; }
@@ -1419,9 +1440,10 @@ async function saveMedia(){ if(!S.file) return;
 async function saveState(){ if(!S.file) return;
   await idbSet("state",{ duration:S.duration,
     segs:S.segs.map(s=>({start:s.start,end:s.end,type:s.type,keep:s.keep})),
-    caps:S.caps, capStyle:S.capStyle, capSize:S.capSize, capPos:S.capPos, capKeys:S.capKeys, params:S.params,
+    caps:S.caps, capStyle:S.capStyle, capSize:S.capSize, capPos:S.capPos, capKeys:S.capKeys,
+    capOffset:S.capOffset, capSpeed:S.capSpeed, params:S.params,
     crop:{ar:crop.ar,fx:crop.fx,fy:crop.fy,zoom:crop.zoom,fillHeight:crop.fillHeight,keys:crop.keys},
-    overlays:OV.map(o=>({id:o.id,start:o.start,end:o.end})) }); }
+    overlays:OV.map(o=>({id:o.id,start:o.start,end:o.end,sound:!!o.sound,px:o.px,py:o.py})) }); }
 async function saveProject(){ if(!S.file){ setStatus("Abra um vídeo antes de salvar."); return; }
   try{ setStatus("💾 Salvando…",true); await saveMedia(); await saveState();
     autosaveOn=true; if(!autosaveTimer) autosaveTimer=setInterval(()=>{ if(autosaveOn) saveState().catch(()=>{}); }, 4000);
@@ -1440,17 +1462,19 @@ async function restoreProject(){
     S.segs=(state.segs||[]).map(s=>({...s,thumb:null}));
     S.caps=state.caps||[]; S.capStyle=state.capStyle||"word"; S.capSize=state.capSize||1;
     S.capPos=state.capPos||{x:.5,y:.5}; S.capKeys=state.capKeys||[]; if(state.params) S.params=state.params;
+    S.capOffset=state.capOffset||0; S.capSpeed=state.capSpeed||1;
     if(state.crop) Object.assign(crop,{ar:state.crop.ar||0,fx:state.crop.fx??.5,fy:state.crop.fy??.5,zoom:state.crop.zoom||1,fillHeight:!!state.crop.fillHeight,keys:state.crop.keys||[]});
   }
   // overlays: recria elementos a partir dos blobs guardados
   OV=[]; ovSeq=0; const meta=new Map((state&&state.overlays||[]).map(o=>[o.id,o]));
   for(const om of (media.overlays||[])){ if(!om.blob) continue; const url=URL.createObjectURL(om.blob); const t=meta.get(om.id)||{};
-    const ov={id:++ovSeq,type:om.type,name:om.name,url,file:om.blob,start:t.start||0,end:t.end||Math.min(S.duration,(t.start||0)+3)};
+    const ov={id:++ovSeq,type:om.type,name:om.name,url,file:om.blob,sound:!!t.sound,px:t.px==null?0.5:t.px,py:t.py==null?0.5:t.py,start:t.start||0,end:t.end||Math.min(S.duration,(t.start||0)+3)};
     if(om.type==="image"){ ov.img=new Image(); ov.img.src=url; } else { ov.vid=document.createElement("video"); ov.vid.src=url; ov.vid.muted=true; ov.vid.playsInline=true; ov.vid.preload="auto"; }
     OV.push(ov); }
   // reflete nos controles
   $("#fmt").value=String(crop.ar||0); $("#zoom").value=crop.zoom; $("#vZoom").textContent=crop.zoom.toFixed(1)+"×"; $("#fillH").checked=crop.fillHeight;
   $("#capSize").value=S.capSize; $("#vCapSize").textContent=Math.round(S.capSize*100)+"%"; $("#capStyle").value=S.capStyle;
+  $("#capOff").value=S.capOffset; $("#vCapOff").textContent=(S.capOffset>=0?"+":"")+(+S.capOffset).toFixed(2)+"s"; $("#capSpd").value=S.capSpeed; $("#vCapSpd").textContent=(+S.capSpeed).toFixed(2)+"×";
   buildWords(); renderAll(); makeThumbs(); renderCaps(); renderOvList(); updateKeyUI(); updateCapKeyUI(); refreshExportButtons(); refreshStage();
   autosaveOn=true; if(!autosaveTimer) autosaveTimer=setInterval(()=>{ if(autosaveOn) saveState().catch(()=>{}); }, 4000);
   setStatus("↺ Projeto restaurado. (Continua auto-salvando.)");

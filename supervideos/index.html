@@ -1425,6 +1425,7 @@ async function exportRealtime(ranges){
   const { ac, dest, stream, pick, opts } = await newRecorder(cv);
   if(!vidSrc){ try{ vidSrc=ac.createMediaElementSource(vid); }catch(e){ vidSrc=null; } }
   if(vidSrc){ try{ vidSrc.connect(dest); vidSrc.connect(ac.destination); }catch(e){} }
+  else { try{ vid.captureStream().getAudioTracks().forEach(t=>stream.addTrack(t)); }catch(e){} } // fallback se o nó WebAudio não pôde ser criado
   const ovNodes=[];
   for(const o of OV){ if(o.type==="video"&&o.vid&&o.sound){ if(!o.srcNode){ try{o.srcNode=ac.createMediaElementSource(o.vid);}catch(e){o.srcNode=null;} } if(o.srcNode){ o.vid.muted=false; try{o.srcNode.connect(dest);o.srcNode.connect(ac.destination);}catch(e){} ovNodes.push(o.srcNode);} } }
   dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
@@ -1432,7 +1433,7 @@ async function exportRealtime(ranges){
   const done=new Promise(r=>rec.onstop=r);
   const caps=capsForCut(); const words=buildCutWords(ranges);
   try{ await document.fonts.load('700 40px Inter'); await document.fonts.load('italic 600 40px "Playfair Display"'); await document.fonts.ready; }catch(e){}
-  const wasMuted=vid.muted; vid.muted=true; // áudio pelo nó de WebAudio
+  const wasMuted=vid.muted; vid.muted=false; vid.volume=1; // NÃO mutar: mutar o elemento silencia o nó WebAudio no Chrome (ficava sem voz)
   const totalCut=Math.max(0.1, finalDuration()); const fmtLbl = pick.mp4?"MP4":"WebM";
   let ri=0, cutClock=0, last, ended=false, lastPct=-1;
   vid.pause(); vid.currentTime=ranges[0].start; await new Promise(r=>{ vid.onseeked=r; });

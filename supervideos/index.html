@@ -967,6 +967,20 @@ if(window.ResizeObserver) new ResizeObserver(refreshStage).observe(vid);
   box.addEventListener("pointerup",end); box.addEventListener("pointercancel",end);
 })();
 
+// arrastar direto no PREVIEW (quando mostra o resultado: zoom-out, zoom-in, meia-tela) pra alinhar a imagem
+(function(){
+  const cvp=$("#previewCanvas"); let d=null;
+  cvp.addEventListener("pointerdown",e=>{ if(cvp.style.display==="none"||!cropActive()) return; e.preventDefault();
+    cvp.setPointerCapture(e.pointerId); const f=cropFXY(curTime()); crop.fx=f.fx; crop.fy=f.fy; crop.zoom=f.zoom;
+    d={x:e.clientX,y:e.clientY,fx:crop.fx,fy:crop.fy,r:cvp.getBoundingClientRect()}; });
+  cvp.addEventListener("pointermove",e=>{ if(!d) return;
+    crop.fx=Math.min(1,Math.max(0, d.fx+(e.clientX-d.x)/d.r.width));
+    crop.fy=Math.min(1,Math.max(0, d.fy+(e.clientY-d.y)/d.r.height));
+    renderStage(curTime(), preview.on||!vid.paused); });
+  const end=()=>{ if(!d) return; d=null; if(crop.keys.length) setKeyAt(curTime()); refreshStage(); };
+  cvp.addEventListener("pointerup",end); cvp.addEventListener("pointercancel",end);
+})();
+
 // ---------- #4 meia-tela (overlay vídeo/imagem por trecho) ----------
 let OV=[], ovSeq=0, ovType="video";
 function activeOverlay(t){ return OV.find(o=> t>=o.start && t<o.end) || null; }
@@ -1037,12 +1051,13 @@ function drawComposite(ctx, W, H, t, src){
       ctx.filter="none"; ctx.restore();
       ctx.fillStyle="rgba(0,0,0,.15)"; ctx.fillRect(0,0,W,H);
       // região revelada cresce (mostra as laterais/topo reais), limitada pela fonte
+      const fB=cropFXY(t);
       const regW=Math.min(Ws, m.cw/z), regH=Math.min(Hs, m.ch/z);
-      const cX=m.cx+m.cw/2, cY=m.cy+m.ch/2;
-      const regX=Math.max(0, Math.min(Ws-regW, cX-regW/2));
-      const regY=Math.max(0, Math.min(Hs-regH, cY-regH/2));
+      const regX=Math.round((Ws-regW)*fB.fx);   // fx escolhe a parte horizontal revelada
+      const regY=Math.round((Hs-regH)*fB.fy);
       const s=Math.min(W/regW, H/regH), fgW=regW*s, fgH=regH*s; // encaixa inteiro (contain)
-      ctx.drawImage(src, regX,regY,regW,regH, (W-fgW)/2,(H-fgH)/2,fgW,fgH);
+      // fx/fy alinham a imagem no quadro (arraste na tela ou o quadro dourado)
+      ctx.drawImage(src, regX,regY,regW,regH, (W-fgW)*fB.fx, (H-fgH)*fB.fy, fgW,fgH);
     } else {
       ctx.drawImage(src, m.cx,m.cy,m.cw,m.ch, 0,0,W,H);
     }
@@ -1085,6 +1100,7 @@ function renderStage(t, playing){
     drawComposite(cctx, cw, ch, t);
     const left=(st.width-dw)/2, top=(st.height-dh)/2;
     cvp.style.display="block"; cvp.style.left=left+"px"; cvp.style.top=top+"px"; cvp.style.width=dw+"px"; cvp.style.height=dh+"px";
+    cvp.style.pointerEvents="auto"; cvp.style.cursor="move";
     vid.style.visibility="hidden"; $("#cropBox").hidden=true;
     frameRect={left,top,w:dw,h:dh};
   }else{

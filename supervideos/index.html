@@ -1344,6 +1344,8 @@ async function getFF(){
 $("#expMp4").onclick=async ()=>{
   stopPreview();
   const ranges=keptRanges(); if(!ranges.length){ setStatus("Nada pra exportar — todos os trechos estão cortados."); return; }
+  const canMT=(typeof crossOriginIsolated!=="undefined"&&crossOriginIsolated)&&(typeof SharedArrayBuffer!=="undefined");
+  if(!canMT && S.duration>90){ setStatus("Sem o ⚡ turbo, esse corte limpo (ffmpeg) é lento pra vídeo longo — pode levar vários minutos. Dica: use o 'MP4 completo' (grava em tempo real). Carregando…", true); }
   try{
     setStatus("Carregando o motor de vídeo (ffmpeg)…", true);
     const f=await getFF();
@@ -1376,87 +1378,123 @@ $("#expMp4").onclick=async ()=>{
   }
 };
 
-// --- Export completo em 2 passos: (1) ffmpeg junta os cortes num vídeo CONTÍNUO,
-//     (2) canvas desenha crop/zoom/meia-tela/legenda SEM pulos → sem travar ---
-let audioCtx=null;
+// --- Export completo — ADAPTATIVO:
+//   • SEM turbo (single-thread): grava em TEMPO REAL (rápido, sem ffmpeg no Chrome que grava MP4 direto)
+//   • COM turbo (multi-thread): 2 passos (ffmpeg junta os cortes → canvas desenha) = sem micro-travadas
+let audioCtx=null, vidSrc=null;
 function getAC(){ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+async function finalizeExport(chunks, pick){
+  const blob=new Blob(chunks,{type:pick.mime||"video/webm"});
+  if(pick.mp4){ download(blob,"reel-final.mp4"); setStatus("✅ MP4 exportado — pronto pro Instagram."); return; }
+  try{ setStatus("Convertendo pra MP4… (pode demorar)", true);
+    const f=await getFF();
+    await f.writeFile("cap.webm", new Uint8Array(await blob.arrayBuffer()));
+    await f.exec(["-i","cap.webm","-c:v","libx264","-preset","medium","-crf","18","-pix_fmt","yuv420p","-c:a","aac","-b:a","192k","-movflags","+faststart","capout.mp4"]);
+    download(new Blob([(await f.readFile("capout.mp4")).buffer],{type:"video/mp4"}), "reel-final.mp4");
+    setStatus("✅ MP4 exportado — pronto pro Instagram.");
+  }catch(e){ console.error(e); download(blob,"reel-final.webm"); setStatus("⚠️ Gravei em WebM mas não converti pra MP4 (seu navegador não grava MP4 direto). Converta no CapCut, ou use o Chrome atualizado."); }
+}
+function buildCutWords(ranges){ buildWords(); return S.words.filter(w=>w.keep).map(w=>({text:w.text,emph:w.emph,capId:w.capId,start:origToCut(w.start,ranges),end:origToCut(w.end,ranges)})); }
+function drawCaptionsAt(cx,cv,caps,words,cutT){
+  const tcc=cutT-(S.capOffset||0), posY=capPosAt(cutToOrig(cutT,keptRanges())).y;
+  if(S.capStyle==="box"){ const c=caps.find(c=>tcc>=c.start && tcc<c.end); if(c) drawCaption(cx,cv,c.text,posY); }
+  else { const ci=caps.findIndex(c=> tcc>=c.start-0.05 && tcc<c.end+0.05);
+    if(ci>=0){ const ws=words.filter(w=>w.capId===ci); if(ws.length){ let ai=ws.findIndex(w=>tcc<w.end); if(ai<0)ai=ws.length-1; if(tcc<ws[0].start)ai=0; drawWordCaption(cx,cv, ws[ai], ws[ai+1], posY); } } }
+}
+async function newRecorder(cv){
+  const stream=cv.captureStream(30);
+  const ac=getAC(); if(ac.state==="suspended") await ac.resume();
+  const dest=ac.createMediaStreamDestination();
+  const pick=pickRecMime();
+  const os={w:cv.width,h:cv.height}; const vbps=Math.min(24_000_000, Math.max(10_000_000, Math.round(os.w*os.h*30*0.18)));
+  const opts={ videoBitsPerSecond:vbps, audioBitsPerSecond:192_000 }; if(pick.mime) opts.mimeType=pick.mime;
+  return { ac, dest, stream, pick, opts };
+}
+async function exportRealtime(ranges){
+  setStatus("Gravando com legenda e efeitos (tempo real)… deixe a aba aberta.", true);
+  const os=outputSize();
+  const cv=document.createElement("canvas"); cv.width=os.w; cv.height=os.h;
+  const cx=cv.getContext("2d"); cx.imageSmoothingEnabled=true; cx.imageSmoothingQuality="high";
+  const { ac, dest, stream, pick, opts } = await newRecorder(cv);
+  if(!vidSrc){ try{ vidSrc=ac.createMediaElementSource(vid); }catch(e){ vidSrc=null; } }
+  if(vidSrc){ try{ vidSrc.connect(dest); vidSrc.connect(ac.destination); }catch(e){} }
+  const ovNodes=[];
+  for(const o of OV){ if(o.type==="video"&&o.vid&&o.sound){ if(!o.srcNode){ try{o.srcNode=ac.createMediaElementSource(o.vid);}catch(e){o.srcNode=null;} } if(o.srcNode){ o.vid.muted=false; try{o.srcNode.connect(dest);o.srcNode.connect(ac.destination);}catch(e){} ovNodes.push(o.srcNode);} } }
+  dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
+  const rec=new MediaRecorder(stream, opts); const chunks=[]; rec.ondataavailable=e=>e.data.size&&chunks.push(e.data);
+  const done=new Promise(r=>rec.onstop=r);
+  const caps=capsForCut(); const words=buildCutWords(ranges);
+  try{ await document.fonts.load('700 40px Inter'); await document.fonts.load('italic 600 40px "Playfair Display"'); await document.fonts.ready; }catch(e){}
+  const wasMuted=vid.muted; vid.muted=true; // áudio pelo nó de WebAudio
+  let ri=0, cutClock=0, last;
+  vid.pause(); vid.currentTime=ranges[0].start; await new Promise(r=>{ vid.onseeked=r; });
+  last=vid.currentTime;
+  let raf;
+  const draw=()=>{ const to=vid.currentTime; syncOverlays(to, true); drawComposite(cx, cv.width, cv.height, to, vid); drawCaptionsAt(cx,cv,caps,words,cutClock); raf=requestAnimationFrame(draw); };
+  rec.start(); await vid.play(); draw();
+  const tick=()=>{
+    cutClock += Math.max(0, vid.currentTime-last); last=vid.currentTime;
+    if(vid.currentTime>=ranges[ri].end-0.03){ ri++; if(ri>=ranges.length){ finish(); return; } vid.currentTime=ranges[ri].start; last=ranges[ri].start; }
+    if(!vid.paused) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+  async function finish(){
+    vid.pause(); cancelAnimationFrame(raf);
+    OV.forEach(o=>{ if(o.vid){ o.vid.pause(); o.vid.muted=true; } });
+    rec.stop(); await done;
+    try{ vidSrc&&vidSrc.disconnect(); }catch(e){} ovNodes.forEach(n=>{ try{ n.disconnect(); }catch(e){} });
+    vid.muted=wasMuted;
+    await finalizeExport(chunks, pick);
+  }
+}
+async function exportTwoPass(ranges){
+  setStatus("Passo 1/2: aplicando os cortes (ffmpeg turbo)…", true);
+  const f=await getFF();
+  const ext=(S.file.name.split(".").pop()||"mp4").toLowerCase();
+  await f.writeFile("in."+ext, await fetchFile(S.file));
+  let fg="", vlab="", alab="";
+  ranges.forEach((r,i)=>{ const d=r.end-r.start;
+    fg+=`[0:v]trim=start=${r.start.toFixed(3)}:end=${r.end.toFixed(3)},setpts=PTS-STARTPTS[v${i}];`;
+    fg+=`[0:a]atrim=start=${r.start.toFixed(3)}:end=${r.end.toFixed(3)},asetpts=PTS-STARTPTS,afade=t=in:st=0:d=0.008,afade=t=out:st=${Math.max(0,d-0.008).toFixed(3)}:d=0.008[a${i}];`;
+    vlab+=`[v${i}]`; alab+=`[a${i}]`; });
+  fg+=`${vlab}${alab}concat=n=${ranges.length}:v=1:a=1[cv][ca]`;
+  await f.exec(["-i","in."+ext,"-filter_complex",fg,"-map","[cv]","-map","[ca]","-c:v","libx264","-preset","ultrafast","-crf","18","-pix_fmt","yuv420p","-c:a","aac","-b:a","192k","cut.mp4"]);
+  const cutUrl=URL.createObjectURL(new Blob([(await f.readFile("cut.mp4")).buffer],{type:"video/mp4"}));
+  setStatus("Passo 2/2: gravando com legenda e efeitos… deixe a aba aberta.", true);
+  const bvid=document.createElement("video"); bvid.src=cutUrl; bvid.playsInline=true; bvid.muted=false;
+  await new Promise(r=>{ bvid.onloadeddata=r; });
+  const os=outputSize();
+  const cv=document.createElement("canvas"); cv.width=os.w; cv.height=os.h;
+  const cx=cv.getContext("2d"); cx.imageSmoothingEnabled=true; cx.imageSmoothingQuality="high";
+  const { ac, dest, stream, pick, opts } = await newRecorder(cv);
+  const bsrc=ac.createMediaElementSource(bvid); bsrc.connect(dest); bsrc.connect(ac.destination);
+  const ovNodes=[];
+  for(const o of OV){ if(o.type==="video"&&o.vid&&o.sound){ if(!o.srcNode){ try{o.srcNode=ac.createMediaElementSource(o.vid);}catch(e){o.srcNode=null;} } if(o.srcNode){ o.vid.muted=false; try{o.srcNode.connect(dest);o.srcNode.connect(ac.destination);}catch(e){} ovNodes.push(o.srcNode);} } }
+  dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
+  const rec=new MediaRecorder(stream, opts); const chunks=[]; rec.ondataavailable=e=>e.data.size&&chunks.push(e.data);
+  const done=new Promise(r=>rec.onstop=r);
+  const caps=capsForCut(); const words=buildCutWords(ranges);
+  try{ await document.fonts.load('700 40px Inter'); await document.fonts.load('italic 600 40px "Playfair Display"'); await document.fonts.ready; }catch(e){}
+  let raf;
+  const draw=()=>{ const ct=bvid.currentTime, to=cutToOrig(ct, ranges); syncOverlays(to, true); drawComposite(cx, cv.width, cv.height, to, bvid); drawCaptionsAt(cx,cv,caps,words,ct); raf=requestAnimationFrame(draw); };
+  rec.start(); await bvid.play(); draw();
+  bvid.onended=async ()=>{
+    cancelAnimationFrame(raf);
+    OV.forEach(o=>{ if(o.vid){ o.vid.pause(); o.vid.muted=true; } });
+    rec.stop(); await done;
+    try{ bsrc.disconnect(); }catch(e){} ovNodes.forEach(n=>{ try{ n.disconnect(); }catch(e){} });
+    URL.revokeObjectURL(cutUrl);
+    await finalizeExport(chunks, pick);
+  };
+}
 $("#expBurn").onclick=async ()=>{
   stopPreview();
   const ranges=keptRanges(); if(!ranges.length){ setStatus("Nada pra exportar."); return; }
-  try{
-    // PASSO 1 — corta (concat) sem crop: vídeo contínuo já sem as pausas/repetições
-    setStatus("Passo 1/2: aplicando os cortes (ffmpeg)…", true);
-    const f=await getFF();
-    const ext=(S.file.name.split(".").pop()||"mp4").toLowerCase();
-    await f.writeFile("in."+ext, await fetchFile(S.file));
-    let fg="", vlab="", alab="";
-    ranges.forEach((r,i)=>{ const d=r.end-r.start;
-      fg+=`[0:v]trim=start=${r.start.toFixed(3)}:end=${r.end.toFixed(3)},setpts=PTS-STARTPTS[v${i}];`;
-      fg+=`[0:a]atrim=start=${r.start.toFixed(3)}:end=${r.end.toFixed(3)},asetpts=PTS-STARTPTS,afade=t=in:st=0:d=0.008,afade=t=out:st=${Math.max(0,d-0.008).toFixed(3)}:d=0.008[a${i}];`;
-      vlab+=`[v${i}]`; alab+=`[a${i}]`; });
-    fg+=`${vlab}${alab}concat=n=${ranges.length}:v=1:a=1[cv][ca]`;
-    await f.exec(["-i","in."+ext,"-filter_complex",fg,"-map","[cv]","-map","[ca]","-c:v","libx264","-preset","veryfast","-crf","16","-pix_fmt","yuv420p","-c:a","aac","-b:a","192k","cut.mp4"]);
-    const cutBlob=new Blob([(await f.readFile("cut.mp4")).buffer],{type:"video/mp4"});
-    const cutUrl=URL.createObjectURL(cutBlob);
-
-    // PASSO 2 — toca o vídeo cortado CONTÍNUO e desenha os efeitos + legenda (sem seeks)
-    setStatus("Passo 2/2: gravando com legenda e efeitos… deixe a aba aberta.", true);
-    const bvid=document.createElement("video"); bvid.src=cutUrl; bvid.playsInline=true; bvid.muted=false;
-    await new Promise(r=>{ bvid.onloadeddata=r; });
-    const os=outputSize();
-    const cv=document.createElement("canvas"); cv.width=os.w; cv.height=os.h;
-    const cx=cv.getContext("2d"); cx.imageSmoothingEnabled=true; cx.imageSmoothingQuality="high";
-    const stream=cv.captureStream(30);
-    // áudio: voz (vídeo cortado) + overlays com som ligado
-    const ac=getAC(); if(ac.state==="suspended") await ac.resume();
-    const dest=ac.createMediaStreamDestination();
-    const bsrc=ac.createMediaElementSource(bvid); bsrc.connect(dest); bsrc.connect(ac.destination);
-    const ovNodes=[];
-    for(const o of OV){ if(o.type==="video"&&o.vid&&o.sound){
-      if(!o.srcNode){ try{ o.srcNode=ac.createMediaElementSource(o.vid); }catch(e){ o.srcNode=null; } }
-      if(o.srcNode){ o.vid.muted=false; try{ o.srcNode.connect(dest); o.srcNode.connect(ac.destination); }catch(e){} ovNodes.push(o.srcNode); }
-    }}
-    dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
-    const pick=pickRecMime(); const mp4ok=pick.mp4;
-    const vbps=Math.min(24_000_000, Math.max(10_000_000, Math.round(os.w*os.h*30*0.18)));
-    const opts={ videoBitsPerSecond:vbps, audioBitsPerSecond:192_000 }; if(pick.mime) opts.mimeType=pick.mime;
-    const rec=new MediaRecorder(stream, opts);
-    const chunks=[]; rec.ondataavailable=e=>e.data.size&&chunks.push(e.data);
-    const done=new Promise(r=>rec.onstop=r);
-    const caps=capsForCut(); buildWords();
-    const words=S.words.filter(w=>w.keep).map(w=>({text:w.text,emph:w.emph,capId:w.capId,start:origToCut(w.start,ranges),end:origToCut(w.end,ranges)}));
-    try{ await document.fonts.load('700 40px Inter'); await document.fonts.load('italic 600 40px "Playfair Display"'); await document.fonts.ready; }catch(e){}
-    let raf;
-    const draw=()=>{
-      const ct=bvid.currentTime, to=cutToOrig(ct, ranges); // tempo de corte → tempo original (p/ crop/overlay/keyframes)
-      const tcc=ct-(S.capOffset||0); // sincronia da legenda
-      syncOverlays(to, true);
-      drawComposite(cx, cv.width, cv.height, to, bvid);
-      const posY=capPosAt(to).y;
-      if(S.capStyle==="box"){ const c=caps.find(c=>tcc>=c.start && tcc<c.end); if(c) drawCaption(cx,cv,c.text,posY); }
-      else { const ci=caps.findIndex(c=> tcc>=c.start-0.05 && tcc<c.end+0.05);
-        if(ci>=0){ const ws=words.filter(w=>w.capId===ci); if(ws.length){ let ai=ws.findIndex(w=>tcc<w.end); if(ai<0)ai=ws.length-1; if(tcc<ws[0].start)ai=0; drawWordCaption(cx,cv, ws[ai], ws[ai+1], posY); } } }
-      raf=requestAnimationFrame(draw);
-    };
-    rec.start(); await bvid.play(); draw();
-    bvid.onended=async ()=>{
-      cancelAnimationFrame(raf);
-      OV.forEach(o=>{ if(o.vid){ o.vid.pause(); o.vid.muted=true; } });
-      rec.stop(); await done;
-      try{ bsrc.disconnect(); }catch(e){} ovNodes.forEach(n=>{ try{ n.disconnect(); }catch(e){} });
-      URL.revokeObjectURL(cutUrl);
-      const blob=new Blob(chunks,{type:pick.mime||"video/webm"});
-      if(mp4ok){ download(blob,"reel-final.mp4"); setStatus("✅ MP4 exportado — pronto pro Instagram."); return; }
-      try{ setStatus("Convertendo pra MP4…", true);
-        await f.writeFile("cap.webm", new Uint8Array(await blob.arrayBuffer()));
-        await f.exec(["-i","cap.webm","-c:v","libx264","-preset","medium","-crf","18","-pix_fmt","yuv420p","-c:a","aac","-b:a","192k","-movflags","+faststart","capout.mp4"]);
-        download(new Blob([(await f.readFile("capout.mp4")).buffer],{type:"video/mp4"}), "reel-final.mp4");
-        setStatus("✅ MP4 exportado — pronto pro Instagram.");
-      }catch(e){ console.error(e); download(blob,"reel-final.webm"); setStatus("⚠️ Gravei em WebM mas não converti pra MP4. Converta no CapCut, ou tente com internet."); }
-    };
-  }catch(err){ console.error(err);
-    const net=/load|fetch|network|import|core/i.test(String(err&&err.message));
-    setStatus(net ? "⚠️ Não carregou o motor de vídeo (ffmpeg) — bloqueio de internet/CDN. Recarregue com internet." : "⚠️ Falha no export: "+(err&&err.message||err)+". Veja o console (F12).");
+  const canMT=(typeof crossOriginIsolated!=="undefined"&&crossOriginIsolated)&&(typeof SharedArrayBuffer!=="undefined");
+  try{ if(canMT) await exportTwoPass(ranges); else await exportRealtime(ranges); }
+  catch(err){ console.error(err);
+    const net=/load|fetch|network|import|core|worker/i.test(String(err&&err.message));
+    setStatus(net ? "⚠️ Motor de vídeo bloqueado (CDN/worker). Veja o console (F12)." : "⚠️ Falha no export: "+(err&&err.message||err)+". (Console F12.)");
   }
 };
 function softShadow(cx,fs){ cx.shadowColor="rgba(0,0,0,.5)"; cx.shadowBlur=fs*0.22; cx.shadowOffsetX=0; cx.shadowOffsetY=fs*0.04; }

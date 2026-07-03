@@ -101,8 +101,15 @@
   .tabs{display:flex; gap:4px; padding:8px 14px 0}
   .tab{padding:7px 12px; border-radius:8px 8px 0 0; cursor:pointer; color:var(--suave); font-size:12px; border:1px solid transparent}
   .tab.active{color:var(--texto); background:var(--preto2); border-color:var(--linha); border-bottom-color:var(--preto2)}
+  .tabs.steps{gap:6px; padding:10px 14px 0}
+  .steps .tab{display:flex; align-items:center; gap:7px; font-weight:600; flex:1; justify-content:center}
+  .steps .stepn{display:inline-flex; align-items:center; justify-content:center; width:19px; height:19px; border-radius:50%; background:var(--linha); color:var(--suave); font-size:11px; font-weight:700; flex:none}
+  .steps .tab.active .stepn{background:var(--ouro); color:#000}
+  .stephead{font-weight:700; font-size:14px; margin:2px 0 10px; color:var(--texto)}
+  .stepnav{display:flex; align-items:center; gap:8px; margin-top:16px; padding-top:12px; border-top:1px solid var(--linha)}
   .panel{flex:1; overflow:auto; padding:10px 14px}
   .panel.hidden{display:none}
+  .controls{border-radius:10px; margin-bottom:10px}
 
   /* filmstrip / segment list */
   .seg-card{display:flex; flex-direction:column; align-items:stretch; gap:0; padding:8px; border:1px solid var(--linha); border-radius:10px; margin-bottom:8px; background:var(--preto2)}
@@ -193,62 +200,44 @@
       <div id="tl"><div id="ph"></div></div>
       <span class="time" id="time">0:00 / 0:00</span>
     </div>
-    <div class="cropbar">
-      <span class="lbl">Formato de saída:</span>
-      <select id="fmt" disabled>
-        <option value="0">Original (sem corte)</option>
-        <option value="0.5625">9:16 — Reels / Stories (vertical)</option>
-        <option value="0.8">4:5 — Feed (vertical)</option>
-        <option value="1">1:1 — Quadrado</option>
-        <option value="1.7778">16:9 — Horizontal (YouTube)</option>
-      </select>
-      <label class="lbl" style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--suave)" title="Mantém 100% da altura do vídeo e corta só os lados (bom pra vídeo de celular mais alto que 9:16)">
-        <input type="checkbox" id="fillH"> altura cheia</label>
-      <label class="lbl" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--suave)">Zoom <b id="vZoom" style="color:var(--ouro)">1.0×</b>
-        <input type="range" id="zoom" min="0.5" max="3" step="0.05" value="1" disabled style="width:90px;accent-color:var(--ouro)"></label>
-      <button id="mkKey" class="ghost" disabled title="Grava posição e zoom do quadro neste instante. Marque em vários momentos pra ele te acompanhar/dar zoom.">📍 Marcar posição</button>
-      <span class="lbl" id="keyCount" style="font-size:12px;color:var(--suave)"></span>
-      <button id="clrKeys" class="ghost" disabled>limpar pontos</button>
-      <span class="hint" id="cropHint">arraste o quadro; ajuste o zoom; marque a posição em vários momentos pra ele seguir/ampliar</span>
-    </div>
   </section>
 
-  <!-- DIREITA: controle e revisão -->
+  <!-- DIREITA: passos de trabalho, na ordem -->
   <section class="pane">
-    <div class="controls">
-      <div class="row">
-        <div class="ctl">
-          <label>Sensibilidade do silêncio <b id="vThr">-38 dB</b></label>
-          <input type="range" id="thr" min="-60" max="-20" value="-38" />
-        </div>
-        <div class="ctl">
-          <label>Pausa mínima pra cortar <b id="vMin">600 ms</b></label>
-          <input type="range" id="min" min="150" max="2000" step="50" value="600" />
-        </div>
-        <div class="ctl">
-          <label>Folga (respiro nas pontas) <b id="vPad">140 ms</b></label>
-          <input type="range" id="pad" min="0" max="400" step="10" value="140" />
-        </div>
-      </div>
-      <div class="row">
-        <button id="detect" class="primary" disabled>✂︎ Detectar pausas</button>
-        <button id="keepAll" class="ghost" disabled>Manter tudo</button>
-        <span class="hint">menos sensível = corta só pausas longas (mais seguro). A folga evita o "picotado".</span>
-      </div>
+    <div class="tabs steps">
+      <div class="tab active" data-tab="segs"><span class="stepn">1</span> Cortar pausas</div>
+      <div class="tab" data-tab="caps"><span class="stepn">2</span> Legenda</div>
+      <div class="tab" data-tab="split"><span class="stepn">3</span> Formato &amp; meia-tela</div>
+      <div class="tab" data-tab="export"><span class="stepn">4</span> Salvar &amp; exportar</div>
     </div>
 
-    <div class="summary" id="summary">
-      <span class="empty" style="padding:6px">Abra um vídeo e clique em <b style="font-size:inherit">Detectar pausas</b> pra começar.</span>
-    </div>
-
-    <div class="tabs">
-      <div class="tab active" data-tab="segs">🎞️ Trechos</div>
-      <div class="tab" data-tab="caps">💬 Legendas</div>
-      <div class="tab" data-tab="split">🖼️ Meia-tela</div>
-      <div class="tab" data-tab="export">⬇︎ Exportar</div>
-    </div>
-
+    <!-- PASSO 1 — cortar pausas e repetições -->
     <div class="panel" id="panel-segs">
+      <div class="stephead">Passo 1 · Tire as pausas e as falas repetidas</div>
+      <div class="controls">
+        <div class="row">
+          <div class="ctl">
+            <label>Sensibilidade do silêncio <b id="vThr">-38 dB</b></label>
+            <input type="range" id="thr" min="-60" max="-20" value="-38" />
+          </div>
+          <div class="ctl">
+            <label>Pausa mínima pra cortar <b id="vMin">600 ms</b></label>
+            <input type="range" id="min" min="150" max="2000" step="50" value="600" />
+          </div>
+          <div class="ctl">
+            <label>Folga (respiro nas pontas) <b id="vPad">140 ms</b></label>
+            <input type="range" id="pad" min="0" max="400" step="10" value="140" />
+          </div>
+        </div>
+        <div class="row">
+          <button id="detect" class="primary" disabled>✂︎ Detectar pausas</button>
+          <button id="keepAll" class="ghost" disabled>Manter tudo</button>
+          <span class="hint">menos sensível = corta só pausas longas (mais seguro). A folga evita o "picotado".</span>
+        </div>
+      </div>
+      <div class="summary" id="summary">
+        <span class="empty" style="padding:6px">Abra um vídeo e clique em <b style="font-size:inherit">Detectar pausas</b> pra começar.</span>
+      </div>
       <div class="review-bar" id="reviewBar">
         <button id="rvAll" disabled>▶︎ Ouvir tudo (revisar)</button>
         <button id="rvRestart" class="ghost" disabled title="Recomeçar do início">⏮</button>
@@ -262,9 +251,11 @@
         <button id="rvFinal" class="ghost" disabled title="As pausas/cortes já estão aplicados. Aqui você só vai pra aba Exportar — o vídeo só é gerado quando você escolher um export.">Ir para Exportar ⬇︎</button>
       </div>
       <div id="segList"><div class="empty">Sem trechos ainda.</div></div>
+      <div class="stepnav"><span class="grow"></span><button class="primary" data-goto="caps">Próximo: Legenda →</button></div>
     </div>
 
     <div class="panel hidden" id="panel-caps">
+      <div class="stephead">Passo 2 · Coloque a legenda (palavra a palavra)</div>
       <div class="row" style="margin-bottom:10px">
         <button id="genCaps" class="ghost" disabled>✨ Gerar legendas (automático)</button>
         <button id="importSrt" class="ghost">Importar .srt</button>
@@ -289,20 +280,47 @@
       </div>
       <div class="hint" style="margin-bottom:8px">💡 <b>Itálico nas palavras‑chave:</b> escreva entre asteriscos — ex.: <b>do *medo*</b> deixa só "medo" no itálico serifado. &nbsp;·&nbsp; <b>Posição:</b> arraste a legenda na tela (vídeo pausado). Pra ela ficar em <b>lugares diferentes por trecho</b>, posicione e clique <b>📍 Fixar posição aqui</b> em vários momentos. Sem fixar, vale uma posição só.</div>
       <div id="capList" class="empty">Nenhuma legenda. Gere automaticamente ou importe um .srt.</div>
+      <div class="stepnav"><button class="ghost" data-goto="segs">← Cortes</button><span class="grow"></span><button class="primary" data-goto="split">Próximo: Formato →</button></div>
     </div>
 
     <div class="panel hidden" id="panel-split">
+      <div class="stephead">Passo 3 · Formato, enquadramento e meia-tela</div>
+      <div class="cropbar">
+        <span class="lbl">Formato de saída:</span>
+        <select id="fmt" disabled>
+          <option value="0">Original (sem corte)</option>
+          <option value="0.5625">9:16 — Reels / Stories (vertical)</option>
+          <option value="0.8">4:5 — Feed (vertical)</option>
+          <option value="1">1:1 — Quadrado</option>
+          <option value="1.7778">16:9 — Horizontal (YouTube)</option>
+        </select>
+        <label class="lbl" style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--suave)" title="Mantém 100% da altura do vídeo e corta só os lados (bom pra vídeo de celular mais alto que 9:16)">
+          <input type="checkbox" id="fillH"> altura cheia</label>
+        <label class="lbl" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--suave)">Zoom <b id="vZoom" style="color:var(--ouro)">1.0×</b>
+          <input type="range" id="zoom" min="0.5" max="3" step="0.05" value="1" disabled style="width:90px;accent-color:var(--ouro)"></label>
+        <button id="mkKey" class="ghost" disabled title="Grava posição e zoom do quadro neste instante. Marque em vários momentos pra ele te acompanhar/dar zoom.">📍 Marcar posição</button>
+        <span class="lbl" id="keyCount" style="font-size:12px;color:var(--suave)"></span>
+        <button id="clrKeys" class="ghost" disabled>limpar pontos</button>
+        <span class="hint" id="cropHint">arraste o quadro no vídeo (à esquerda); ajuste o zoom; marque a posição em vários momentos pra ele seguir/ampliar</span>
+      </div>
+      <div class="stephead" style="font-size:13px;margin:16px 0 8px">Meia-tela (vídeo/imagem em cima)</div>
       <div class="row" style="margin-bottom:8px">
         <button id="addOvVid" class="ghost" disabled>＋ Vídeo em cima</button>
         <button id="addOvImg" class="ghost" disabled>＋ Imagem em cima</button>
         <input type="file" id="ovFile" accept="video/*,image/*" hidden />
       </div>
-      <div class="hint" style="margin-bottom:8px">A meia-tela aparece só nos trechos que você criar: <b>vai até o ponto do vídeo</b>, adicione o vídeo/imagem, e use <b>“início aqui”/“fim aqui”</b> pra marcar quando ele aparece. Em cima fica o conteúdo; embaixo, você. (Sai no export <b>WebM com legenda</b>.)</div>
+      <div class="hint" style="margin-bottom:8px">A meia-tela aparece só nos trechos que você criar: <b>vai até o ponto do vídeo</b>, adicione o vídeo/imagem, e use <b>“início aqui”/“fim aqui”</b> pra marcar quando ele aparece. Em cima fica o conteúdo; embaixo, você.</div>
       <div id="ovList" class="empty">Nenhuma meia-tela. Adicione um vídeo ou imagem.</div>
+      <div class="stepnav"><button class="ghost" data-goto="caps">← Legenda</button><span class="grow"></span><button class="primary" data-goto="export">Próximo: Salvar &amp; exportar →</button></div>
     </div>
 
     <div class="panel hidden" id="panel-export">
-      <p class="hint" style="margin-top:0">As pausas, repetições e cortes <b>já estão aplicados</b> no resultado. O vídeo só é <b>gerado quando você clica num export aqui embaixo</b> — então faça todos os ajustes antes (zoom, legenda, meia-tela). Dica: confira no <b>“▶︎ Ouvir tudo”</b> primeiro.</p>
+      <div class="stephead">Passo 4 · Salve e exporte</div>
+      <div class="seg-card" style="flex-direction:column; align-items:stretch; gap:8px">
+        <div><b>Salve antes de exportar</b><div class="hint">Guarda tudo (vídeo + edições) neste navegador. Se fechar a aba ou der ruim no export, você recupera com <b>↺ Restaurar</b> lá em cima — sem refazer nada.</div></div>
+        <button id="btnSave2" class="ghost" disabled>💾 Salvar projeto</button>
+      </div>
+      <p class="hint" style="margin-top:4px">As pausas, repetições e cortes <b>já estão aplicados</b> no resultado. O vídeo só é <b>gerado quando você clica num export aqui embaixo</b> — então faça todos os ajustes antes (zoom, legenda, meia-tela). Dica: confira no <b>“▶︎ Ouvir tudo”</b> (Passo 1) primeiro.</p>
       <div class="seg-card" style="flex-direction:column; align-items:stretch; gap:10px">
         <div><b>1. Completo — MP4 pronto pro Instagram</b><div class="hint">Legenda queimada, meia-tela, zoom e quadro que te acompanha. Grava em tempo real (~a duração do vídeo) e entrega <b>MP4 (H.264/AAC)</b> que o Instagram aceita. Inclui o áudio do vídeo de cima na meia-tela.</div></div>
         <button id="expBurn" class="primary" disabled>Exportar MP4 completo (com legenda)</button>
@@ -372,7 +390,7 @@ async function loadVideo(file){
   S.duration=vid.duration;
   $("#play").disabled=false; $("#detect").disabled=false; $("#keepAll").disabled=false; $("#genCaps").disabled=false;
   $("#expEdl").disabled=false; $("#fmt").disabled=false; $("#findReps").disabled=false;
-  $("#zoom").disabled=false; $("#addOvVid").disabled=false; $("#addOvImg").disabled=false; $("#btnSave").disabled=false;
+  $("#zoom").disabled=false; $("#addOvVid").disabled=false; $("#addOvImg").disabled=false; $("#btnSave").disabled=false; $("#btnSave2").disabled=false;
   refreshStage(); updateKeyUI();
   updateTime();
   setStatus("Lendo o áudio pra achar as pausas…", true);
@@ -1117,6 +1135,10 @@ document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   t.classList.add("active");
   ["segs","caps","split","export"].forEach(n=>$("#panel-"+n).classList.toggle("hidden", n!==t.dataset.tab));
 });
+// navegação "próximo passo / voltar" dentro dos painéis
+document.querySelectorAll("[data-goto]").forEach(b=>b.onclick=()=>{ ensureTab(b.dataset.goto); const p=$("#panel-"+b.dataset.goto); if(p) p.scrollTop=0; });
+// botão salvar do Passo 4 dispara o mesmo salvar do topo
+$("#btnSave2").onclick=()=>$("#btnSave").click();
 
 // ---------- legendas ----------
 $("#importSrt").onclick=()=>$("#srtFile").click();
@@ -1418,7 +1440,7 @@ async function newRecorder(cv){
   return { ac, dest, stream, pick, opts };
 }
 async function exportRealtime(ranges){
-  setStatus("Gravando com legenda e efeitos (tempo real)… deixe a aba aberta.", true);
+  setStatus("Preparando a gravação…", true);
   const os=outputSize();
   const cv=document.createElement("canvas"); cv.width=os.w; cv.height=os.h;
   const cx=cv.getContext("2d"); cx.imageSmoothingEnabled=true; cx.imageSmoothingQuality="high";
@@ -1435,31 +1457,49 @@ async function exportRealtime(ranges){
   try{ await document.fonts.load('700 40px Inter'); await document.fonts.load('italic 600 40px "Playfair Display"'); await document.fonts.ready; }catch(e){}
   const wasMuted=vid.muted; vid.muted=false; vid.volume=1; // NÃO mutar: mutar o elemento silencia o nó WebAudio no Chrome (ficava sem voz)
   const totalCut=Math.max(0.1, finalDuration()); const fmtLbl = pick.mp4?"MP4":"WebM";
-  let ri=0, cutClock=0, last, ended=false, lastPct=-1;
-  vid.pause(); vid.currentTime=ranges[0].start; await new Promise(r=>{ vid.onseeked=r; });
-  last=vid.currentTime;
-  let raf;
-  const draw=()=>{ const to=vid.currentTime; syncOverlays(to, true); drawComposite(cx, cv.width, cv.height, to, vid); drawCaptionsAt(cx,cv,caps,words,cutClock); raf=requestAnimationFrame(draw); };
-  rec.start(); await vid.play(); draw();
-  vid.onended=()=>{ finish(); };
-  const tick=()=>{
-    cutClock += Math.max(0, vid.currentTime-last); last=vid.currentTime;
-    const pct=Math.min(99, Math.round(cutClock/totalCut*100));
-    if(pct!==lastPct){ lastPct=pct; setStatus(`Gravando ${fmtLbl}… ${pct}% (deixe a aba ABERTA e visível)`, true); }
-    if(vid.currentTime>=ranges[ri].end-0.03){ ri++; if(ri>=ranges.length){ finish(); return; } vid.currentTime=ranges[ri].start; last=ranges[ri].start; }
-    if(!vid.paused && !ended) requestAnimationFrame(tick);
+  const seekTo=(t)=>new Promise(r=>{ const h=()=>{ vid.removeEventListener("seeked",h); r(); }; vid.addEventListener("seeked",h); try{ vid.currentTime=t; }catch(e){ vid.removeEventListener("seeked",h); r(); } });
+
+  // ESTRATÉGIA: nunca dar seek COM o gravador ativo. Toca cada trecho mantido em velocidade normal;
+  // nos vazios (pausas/cortes) PAUSA o gravador e dá seek — gravador pausado não captura nada,
+  // então as partes removidas não podem voltar e não há engasgo de seek na imagem.
+  let cutClock=0, capturing=false, last=0, ended=false, lastPct=-1, raf;
+  const draw=()=>{
+    const to=vid.currentTime;
+    if(capturing){ cutClock += Math.max(0, Math.min(0.1, to-last)); last=to;
+      const pct=Math.min(99, Math.round(cutClock/totalCut*100));
+      if(pct!==lastPct){ lastPct=pct; setStatus(`Gravando ${fmtLbl}… ${pct}% (deixe a aba ABERTA e visível)`, true); }
+    } else { last=to; }
+    syncOverlays(to, true);
+    drawComposite(cx, cv.width, cv.height, to, vid);
+    drawCaptionsAt(cx,cv,caps,words,cutClock);
+    raf=requestAnimationFrame(draw);
   };
-  requestAnimationFrame(tick);
   async function finish(){
     if(ended) return; ended=true;
-    vid.onended=null; vid.pause(); cancelAnimationFrame(raf);
+    cancelAnimationFrame(raf); vid.pause();
     OV.forEach(o=>{ if(o.vid){ o.vid.pause(); o.vid.muted=true; } });
-    try{ rec.stop(); }catch(e){} await done;
+    try{ if(rec.state!=="inactive") rec.stop(); }catch(e){} await done;
     try{ vidSrc&&vidSrc.disconnect(); }catch(e){} ovNodes.forEach(n=>{ try{ n.disconnect(); }catch(e){} });
     vid.muted=wasMuted;
     setStatus("Finalizando o arquivo…", true);
     await finalizeExport(chunks, pick);
   }
+  const reachEnd=(endT)=>new Promise(res=>{ const w=()=>{ if(ended||vid.ended||vid.currentTime>=endT-0.02){ res(); return; } requestAnimationFrame(w); }; requestAnimationFrame(w); });
+
+  vid.pause(); await seekTo(ranges[0].start); last=vid.currentTime;
+  rec.start(); draw();
+  try{
+    for(let i=0;i<ranges.length && !ended;i++){
+      if(i>0){ await seekTo(ranges[i].start); last=vid.currentTime; } // seek acontece com o gravador PAUSADO
+      capturing=true;
+      await vid.play();
+      if(rec.state==="paused") try{ rec.resume(); }catch(e){} // retoma a captura só depois que já está tocando
+      await reachEnd(ranges[i].end);
+      capturing=false; vid.pause();
+      if(i<ranges.length-1 && !ended && rec.state==="recording") try{ rec.pause(); }catch(e){} // pausa a captura ANTES do próximo seek
+    }
+  }catch(e){ console.error(e); }
+  await finish();
 }
 async function exportTwoPass(ranges){
   setStatus("Passo 1/2: aplicando os cortes (ffmpeg turbo)…", true);

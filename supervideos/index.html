@@ -7,6 +7,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Playfair+Display:ital,wght@1,500;1,600&display=swap" rel="stylesheet">
+<!-- Liga o "cross-origin isolation" (COOP/COEP) quando a página é HOSPEDADA, pra habilitar o ffmpeg multi-thread (export mais rápido).
+     Precisa do arquivo coi-serviceworker.js do lado. Aberto por file:// não faz nada (segue single-thread). -->
+<script>window.coi = { coepCredentialless: () => true, quiet: true };</script>
+<script src="coi-serviceworker.js"></script>
 <style>
   :root{
     --preto:#0a0a0b; --preto2:#121214; --preto3:#1b1b1f;
@@ -161,6 +165,7 @@
 <header>
   <h1>Editor de <span>Reels</span> — corte por pausa, com revisão</h1>
   <span class="hint">o vídeo fica só no seu navegador · nada é enviado pra internet</span>
+  <span id="mtBadge" class="hint" style="color:var(--ouro)"></span>
   <span class="grow"></span>
   <button id="btnSave" class="ghost" disabled title="Guarda tudo (vídeo + edições) no seu navegador. Depois de salvar, ele passa a auto-salvar.">💾 Salvar</button>
   <button id="btnRestore" class="ghost" disabled title="Recarrega o último projeto salvo neste navegador.">↺ Restaurar</button>
@@ -1271,22 +1276,21 @@ function pickRecMime(){
   for(const t of webm) if(MR.isTypeSupported(t)) return {mime:t,mp4:false};
   return {mime:"",mp4:false};
 }
-// --- ffmpeg.wasm (corte limpo + conversão WebM→MP4) — carrega de vários CDNs ---
-let ff=null;
+// --- ffmpeg.wasm — usa a versão MULTI-THREAD quando a página está isolada (COOP/COEP), senão single-thread ---
+let ff=null, ffMT=false;
 async function getFF(){
   if(ff) return ff;
   const inst=new FFmpeg();
   inst.on("progress",({progress})=> setStatus(`Processando vídeo… ${Math.round((progress||0)*100)}%`, true));
-  const bases=[
-    "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd",
-    "https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd",
-    "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd"
-  ];
+  const canMT = (typeof crossOriginIsolated!=="undefined" && crossOriginIsolated) && (typeof SharedArrayBuffer!=="undefined");
+  const st=[ "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd",
+             "https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd" ];
+  const mt=[ "https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.10/dist/umd",
+             "https://unpkg.com/@ffmpeg/core-mt@0.12.10/dist/umd" ];
+  const tryLoad=async(base)=>{ await inst.load({ coreURL:`${base}/ffmpeg-core.js`, wasmURL:`${base}/ffmpeg-core.wasm` }); };
   let lastErr;
-  for(const base of bases){
-    try{ await inst.load({ coreURL:`${base}/ffmpeg-core.js`, wasmURL:`${base}/ffmpeg-core.wasm` }); ff=inst; return ff; }
-    catch(e){ lastErr=e; console.warn("ffmpeg load falhou em",base,e); }
-  }
+  if(canMT){ for(const base of mt){ try{ await tryLoad(base); ff=inst; ffMT=true; return ff; }catch(e){ lastErr=e; console.warn("ffmpeg MT falhou em",base,e); } } }
+  for(const base of st){ try{ await tryLoad(base); ff=inst; ffMT=false; return ff; }catch(e){ lastErr=e; console.warn("ffmpeg falhou em",base,e); } }
   throw lastErr||new Error("não carregou o ffmpeg");
 }
 $("#expMp4").onclick=async ()=>{
@@ -1491,6 +1495,9 @@ $("#btnRestore").onclick=restoreProject;
 // na abertura, se houver projeto salvo, habilita Restaurar
 (async()=>{ try{ const media=await idbGet("media"); if(media&&media.videoBlob){ $("#btnRestore").disabled=false;
   setStatus(`↺ Há um projeto salvo ("${media.videoName||"vídeo"}"). Clique em "Restaurar" pra continuar de onde parou.`); } }catch(e){} })();
+
+// indicador de turbo (ffmpeg multi-thread) — só quando a página está isolada (hospedada com o service worker/headers)
+try{ if(typeof crossOriginIsolated!=="undefined" && crossOriginIsolated && typeof SharedArrayBuffer!=="undefined"){ $("#mtBadge").textContent="⚡ export turbo (multi-thread)"; } }catch(e){}
 
 setStatus("Abra um vídeo pra começar (ou ↺ Restaurar, se já salvou algo).");
 </script>

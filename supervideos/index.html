@@ -1029,13 +1029,20 @@ function drawComposite(ctx, W, H, t, src){
   const r=cropRect(t), m=r||{cx:0,cy:0,cw:src.videoWidth,ch:src.videoHeight,z:1};
   const o=activeOverlay(t);
   if(!o){
-    if(m.z!=null && m.z<0.999){ // AFASTAR: fundo desfocado + vídeo menor centralizado
-      ctx.save(); ctx.filter=`blur(${Math.max(4,Math.round(W*0.05))}px)`;
-      drawCover(ctx, src, 0,0,src.videoWidth,src.videoHeight, 0,0,W,H);
+    if(m.z!=null && m.z<0.999){ // AFASTAR: REVELA mais da cena (nítido), encaixado, com desfoque só no topo/base
+      const Ws=src.videoWidth, Hs=src.videoHeight, z=m.z;
+      // fundo: a própria cena, desfocada, preenchendo (evita barras pretas)
+      ctx.save(); ctx.filter=`blur(${Math.max(6,Math.round(W*0.045))}px)`;
+      drawCoverB(ctx, src, 0,0,Ws,Hs, 0,0,W,H, 0.5,0.5);
       ctx.filter="none"; ctx.restore();
-      ctx.fillStyle="rgba(0,0,0,.22)"; ctx.fillRect(0,0,W,H);
-      const dw=W*m.z, dh=H*m.z, dx=(W-dw)/2, dy=(H-dh)/2;
-      ctx.drawImage(src, m.cx,m.cy,m.cw,m.ch, dx,dy,dw,dh);
+      ctx.fillStyle="rgba(0,0,0,.15)"; ctx.fillRect(0,0,W,H);
+      // região revelada cresce (mostra as laterais/topo reais), limitada pela fonte
+      const regW=Math.min(Ws, m.cw/z), regH=Math.min(Hs, m.ch/z);
+      const cX=m.cx+m.cw/2, cY=m.cy+m.ch/2;
+      const regX=Math.max(0, Math.min(Ws-regW, cX-regW/2));
+      const regY=Math.max(0, Math.min(Hs-regH, cY-regH/2));
+      const s=Math.min(W/regW, H/regH), fgW=regW*s, fgH=regH*s; // encaixa inteiro (contain)
+      ctx.drawImage(src, regX,regY,regW,regH, (W-fgW)/2,(H-fgH)/2,fgW,fgH);
     } else {
       ctx.drawImage(src, m.cx,m.cy,m.cw,m.ch, 0,0,W,H);
     }

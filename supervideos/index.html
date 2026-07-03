@@ -1065,7 +1065,9 @@ let frameRect=null;
 function renderStage(t, playing){
   const cvp=$("#previewCanvas"), st=$("#stage").getBoundingClientRect();
   syncOverlays(t, playing);
-  const useCanvas = playing && (cropActive() || activeOverlay(t)) && vid.videoWidth;
+  // mostra o RESULTADO no canvas quando toca, OU quando há zoom-out (afastar) — pra ver o efeito mesmo parado
+  const effZoom = (cropFXY(t).zoom)||1;
+  const useCanvas = (playing || effZoom<0.999) && (cropActive() || activeOverlay(t)) && vid.videoWidth;
   if(useCanvas){
     // preview desenha na resolução da TELA (não em 1080) — bem mais leve, não trava
     const base=cropRect(t); const OW=base?base.cw0:vid.videoWidth, OH=base?base.ch0:vid.videoHeight;

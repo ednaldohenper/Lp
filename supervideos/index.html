@@ -665,13 +665,45 @@ function tokenize(text){
   }
   return out;
 }
+const normWord=s=>(s||"").toLowerCase().replace(/[^\p{L}\p{N}]/gu,"");
+// monta as legendas a partir das PALAVRAS com tempo real do Whisper: agrupa em frases e guarda o tempo de cada palavra (wtimes)
+function capsFromWords(wc){
+  let rw = (wc||[]).filter(c=>c.text && c.text.trim() && c.timestamp && c.timestamp[0]!=null)
+    .map(c=>({ text:c.text.trim(), start:c.timestamp[0], end:(c.timestamp[1]!=null? c.timestamp[1] : c.timestamp[0]+0.3) }));
+  // remove repetição colada (artefato do overlap/stride do Whisper): mesma palavra quase no mesmo tempo
+  rw = rw.filter((w,i)=>{ const p=rw[i-1]; if(!p) return true; return !(normWord(w.text)===normWord(p.text) && (w.start-p.start)<0.12); });
+  if(!rw.length) return [];
+  const caps=[]; let cur=[];
+  const flush=()=>{ if(!cur.length) return;
+    caps.push({ start:cur[0].start, end:cur[cur.length-1].end,
+      text:cur.map(x=>x.text).join(" ").replace(/\s+([,.!?…:;])/g,"$1"),
+      wtimes:cur.map(x=>[x.start,x.end]) });
+    cur=[]; };
+  rw.forEach((w,i)=>{ cur.push(w); const next=rw[i+1];
+    const endsSent=/[.!?…]$/.test(w.text);
+    const gap = next ? next.start - w.end : Infinity;
+    if(endsSent || !next || gap>0.6 || cur.length>=7) flush();
+  });
+  flush();
+  return caps;
+}
 function buildWordsFrom(caps){
   const out=[]; const spd=Math.max(0.5, S.capSpeed||1);
   caps.forEach((c,ci)=>{
     const toks=tokenize(c.text); if(!toks.length) return;
-    const dur=Math.max(0.24, c.end-c.start), per=(dur/toks.length)/spd; // ritmo: <1 alarga cada palavra
-    toks.forEach((tk,k)=> out.push({text:tk.text, emph:tk.emph, start:c.start+k*per, end:c.start+(k+1)*per, capId:ci}));
+    if(c.wtimes && c.wtimes.length===toks.length){
+      // tempo REAL de cada palavra (segue a cadência da fala)
+      toks.forEach((tk,k)=>{ let s=c.wtimes[k][0], e=c.wtimes[k][1]; if(!(e>s)) e=s+0.12;
+        out.push({text:tk.text, emph:tk.emph, start:s, end:e, capId:ci}); });
+    } else {
+      // fallback: divide igualmente (quando não há tempo por palavra)
+      const dur=Math.max(0.24, c.end-c.start), per=(dur/toks.length)/spd;
+      toks.forEach((tk,k)=> out.push({text:tk.text, emph:tk.emph, start:c.start+k*per, end:c.start+(k+1)*per, capId:ci}));
+    }
   });
+  // continuidade: cada palavra fica na tela até a próxima COMEÇAR (sem piscar, sem repetir), respeitando pausas longas
+  out.sort((a,b)=>a.start-b.start);
+  for(let k=0;k<out.length-1;k++){ const gap=out[k+1].start-out[k].start; if(gap>0.02 && gap<1.2) out[k].end=out[k+1].start; }
   return out;
 }
 function buildWords(){
@@ -733,8 +765,7 @@ function renderCaption(t){
   const W=S.words.filter(w=>w.keep);
   let ai=-1; for(let k=0;k<W.length;k++){ if(tc>=W[k].start && tc<W[k].end){ ai=k; break; } }
   if(ai<0){ ov.innerHTML=""; return; }
-  const a=W[ai], b=(W[ai+1] && W[ai+1].capId===a.capId) ? W[ai+1] : null;
-  ov.innerHTML = span(a) + (b? " "+span(b) : "");
+  ov.innerHTML = span(W[ai]); // uma palavra por vez, no tempo real da fala (estilo Reels)
 }
 $("#capStyle").onchange=()=>{ S.capStyle=$("#capStyle").value; renderCaption(preview.posOrig||vid.currentTime||0); };
 
@@ -1206,11 +1237,21 @@ async function genCaptions(){
   }
   setStatus("Transcrevendo o áudio (roda no seu navegador, pode levar alguns minutos)…", true);
   const mono = await to16kMono(S.audio);
-  const out = await transcriber(mono, { language:"portuguese", task:"transcribe", return_timestamps:true, chunk_length_s:30, stride_length_s:5 });
-  const chunks = out.chunks || [];
-  S.caps = chunks.filter(c=>c.text && c.text.trim()).map(c=>({
-    start:c.timestamp[0]||0, end:c.timestamp[1]||((c.timestamp[0]||0)+2), text:c.text.trim()
-  }));
+  // 1ª tentativa: timestamps POR PALAVRA (cada palavra fica na tela no tempo real da fala — segue a cadência)
+  let caps=null;
+  try{
+    const out = await transcriber(mono, { language:"portuguese", task:"transcribe", return_timestamps:"word", chunk_length_s:30, stride_length_s:5 });
+    caps = capsFromWords(out.chunks||[]);
+  }catch(e){ console.warn("timestamps por palavra indisponíveis, usando por frase:", e); }
+  // fallback: por frase (dividido igualmente) se o modelo não devolver palavras
+  if(!caps || !caps.length){
+    const out = await transcriber(mono, { language:"portuguese", task:"transcribe", return_timestamps:true, chunk_length_s:30, stride_length_s:5 });
+    const chunks = out.chunks || [];
+    caps = chunks.filter(c=>c.text && c.text.trim()).map(c=>({
+      start:c.timestamp[0]||0, end:c.timestamp[1]||((c.timestamp[0]||0)+2), text:c.text.trim()
+    }));
+  }
+  S.caps = caps;
   renderCaps(); renderSegs(); refreshExportButtons();
   return S.caps.length>0;
 }
@@ -1435,7 +1476,7 @@ function drawCaptionsAt(cx,cv,caps,words,cutT){
   const tcc=cutT-(S.capOffset||0), posY=capPosAt(cutToOrig(cutT,keptRanges())).y;
   if(S.capStyle==="box"){ const c=caps.find(c=>tcc>=c.start && tcc<c.end); if(c) drawCaption(cx,cv,c.text,posY); }
   else { const ci=caps.findIndex(c=> tcc>=c.start-0.05 && tcc<c.end+0.05);
-    if(ci>=0){ const ws=words.filter(w=>w.capId===ci); if(ws.length){ let ai=ws.findIndex(w=>tcc<w.end); if(ai<0)ai=ws.length-1; if(tcc<ws[0].start)ai=0; drawWordCaption(cx,cv, ws[ai], ws[ai+1], posY); } } }
+    if(ci>=0){ const ws=words.filter(w=>w.capId===ci); if(ws.length){ let ai=ws.findIndex(w=>tcc<w.end); if(ai<0)ai=ws.length-1; if(tcc<ws[0].start)ai=0; drawWordCaption(cx,cv, ws[ai], null, posY); } } }
 }
 async function newRecorder(cv){
   const stream=cv.captureStream(30);

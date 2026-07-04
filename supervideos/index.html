@@ -274,6 +274,8 @@
           <option value="word">Palavra a palavra</option>
           <option value="box">Frase inteira</option>
         </select>
+        <label class="lbl" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--suave)" title="Cor da palavra em destaque (a que está sendo falada) no estilo Grupo. Escolha branco (#FFFFFF) se não quiser destaque nenhum.">Destaque
+          <input type="color" id="capColor" value="#D9A85B" style="width:32px;height:22px;padding:0;border:1px solid var(--linha);border-radius:4px;background:none;cursor:pointer"></label>
         <label class="lbl" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--suave)">Tamanho <b id="vCapSize" style="color:var(--ouro)">100%</b>
           <input type="range" id="capSize" min="0.6" max="2" step="0.05" value="1" style="width:80px;accent-color:var(--ouro)"></label>
         <label class="lbl" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--suave)" title="Se a legenda estiver adiantada, aumente o atraso">Sincronia <b id="vCapOff" style="color:var(--ouro)">0.00s</b>
@@ -367,6 +369,7 @@ const S = {
   caps:[],               // [{start,end,text}]  em tempo ORIGINAL
   words:[],              // palavras com tempo (derivadas das caps) p/ legenda animada
   capStyle:"group",      // "group" (grupo 2 linhas) | "word" (palavra a palavra) | "box" (frase)
+  capColor:"#D9A85B",    // cor da palavra em destaque no estilo Grupo (o usuário escolhe)
   capSize:1,             // multiplicador do tamanho da legenda
   capPos:{x:0.5, y:0.5}, // posição de trabalho (fração do quadro) — arrastável
   capKeys:[],            // posições por trecho [{t,x,y}] (vazio = fixa em capPos)
@@ -611,7 +614,7 @@ function openTrim(seg, card){
     if(drag==="a") a=Math.min(f,b-0.02); else b=Math.max(f,a+0.02); draw(); });
   bar.addEventListener("pointermove",e=>{ if(!drag)return; const f=xFrac(e); if(drag==="a") a=Math.min(f,b-0.02); else b=Math.max(f,a+0.02); draw(); });
   const up=()=>{ drag=null; }; bar.addEventListener("pointerup",up); bar.addEventListener("pointercancel",up);
-  wrap.querySelector('[data-t="play"]').onclick=()=>{ stopPreview(); vid.currentTime=seg.start; vid.play();
+  wrap.querySelector('[data-t="play"]').onclick=()=>{ stopPreview(); try{ if(vidSrc) getAC().resume(); }catch(e){} vid.currentTime=seg.start; vid.play();
     const loop=()=>{ if(vid.paused) return; const f=(vid.currentTime-seg.start)/dur; ph.style.left=(Math.min(1,Math.max(0,f))*100)+"%";
       if(vid.currentTime>=seg.end-0.02){ vid.pause(); return; } trimRAF=requestAnimationFrame(loop); };
     trimRAF=requestAnimationFrame(loop); };
@@ -637,7 +640,7 @@ function renderTimeline(){
 // ---------- player ----------
 vid.onplay =()=> $("#play").textContent="❚❚";
 vid.onpause=()=>{ $("#play").textContent="▶︎"; if(typeof refreshStage==="function") refreshStage(); };
-$("#play").onclick=()=>{ stopPreview(); if(vid.ended && lastPos<S.duration-0.1) vid.currentTime=lastPos; vid.paused?vid.play():vid.pause(); };
+$("#play").onclick=()=>{ stopPreview(); try{ if(vidSrc) getAC().resume(); }catch(e){} if(vid.ended && lastPos<S.duration-0.1) vid.currentTime=lastPos; vid.paused?vid.play():vid.pause(); };
 
 // atualiza overlay/destaque/timeline para um tempo (no relógio ORIGINAL do vídeo)
 let lastPlayIdx=-1, lastPos=0;
@@ -786,14 +789,16 @@ function renderCaption(t){
     // grupo de palavras (2 linhas) com a palavra atual em destaque; segue o tempo real da fala
     const ids=chunkWords(W); const gid=ids[ai]; let html="";
     W.forEach((w,k)=>{ if(ids[k]!==gid) return; const cur=(k===ai);
-      const cls = w.emph ? (cur?"w-em w-cur":"w-em") : (cur?"w-cur":"w-on");
-      html += `<span class="${cls}">${esc(w.text)}</span>`; });
+      const cls = w.emph ? "w-em" : "w-on";
+      const style = cur ? ` style="color:${S.capColor||'#D9A85B'}"` : "";
+      html += `<span class="${cls}"${style}>${esc(w.text)}</span>`; });
     ov.innerHTML = `<span class="capgroup">${html}</span>`;
     return;
   }
   ov.innerHTML = span(W[ai]); // uma palavra por vez, no tempo real da fala (estilo Reels)
 }
 $("#capStyle").onchange=()=>{ S.capStyle=$("#capStyle").value; renderCaption(preview.posOrig||vid.currentTime||0); };
+$("#capColor").oninput=e=>{ S.capColor=e.target.value; renderCaption(preview.posOrig||vid.currentTime||0); };
 
 // ===== MOTOR "OUVIR SÓ O ÚTIL" =====
 // Toca o ÁUDIO apenas dos trechos mantidos, colado e SEM emenda audível (Web Audio).
@@ -1560,7 +1565,9 @@ async function exportRealtime(ranges){
     cancelAnimationFrame(raf); vid.pause();
     OV.forEach(o=>{ if(o.vid){ o.vid.pause(); o.vid.muted=true; } });
     try{ if(rec.state!=="inactive") rec.stop(); }catch(e){} await done;
-    try{ vidSrc&&vidSrc.disconnect(); }catch(e){} ovNodes.forEach(n=>{ try{ n.disconnect(); }catch(e){} });
+    // desconecta só do GRAVADOR (dest); mantém vidSrc → alto-falante, senão o vídeo toca MUDO depois do export
+    try{ vidSrc&&vidSrc.disconnect(dest); }catch(e){}
+    ovNodes.forEach(n=>{ try{ n.disconnect(); }catch(e){} });
     vid.muted=wasMuted;
     setStatus("Finalizando o arquivo…", true);
     await finalizeExport(chunks, pick);
@@ -1677,7 +1684,7 @@ function drawGroupCaption(cx,cv,gw,curIdx,posY){
   softShadow(cx,fs); cx.textBaseline="middle"; cx.textAlign="left";
   L.forEach((ln,li)=>{ const lineW=ln.reduce((s,it,idx)=>s+it.wdt+(idx?spaceW:0),0);
     let x=(cv.width-lineW)/2; const cy=top+li*lh+lh/2;
-    ln.forEach((it,idx)=>{ if(idx) x+=spaceW; cx.font=it.font; cx.fillStyle=it.cur?"#D9A85B":"#fff"; cx.fillText(it.txt,x,cy); x+=it.wdt; }); });
+    ln.forEach((it,idx)=>{ if(idx) x+=spaceW; cx.font=it.font; cx.fillStyle=it.cur?(S.capColor||"#D9A85B"):"#fff"; cx.fillText(it.txt,x,cy); x+=it.wdt; }); });
   clearShadow(cx);
 }
 
@@ -1694,7 +1701,7 @@ async function saveMedia(){ if(!S.file) return;
 async function saveState(){ if(!S.file) return;
   await idbSet("state",{ duration:S.duration,
     segs:S.segs.map(s=>({start:s.start,end:s.end,type:s.type,keep:s.keep})),
-    caps:S.caps, capStyle:S.capStyle, capSize:S.capSize, capPos:S.capPos, capKeys:S.capKeys,
+    caps:S.caps, capStyle:S.capStyle, capColor:S.capColor, capSize:S.capSize, capPos:S.capPos, capKeys:S.capKeys,
     capOffset:S.capOffset, capSpeed:S.capSpeed, params:S.params,
     crop:{ar:crop.ar,fx:crop.fx,fy:crop.fy,zoom:crop.zoom,fillHeight:crop.fillHeight,keys:crop.keys},
     overlays:OV.map(o=>({id:o.id,start:o.start,end:o.end,sound:!!o.sound,px:o.px,py:o.py})) }); }
@@ -1714,7 +1721,7 @@ async function restoreProject(){
   await loadVideo(file);
   if(state){
     S.segs=(state.segs||[]).map(s=>({...s,thumb:null}));
-    S.caps=state.caps||[]; S.capStyle=state.capStyle||"word"; S.capSize=state.capSize||1;
+    S.caps=state.caps||[]; S.capStyle=state.capStyle||"group"; S.capColor=state.capColor||"#D9A85B"; S.capSize=state.capSize||1;
     S.capPos=state.capPos||{x:.5,y:.5}; S.capKeys=state.capKeys||[]; if(state.params) S.params=state.params;
     S.capOffset=state.capOffset||0; S.capSpeed=state.capSpeed||1;
     if(state.crop) Object.assign(crop,{ar:state.crop.ar||0,fx:state.crop.fx??.5,fy:state.crop.fy??.5,zoom:state.crop.zoom||1,fillHeight:!!state.crop.fillHeight,keys:state.crop.keys||[]});
@@ -1727,7 +1734,7 @@ async function restoreProject(){
     OV.push(ov); }
   // reflete nos controles
   $("#fmt").value=String(crop.ar||0); $("#zoom").value=crop.zoom; $("#vZoom").textContent=crop.zoom.toFixed(1)+"×"; $("#fillH").checked=crop.fillHeight;
-  $("#capSize").value=S.capSize; $("#vCapSize").textContent=Math.round(S.capSize*100)+"%"; $("#capStyle").value=S.capStyle;
+  $("#capSize").value=S.capSize; $("#vCapSize").textContent=Math.round(S.capSize*100)+"%"; $("#capStyle").value=S.capStyle; if($("#capColor")) $("#capColor").value=S.capColor||"#D9A85B";
   $("#capOff").value=S.capOffset; $("#vCapOff").textContent=(S.capOffset>=0?"+":"")+(+S.capOffset).toFixed(2)+"s"; $("#capSpd").value=S.capSpeed; $("#vCapSpd").textContent=(+S.capSpeed).toFixed(2)+"×";
   buildWords(); renderAll(); makeThumbs(); renderCaps(); renderOvList(); updateKeyUI(); updateCapKeyUI(); refreshExportButtons(); refreshStage();
   autosaveOn=true; if(!autosaveTimer) autosaveTimer=setInterval(()=>{ if(autosaveOn) saveState().catch(()=>{}); }, 4000);

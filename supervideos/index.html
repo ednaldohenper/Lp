@@ -198,8 +198,8 @@
       </div>
     </div>
     <div class="transport">
-      <button id="play" disabled>▶︎</button>
-      <button id="previewResult" class="ghost" disabled title="Tocar pulando os trechos cortados">▶︎ só o resultado</button>
+      <button id="play" disabled title="Play/Pausa — toca o RESULTADO (cortes pulados) com legenda, de onde parou. Funciona em qualquer aba. (ESPAÇO)">▶︎</button>
+      <button id="previewResult" class="ghost" disabled title="Toca o vídeo ORIGINAL, com as pausas, sem cortes — pra comparar.">▶︎ original</button>
       <div id="tl"><div id="ph"></div></div>
       <span class="time" id="time">0:00 / 0:00</span>
     </div>
@@ -399,7 +399,7 @@ async function loadVideo(file){
   setStatus("Carregando vídeo…", true);
   await new Promise(r=> vid.onloadedmetadata=r);
   S.duration=vid.duration;
-  $("#play").disabled=false; $("#detect").disabled=false; $("#keepAll").disabled=false; $("#genCaps").disabled=false;
+  $("#play").disabled=false; $("#previewResult").disabled=false; $("#detect").disabled=false; $("#keepAll").disabled=false; $("#genCaps").disabled=false;
   $("#expEdl").disabled=false; $("#fmt").disabled=false; $("#findReps").disabled=false;
   $("#zoom").disabled=false; $("#addOvVid").disabled=false; $("#addOvImg").disabled=false; $("#btnSave").disabled=false; $("#btnSave2").disabled=false;
   refreshStage(); updateKeyUI();
@@ -639,9 +639,19 @@ function renderTimeline(){
 }
 
 // ---------- player ----------
-vid.onplay =()=> $("#play").textContent="❚❚";
-vid.onpause=()=>{ $("#play").textContent="▶︎"; if(typeof refreshStage==="function") refreshStage(); };
-$("#play").onclick=()=>{ stopPreview(); try{ if(vidSrc) getAC().resume(); }catch(e){} if(vid.ended && lastPos<S.duration-0.1) vid.currentTime=lastPos; vid.paused?vid.play():vid.pause(); };
+// durante o PREVIEW do resultado o rótulo do ▶ é controlado por startPreview/pausePreview.
+// aqui só cuidamos do botão "▶ original" (vídeo cru).
+vid.onplay =()=>{ if(!preview.on) $("#previewResult").textContent="❚❚ original"; };
+vid.onpause=()=>{ if(!preview.on){ $("#previewResult").textContent="▶︎ original"; $("#play").textContent="▶︎"; if(typeof refreshStage==="function") refreshStage(); } };
+// ▶ curinga: toca/pausa o RESULTADO (cortes pulados) com legenda, de onde parou — funciona em qualquer aba
+$("#play").onclick=()=>{
+  try{ if(vidSrc) getAC().resume(); }catch(e){}
+  if(preview.on){ pausePreview(); return; }   // tocando → pausa (continua depois)
+  if(!vid.paused){ vid.pause(); return; }      // se estava tocando o vídeo cru, pausa
+  const cont = preview.paused ? preview.posOrig : lastPos;
+  const from = (cont>0.05 && cont<S.duration-0.15) ? cont : (keptRanges()[0]?.start || 0);
+  startPreview(from, null);
+};
 
 // atualiza overlay/destaque/timeline para um tempo (no relógio ORIGINAL do vídeo)
 let lastPlayIdx=-1, lastPos=0;
@@ -843,7 +853,7 @@ function startPreview(fromOrig, stopOrig){
   node.onended=()=>{ if(preview.on) stopPreview(); };
   node.start(0, offCut);
   vid.muted=true; vid.play().catch(()=>{});
-  $("#play").textContent="❚❚"; $("#previewResult").style.color="var(--ouro)"; setRvLabel(true);
+  $("#play").textContent="❚❚"; $("#play").style.color="var(--ouro)"; setRvLabel(true);
   loopPreview();
 }
 function loopPreview(){
@@ -864,7 +874,7 @@ function pausePreview(){
   if(preview.ac){ try{ preview.ac.close(); }catch(e){} }
   preview.on=false; preview.paused=true; preview.node=null; preview.ac=null;
   vid.pause(); vid.muted=false;
-  $("#previewResult").style.color=""; $("#play").textContent="▶︎"; setRvLabel(false);
+  $("#play").style.color=""; $("#play").textContent="▶︎"; setRvLabel(false);
   refreshStage();
   const n=document.querySelector(".seg-card.playing .num")?.textContent;
   setStatus(`⏸ Pausado em ${fmt(preview.posOrig||0)}${n?` — trecho ${n} (em destaque)`:""}. Clique no trecho pra abrir o cortador, ou corte/exclua. "Ouvir tudo" continua daqui.`);
@@ -875,13 +885,14 @@ function stopPreview(){
   if(preview.node){ try{ preview.node.onended=null; preview.node.stop(); }catch(e){} }
   if(preview.ac){ try{ preview.ac.close(); }catch(e){} }
   const was=preview.on; preview.on=false; preview.paused=false; preview.posOrig=0; preview.node=null; preview.ac=null;
-  $("#previewResult").style.color=""; $("#play").textContent="▶︎"; setRvLabel(false);
+  $("#play").style.color=""; $("#play").textContent="▶︎"; setRvLabel(false);
   if(was){ vid.pause(); vid.muted=false; }
   if(typeof refreshStage==="function") refreshStage();
 }
 
 // "só o resultado" no player: liga/desliga a pré-escuta a partir de onde está
-$("#previewResult").onclick=()=>{ if(preview.on) stopPreview(); else startPreview(vid.currentTime,null); };
+// "▶ original": toca o vídeo cru (com pausas), pra comparar com o resultado
+$("#previewResult").onclick=()=>{ stopPreview(); try{ if(vidSrc) getAC().resume(); }catch(e){} if(vid.ended && lastPos<S.duration-0.1) vid.currentTime=lastPos; vid.paused?vid.play():vid.pause(); };
 
 // ouvir SÓ a junção de um corte (entra um pouco antes, pula a pausa, para sozinho)
 function hearJoin(i){ const seg=S.segs[i]; startPreview(Math.max(0, seg.start-0.8), seg.start); }
@@ -954,8 +965,8 @@ $("#rvRestart").onclick=()=>{ stopPreview(); lastPos=0; preview.paused=false; pr
 document.addEventListener("keydown",e=>{
   if(e.code!=="Space") return;
   const t=e.target; if(t && /^(input|textarea|select)$/i.test(t.tagName)) return;
-  if($("#rvAll").disabled) return;
-  e.preventDefault(); $("#rvAll").click();
+  if($("#play").disabled) return;
+  e.preventDefault(); $("#play").click(); // ESPAÇO = play/pause curinga (mesmo botão da esquerda)
 });
 $("#rvNext").onclick=()=> reviewGoto(reviewIdx+1);
 $("#rvPrev").onclick=()=> reviewGoto(reviewIdx-1);

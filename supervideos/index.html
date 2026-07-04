@@ -74,7 +74,7 @@
     color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.5), 0 1px 2px rgba(0,0,0,.55); z-index:5;
   }
   #capOverlay .w-on{color:#fff}
-  #capOverlay .w-em{color:#fff; font-style:italic; font-weight:600; font-family:'Playfair Display',Georgia,serif; letter-spacing:0}
+  #capOverlay .w-em{color:#fff; font-style:italic; font-weight:600; font-family:'Playfair Display',Georgia,serif; letter-spacing:0; font-size:1.08em}
   #capOverlay .w-cur{color:var(--ouro)}
   #capOverlay .capbox{display:inline}
   #capOverlay .capgroup{display:inline-block; max-width:100%}
@@ -1706,7 +1706,7 @@ function drawCaption(cx,cv,text,posY){
 function drawWordCaption(cx,cv,a,b,posY){
   const fs=Math.round(cv.width*0.078*S.capSize), y=cv.height*(posY!=null?posY:S.capPos.y);
   cx.textAlign="left"; cx.textBaseline="middle";
-  const fontOf=w=> w.emph ? `italic 600 ${fs}px "Playfair Display",Georgia,serif` : `700 ${fs}px Inter,system-ui,sans-serif`;
+  const fontOf=w=> w.emph ? `italic 600 ${Math.round(fs*1.08)}px "Playfair Display",Georgia,serif` : `700 ${fs}px Inter,system-ui,sans-serif`;
   const items=[a]; if(b) items.push(b);
   const parts=items.map((w,i)=>{ const txt=w.text.toLowerCase()+(i<items.length-1?" ":""); cx.font=fontOf(w); return {txt,font:fontOf(w),wdt:cx.measureText(txt).width}; });
   let x=(cv.width - parts.reduce((s,p)=>s+p.wdt,0))/2;
@@ -1718,7 +1718,7 @@ function drawWordCaption(cx,cv,a,b,posY){
 function drawGroupCaption(cx,cv,gw,curIdx,posY){
   const fs=Math.round(cv.width*0.062*S.capSize), y=cv.height*(posY!=null?posY:S.capPos.y);
   const maxW=cv.width*0.84;
-  const fontOf=w=> w.emph ? `italic 600 ${fs}px "Playfair Display",Georgia,serif` : `700 ${fs}px Inter,system-ui,sans-serif`;
+  const fontOf=w=> w.emph ? `italic 600 ${Math.round(fs*1.08)}px "Playfair Display",Georgia,serif` : `700 ${fs}px Inter,system-ui,sans-serif`;
   cx.font=`700 ${fs}px Inter,system-ui,sans-serif`; const spaceW=cx.measureText(" ").width;
   const items=gw.map((w,i)=>{ cx.font=fontOf(w); return {txt:w.text.toLowerCase(), font:fontOf(w), cur:i===curIdx, wdt:cx.measureText(w.text.toLowerCase()).width}; });
   const lines=[]; let line=[], lw=0;

@@ -75,7 +75,10 @@
   }
   #capOverlay .w-on{color:#fff}
   #capOverlay .w-em{color:#fff; font-style:italic; font-weight:600; font-family:'Playfair Display',Georgia,serif; letter-spacing:0}
+  #capOverlay .w-cur{color:var(--ouro)}
   #capOverlay .capbox{display:inline}
+  #capOverlay .capgroup{display:inline-block; max-width:100%}
+  #capOverlay .capgroup span{margin:0 .12em}
   .transport{display:flex; align-items:center; gap:10px; padding:10px 14px; border-top:1px solid var(--linha); background:var(--preto2)}
   .time{font-variant-numeric:tabular-nums; color:var(--suave); font-size:12px; min-width:96px}
   /* timeline */
@@ -267,7 +270,8 @@
         <button id="findReps" class="ghost" disabled title="Acha falas repetidas (erro + refez) e marca o take anterior pra cortar">🔁 Marcar repetições</button>
         <span class="lbl" style="font-size:12px;color:var(--suave)">Estilo:</span>
         <select id="capStyle">
-          <option value="word">Palavra a palavra (estilo Reels)</option>
+          <option value="group">Grupo (2–3 palavras, 2 linhas)</option>
+          <option value="word">Palavra a palavra</option>
           <option value="box">Frase inteira</option>
         </select>
         <label class="lbl" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--suave)">Tamanho <b id="vCapSize" style="color:var(--ouro)">100%</b>
@@ -362,7 +366,7 @@ const S = {
   segs:[],               // [{start,end,type:'silence'|'speech',keep,thumb}]
   caps:[],               // [{start,end,text}]  em tempo ORIGINAL
   words:[],              // palavras com tempo (derivadas das caps) p/ legenda animada
-  capStyle:"word",       // "word" (palavra a palavra) | "box" (frase)
+  capStyle:"group",      // "group" (grupo 2 linhas) | "word" (palavra a palavra) | "box" (frase)
   capSize:1,             // multiplicador do tamanho da legenda
   capPos:{x:0.5, y:0.5}, // posição de trabalho (fração do quadro) — arrastável
   capKeys:[],            // posições por trecho [{t,x,y}] (vazio = fixa em capPos)
@@ -706,6 +710,19 @@ function buildWordsFrom(caps){
   for(let k=0;k<out.length-1;k++){ const gap=out[k+1].start-out[k].start; if(gap>0.02 && gap<1.2) out[k].end=out[k+1].start; }
   return out;
 }
+// agrupa palavras em "chunks" que cabem em ~2 linhas: palavra grande → 2-3; palavra pequena → até 6.
+// quebra também no fim de frase (. ! ?) e em pausa longa entre palavras.
+function chunkWords(W){
+  const BUDGET=26, MAXW=6; // orçamento de caracteres (2 linhas) e nº máx de palavras
+  const ids=new Array(W.length); let id=0, len=0, count=0, lastEnd=null;
+  for(let i=0;i<W.length;i++){ const w=W[i], add=w.text.length+1;
+    const gap = lastEnd!=null ? w.start-lastEnd : 0;
+    const prevSent = i>0 && /[.!?…]$/.test(W[i-1].text);
+    if(count>0 && (count>=MAXW || len+add>BUDGET || gap>0.6 || prevSent)){ id++; len=0; count=0; }
+    ids[i]=id; len+=add; count++; lastEnd=w.end;
+  }
+  return ids;
+}
 function buildWords(){
   const R=keptRanges();
   const kept=t=> R.some(r=> t>=r.start-0.001 && t<r.end+0.001);
@@ -761,10 +778,19 @@ function renderCaption(t){
     ov.innerHTML = kw.length ? `<span class="capbox">${kw.map(w=>esc(w.text)).join(" ")}</span>` : "";
     return;
   }
-  // palavra a palavra — só palavras de trechos MANTIDOS (some nas pausas/repetições)
+  // só palavras de trechos MANTIDOS (some nas pausas/repetições)
   const W=S.words.filter(w=>w.keep);
   let ai=-1; for(let k=0;k<W.length;k++){ if(tc>=W[k].start && tc<W[k].end){ ai=k; break; } }
   if(ai<0){ ov.innerHTML=""; return; }
+  if(S.capStyle==="group"){
+    // grupo de palavras (2 linhas) com a palavra atual em destaque; segue o tempo real da fala
+    const ids=chunkWords(W); const gid=ids[ai]; let html="";
+    W.forEach((w,k)=>{ if(ids[k]!==gid) return; const cur=(k===ai);
+      const cls = w.emph ? (cur?"w-em w-cur":"w-em") : (cur?"w-cur":"w-on");
+      html += `<span class="${cls}">${esc(w.text)}</span>`; });
+    ov.innerHTML = `<span class="capgroup">${html}</span>`;
+    return;
+  }
   ov.innerHTML = span(W[ai]); // uma palavra por vez, no tempo real da fala (estilo Reels)
 }
 $("#capStyle").onchange=()=>{ S.capStyle=$("#capStyle").value; renderCaption(preview.posOrig||vid.currentTime||0); };
@@ -1474,9 +1500,16 @@ async function finalizeExport(chunks, pick){
 function buildCutWords(ranges){ buildWords(); return S.words.filter(w=>w.keep).map(w=>({text:w.text,emph:w.emph,capId:w.capId,start:origToCut(w.start,ranges),end:origToCut(w.end,ranges)})); }
 function drawCaptionsAt(cx,cv,caps,words,cutT){
   const tcc=cutT-(S.capOffset||0), posY=capPosAt(cutToOrig(cutT,keptRanges())).y;
-  if(S.capStyle==="box"){ const c=caps.find(c=>tcc>=c.start && tcc<c.end); if(c) drawCaption(cx,cv,c.text,posY); }
-  else { const ci=caps.findIndex(c=> tcc>=c.start-0.05 && tcc<c.end+0.05);
-    if(ci>=0){ const ws=words.filter(w=>w.capId===ci); if(ws.length){ let ai=ws.findIndex(w=>tcc<w.end); if(ai<0)ai=ws.length-1; if(tcc<ws[0].start)ai=0; drawWordCaption(cx,cv, ws[ai], null, posY); } } }
+  if(S.capStyle==="box"){ const c=caps.find(c=>tcc>=c.start && tcc<c.end); if(c) drawCaption(cx,cv,c.text,posY); return; }
+  // group/word: acha a palavra atual na lista plana (tempo real de cada palavra)
+  let ai=-1; for(let k=0;k<words.length;k++){ if(tcc>=words[k].start && tcc<words[k].end){ ai=k; break; } }
+  if(ai<0) return;
+  if(S.capStyle==="group"){
+    const ids=chunkWords(words); const gid=ids[ai]; const gw=[]; let curIdx=0;
+    words.forEach((w,k)=>{ if(ids[k]===gid){ if(k===ai) curIdx=gw.length; gw.push(w); } });
+    drawGroupCaption(cx,cv,gw,curIdx,posY); return;
+  }
+  drawWordCaption(cx,cv, words[ai], null, posY);
 }
 async function newRecorder(cv){
   const stream=cv.captureStream(30);
@@ -1625,6 +1658,26 @@ function drawWordCaption(cx,cv,a,b,posY){
   let x=(cv.width - parts.reduce((s,p)=>s+p.wdt,0))/2;
   softShadow(cx,fs); cx.fillStyle="#fff";
   for(const p of parts){ cx.font=p.font; cx.fillText(p.txt,x,y); x+=p.wdt; }
+  clearShadow(cx);
+}
+// estilo grupo: 2-3 palavras (até 6 se pequenas) em até 2 linhas; palavra atual em dourado; *asteriscos* em itálico serifado
+function drawGroupCaption(cx,cv,gw,curIdx,posY){
+  const fs=Math.round(cv.width*0.062*S.capSize), y=cv.height*(posY!=null?posY:S.capPos.y);
+  const maxW=cv.width*0.84;
+  const fontOf=w=> w.emph ? `italic 600 ${fs}px "Playfair Display",Georgia,serif` : `700 ${fs}px Inter,system-ui,sans-serif`;
+  cx.font=`700 ${fs}px Inter,system-ui,sans-serif`; const spaceW=cx.measureText(" ").width;
+  const items=gw.map((w,i)=>{ cx.font=fontOf(w); return {txt:w.text.toLowerCase(), font:fontOf(w), cur:i===curIdx, wdt:cx.measureText(w.text.toLowerCase()).width}; });
+  const lines=[]; let line=[], lw=0;
+  for(const it of items){ const need=(line.length?spaceW:0)+it.wdt;
+    if(line.length && lw+need>maxW){ lines.push(line); line=[it]; lw=it.wdt; }
+    else { lw+=need; line.push(it); } }
+  if(line.length) lines.push(line);
+  const L=lines.slice(0,2);
+  const lh=fs*1.18, totalH=L.length*lh, top=y-totalH/2;
+  softShadow(cx,fs); cx.textBaseline="middle"; cx.textAlign="left";
+  L.forEach((ln,li)=>{ const lineW=ln.reduce((s,it,idx)=>s+it.wdt+(idx?spaceW:0),0);
+    let x=(cv.width-lineW)/2; const cy=top+li*lh+lh/2;
+    ln.forEach((it,idx)=>{ if(idx) x+=spaceW; cx.font=it.font; cx.fillStyle=it.cur?"#D9A85B":"#fff"; cx.fillText(it.txt,x,cy); x+=it.wdt; }); });
   clearShadow(cx);
 }
 

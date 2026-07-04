@@ -744,15 +744,6 @@ function chunkWords(W){
   }
   return ids;
 }
-// qual palavra mostrar no tempo tc: entra um tico ANTES (LEAD) e faz PRÉ-ROLL —
-// se a próxima palavra começa logo (início de frase / logo após um corte), já mostra o texto,
-// pra não perder o "time" das primeiras palavras que são muito rápidas.
-function curWordIdx(W, tc){
-  const LEAD=0.12, PREROLL=0.8;
-  for(let k=0;k<W.length;k++){ if(tc+LEAD>=W[k].start && tc<W[k].end) return k; }
-  for(let k=0;k<W.length;k++){ if(W[k].start>tc) return (W[k].start-tc<PREROLL)? k : -1; }
-  return -1;
-}
 function buildWords(){
   const R=keptRanges();
   const kept=t=> R.some(r=> t>=r.start-0.001 && t<r.end+0.001);
@@ -812,7 +803,7 @@ function renderCaption(t){
   }
   // só palavras de trechos MANTIDOS (some nas pausas/repetições)
   const W=S.words.filter(w=>w.keep);
-  const ai=curWordIdx(W, tc);
+  let ai=-1; for(let k=0;k<W.length;k++){ if(tc>=W[k].start && tc<W[k].end){ ai=k; break; } }
   if(ai<0){ ov.innerHTML=""; return; }
   if(S.capStyle==="group"){
     // grupo de palavras (2 linhas) com a palavra atual em destaque; segue o tempo real da fala
@@ -1556,8 +1547,8 @@ function buildCutWords(ranges){ buildWords(); return S.words.filter(w=>w.keep).m
 function drawCaptionsAt(cx,cv,caps,words,cutT){
   const tcc=cutT-(S.capOffset||0), posY=capPosAt(cutToOrig(cutT,keptRanges())).y;
   if(S.capStyle==="box"){ const c=caps.find(c=>tcc>=c.start && tcc<c.end); if(c) drawCaption(cx,cv,c.text,posY); return; }
-  // group/word: acha a palavra atual (com lead + pré-roll, igual ao preview)
-  const ai=curWordIdx(words, tcc);
+  // group/word: acha a palavra atual na lista plana (tempo real de cada palavra)
+  let ai=-1; for(let k=0;k<words.length;k++){ if(tcc>=words[k].start && tcc<words[k].end){ ai=k; break; } }
   if(ai<0) return;
   if(S.capStyle==="group"){
     const ids=chunkWords(words); const gid=ids[ai]; const gw=[]; let curIdx=0;

@@ -675,11 +675,16 @@ function tokenize(text){
 const normWord=s=>(s||"").toLowerCase().replace(/[^\p{L}\p{N}]/gu,"");
 // monta as legendas a partir das PALAVRAS com tempo real do Whisper: agrupa em frases e guarda o tempo de cada palavra (wtimes)
 function capsFromWords(wc){
-  let rw = (wc||[]).filter(c=>c.text && c.text.trim() && c.timestamp && c.timestamp[0]!=null)
-    .map(c=>({ text:c.text.trim(), start:c.timestamp[0], end:(c.timestamp[1]!=null? c.timestamp[1] : c.timestamp[0]+0.3) }));
-  // remove repetição colada (artefato do overlap/stride do Whisper): mesma palavra quase no mesmo tempo
-  rw = rw.filter((w,i)=>{ const p=rw[i-1]; if(!p) return true; return !(normWord(w.text)===normWord(p.text) && (w.start-p.start)<0.12); });
+  // NÃO descarta palavra por falta de timestamp — mantém TODAS as palavras e estima o tempo que faltar
+  let rw = (wc||[]).map(c=>({ text:(c.text||"").trim(), ts:c.timestamp })).filter(w=>w.text);
   if(!rw.length) return [];
+  let lastEnd=0;
+  rw.forEach(w=>{ const s=(w.ts && w.ts[0]!=null)? w.ts[0] : lastEnd;
+    const e=(w.ts && w.ts[1]!=null && w.ts[1]>s)? w.ts[1] : null;
+    w.start=s; w.end=e; lastEnd=(e!=null? e : s); });
+  for(let i=0;i<rw.length;i++){ if(rw[i].end==null){ const ns=rw[i+1]? rw[i+1].start : null; rw[i].end=(ns!=null && ns>rw[i].start)? ns : rw[i].start+0.28; } }
+  // remove só duplicata colada exata (artefato do overlap/stride): mesma palavra quase no mesmo tempo
+  rw = rw.filter((w,i)=>{ const p=rw[i-1]; if(!p) return true; return !(normWord(w.text)===normWord(p.text) && Math.abs(w.start-p.start)<0.10); });
   const caps=[]; let cur=[];
   const flush=()=>{ if(!cur.length) return;
     caps.push({ start:cur[0].start, end:cur[cur.length-1].end,
@@ -689,7 +694,7 @@ function capsFromWords(wc){
   rw.forEach((w,i)=>{ cur.push(w); const next=rw[i+1];
     const endsSent=/[.!?…]$/.test(w.text);
     const gap = next ? next.start - w.end : Infinity;
-    if(endsSent || !next || gap>0.6 || cur.length>=7) flush();
+    if(endsSent || !next || gap>0.8 || cur.length>=8) flush();
   });
   flush();
   return caps;

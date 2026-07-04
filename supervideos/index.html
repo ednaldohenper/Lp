@@ -487,7 +487,8 @@ async function makeThumbs(){
 }
 
 // ---------- render ----------
-function renderAll(){ if(S.caps.length) buildWords(); renderSummary(); renderSegs(); renderTimeline(); refreshExportButtons(); }
+function renderAll(){ if(S.caps.length){ buildWords(); if(!capEditing) renderCaps(); } renderSummary(); renderSegs(); renderTimeline(); refreshExportButtons(); }
+let capEditing=false; // enquanto você digita numa legenda, não reconstruímos a lista (não perde o foco)
 
 function keptRanges(){
   // funde trechos mantidos contíguos em faixas
@@ -1238,22 +1239,42 @@ function parseSrt(txt){
 const srtT=s=>{ const [h,m,rest]=s.replace(",",".").split(":"); return +h*3600+ +m*60+ parseFloat(rest); };
 const toSrtT=t=>{ const h=Math.floor(t/3600), m=Math.floor(t%3600/60), s=Math.floor(t%60), ms=Math.round((t%1)*1000); return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")},${String(ms).padStart(3,"0")}`; };
 
+// junta legendas repetidas coladas no tempo (mesmo texto) num item só — evita a duplicação
+function dedupeCaps(){
+  const out=[];
+  for(const c of (S.caps||[])){
+    const p=out[out.length-1];
+    if(p && normWord(p.text)===normWord(c.text) && c.start < (p.end+0.4)){
+      p.end=Math.max(p.end,c.end);
+      if(c.wtimes && (!p.wtimes || c.wtimes.length>p.wtimes.length)) p.wtimes=c.wtimes;
+      continue;
+    }
+    out.push(c);
+  }
+  S.caps=out;
+}
 function renderCaps(){
-  buildWords();
+  dedupeCaps(); buildWords();
   const el=$("#capList");
   if(!S.caps.length){ el.className="empty"; el.textContent="Nenhuma legenda. Gere automaticamente ou importe um .srt."; return; }
+  const keptCap=new Set(S.words.filter(w=>w.keep).map(w=>w.capId)); // legendas que ainda têm conteúdo mantido
   el.className=""; el.innerHTML="";
+  let hidden=0, shownN=0;
   S.caps.forEach((c,i)=>{
+    if(S.segs.length && !keptCap.has(i)){ hidden++; return; } // trecho cortado → some da área de edição
+    shownN++;
     const row=document.createElement("div"); row.className="cap-row";
-    const cut = S.segs.length && S.segs.some(s=>!s.keep && c.start>=s.start-0.05 && c.end<=s.end+0.05); // legenda dentro de trecho cortado
-    row.innerHTML=`<div class="ct">${fmtT(c.start)}${cut?' <span style="color:var(--verm)">·cortada</span>':''}</div><textarea>${c.text}</textarea><button class="del" title="Excluir esta legenda">🗑</button>`;
-    if(cut) row.style.opacity=".5";
+    row.innerHTML=`<div class="ct">${fmtT(c.start)}</div><textarea>${c.text}</textarea><button class="del" title="Excluir esta legenda">🗑</button>`;
     const ta=row.querySelector("textarea");
     ta.oninput=()=>{ c.text=ta.value; buildWords(); renderCaption(curTime()); refreshExportButtons(); };
-    ta.onfocus=()=>{ stopPreview(); vid.currentTime=c.start; };
-    row.querySelector(".del").onclick=()=>{ S.caps.splice(i,1); buildWords(); renderCaps(); refreshExportButtons(); setStatus("Legenda excluída."); };
+    ta.onfocus=()=>{ capEditing=true; stopPreview(); vid.currentTime=c.start; };
+    ta.onblur=()=>{ capEditing=false; };
+    row.querySelector(".del").onclick=()=>{ const idx=S.caps.indexOf(c); if(idx>=0) S.caps.splice(idx,1); buildWords(); renderCaps(); refreshExportButtons(); setStatus("Legenda excluída."); };
     el.appendChild(row);
   });
+  if(hidden){ const note=document.createElement("div"); note.className="hint"; note.style.marginTop="8px";
+    note.textContent=`${hidden} legenda(s) de trechos cortados foram ocultadas daqui (voltam se você desfizer o corte).`; el.appendChild(note); }
+  if(!shownN){ el.className="empty"; el.textContent="As legendas ficaram todas em trechos cortados. Desfaça um corte ou gere de novo."; }
 }
 
 // transcrição automática (transformers.js / Whisper) — carregada sob demanda

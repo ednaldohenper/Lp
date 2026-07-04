@@ -759,6 +759,12 @@ function buildWords(){
   // mantém a palavra se o MEIO, o INÍCIO ou o FIM caem em trecho mantido —
   // assim a 1ª palavra depois de um corte (cujo começo caiu na pausa removida) não some
   S.words=buildWordsFrom(S.caps).map(w=>({...w, keep: kept((w.start+w.end)/2) || kept(w.start) || kept(Math.max(w.start, w.end-0.03))}));
+  // a 1ª palavra mantida de CADA trecho passa a valer desde o começo do trecho — assim, no tempo zero
+  // e logo após cada corte, o texto já está na tela quando a fala começa (não perde as primeiras palavras rápidas)
+  for(const r of R){
+    const w=S.words.find(x=>x.keep && x.end>r.start+0.02 && x.start<r.end);
+    if(w && w.start>r.start) w.start=r.start;
+  }
 }
 // retângulo (em coords do palco) do que vai aparecer no vídeo final — segue o crop 9:16 se houver
 function frameDisplayRect(){
@@ -804,7 +810,8 @@ function renderCaption(t){
   const span=w=> w? `<span class="${w.emph?"w-em":"w-on"}">${esc(w.text)}</span>` : "";
   if(S.capStyle==="box"){
     // mostra a frase montada só com as palavras MANTIDAS (some o que foi cortado)
-    const ci=S.caps.findIndex(c=>tc>=c.start && tc<c.end);
+    let ci=S.caps.findIndex(c=>tc>=c.start-0.15 && tc<c.end);
+    if(ci<0) ci=S.caps.findIndex(c=>c.start>tc && c.start-tc<0.8); // pré-roll: já mostra a próxima frase
     if(ci<0){ ov.innerHTML=""; return; }
     const kw=S.words.filter(w=>w.capId===ci && w.keep);
     ov.innerHTML = kw.length ? `<span class="capbox">${kw.map(w=>esc(w.text)).join(" ")}</span>` : "";
@@ -1555,7 +1562,7 @@ async function finalizeExport(chunks, pick){
 function buildCutWords(ranges){ buildWords(); return S.words.filter(w=>w.keep).map(w=>({text:w.text,emph:w.emph,capId:w.capId,start:origToCut(w.start,ranges),end:origToCut(w.end,ranges)})); }
 function drawCaptionsAt(cx,cv,caps,words,cutT){
   const tcc=cutT-(S.capOffset||0), posY=capPosAt(cutToOrig(cutT,keptRanges())).y;
-  if(S.capStyle==="box"){ const c=caps.find(c=>tcc>=c.start && tcc<c.end); if(c) drawCaption(cx,cv,c.text,posY); return; }
+  if(S.capStyle==="box"){ const c=caps.find(c=>tcc>=c.start-0.15 && tcc<c.end) || caps.find(c=>c.start>tcc && c.start-tcc<0.8); if(c) drawCaption(cx,cv,c.text,posY); return; }
   // group/word: acha a palavra atual (com lead + pré-roll, igual ao preview)
   const ai=curWordIdx(words, tcc);
   if(ai<0) return;

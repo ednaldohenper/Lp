@@ -714,23 +714,16 @@ function buildWordsFrom(caps){
   const out=[]; const spd=Math.max(0.5, S.capSpeed||1);
   caps.forEach((c,ci)=>{
     const toks=tokenize(c.text); if(!toks.length) return;
-    if(c.wtimes && c.wtimes.length){
-      // usa o tempo REAL de cada palavra; se você EDITOU o texto e mudou a contagem,
-      // as palavras conhecidas mantêm o tempo e as ADICIONADAS entram depois da última (distribuídas até o fim da legenda)
-      const Wt=c.wtimes, base=Wt.length;
-      const lastEnd=(Wt[base-1] && Wt[base-1][1]) || c.end || (c.start+0.3);
-      const extraN=Math.max(0, toks.length-base);
-      const remain=Math.max(0.3, ((c.end!=null?c.end:lastEnd+0.3) - lastEnd));
-      const perExtra=extraN? remain/(extraN+1) : 0;
-      toks.forEach((tk,k)=>{ let s,e;
-        if(k<base){ s=Wt[k][0]; e=Wt[k][1]; }
-        else { const j=k-base+1; s=lastEnd+(j-1)*perExtra; e=lastEnd+j*perExtra; }
-        if(!(e>s)) e=s+0.12;
+    if(c.wtimes && c.wtimes.length===toks.length){
+      // texto igual ao transcrito (ou só corrigido, sem mudar a contagem): usa o tempo REAL de cada palavra
+      toks.forEach((tk,k)=>{ let s=c.wtimes[k][0], e=c.wtimes[k][1]; if(!(e>s)) e=s+0.12;
         out.push({text:tk.text, emph:tk.emph, start:s, end:e, capId:ci}); });
     } else {
-      // fallback: divide igualmente (quando não há tempo por palavra — ex.: .srt importado)
-      const dur=Math.max(0.24, c.end-c.start), per=(dur/toks.length)/spd;
-      toks.forEach((tk,k)=> out.push({text:tk.text, emph:tk.emph, start:c.start+k*per, end:c.start+(k+1)*per, capId:ci}));
+      // você mudou a QUANTIDADE de palavras (inseriu/removeu) — redistribui TODAS igualmente dentro
+      // do tempo desta legenda, então a palavra nova entra NA ORDEM e sempre aparece
+      const st=c.start, en=Math.max(st+0.24, (c.end!=null?c.end:st+toks.length*0.3));
+      const per=((en-st)/toks.length)/spd;
+      toks.forEach((tk,k)=> out.push({text:tk.text, emph:tk.emph, start:st+k*per, end:st+(k+1)*per, capId:ci}));
     }
   });
   // continuidade: cada palavra fica na tela até a próxima COMEÇAR (sem piscar, sem repetir), respeitando pausas longas

@@ -747,8 +747,9 @@ function chunkWords(W){
 function buildWords(){
   const R=keptRanges();
   const kept=t=> R.some(r=> t>=r.start-0.001 && t<r.end+0.001);
-  // mantém a palavra se o MEIO ou o INÍCIO cai em trecho mantido (não perde palavra editada/adicionada no fim)
-  S.words=buildWordsFrom(S.caps).map(w=>({...w, keep: kept((w.start+w.end)/2) || kept(w.start)}));
+  // mantém a palavra se o MEIO, o INÍCIO ou o FIM caem em trecho mantido —
+  // assim a 1ª palavra depois de um corte (cujo começo caiu na pausa removida) não some
+  S.words=buildWordsFrom(S.caps).map(w=>({...w, keep: kept((w.start+w.end)/2) || kept(w.start) || kept(Math.max(w.start, w.end-0.03))}));
 }
 // retângulo (em coords do palco) do que vai aparecer no vídeo final — segue o crop 9:16 se houver
 function frameDisplayRect(){

@@ -311,10 +311,10 @@
           <input type="checkbox" id="fillH"> altura cheia</label>
         <label class="lbl" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--suave)">Zoom <b id="vZoom" style="color:var(--ouro)">1.0×</b>
           <input type="range" id="zoom" min="0.5" max="3" step="0.05" value="1" disabled style="width:90px;accent-color:var(--ouro)"></label>
-        <button id="mkKey" class="ghost" disabled title="Grava posição e zoom do quadro neste instante. Marque em vários momentos pra ele te acompanhar/dar zoom.">📍 Marcar posição</button>
+        <button id="mkKey" class="ghost" disabled title="Grava a POSIÇÃO do quadro neste instante (pra ele te acompanhar ao longo do vídeo). O zoom é fixo, não anima.">📍 Marcar posição</button>
         <span class="lbl" id="keyCount" style="font-size:12px;color:var(--suave)"></span>
         <button id="clrKeys" class="ghost" disabled>limpar pontos</button>
-        <span class="hint" id="cropHint">arraste o quadro no vídeo (à esquerda); ajuste o zoom; marque a posição em vários momentos pra ele seguir/ampliar</span>
+        <span class="hint" id="cropHint">arraste o quadro no vídeo (à esquerda); o <b>zoom é fixo</b> pro clipe todo; use "📍 Marcar posição" só se quiser que o quadro te <b>acompanhe</b> ao longo do vídeo</span>
       </div>
       <div class="stephead" style="font-size:13px;margin:16px 0 8px">Meia-tela (vídeo/imagem em cima)</div>
       <div class="row" style="margin-bottom:8px">
@@ -1012,12 +1012,13 @@ let cropDragging=false;
 function curTime(){ return (preview.on||preview.paused) ? (preview.posOrig||0) : (vid.currentTime||0); }
 function cropActive(){ return !!(crop.ar || Math.abs(crop.zoom-1)>0.001 || crop.keys.length); }
 function cropFXY(t){
-  const K=crop.keys; if(!K.length || t==null) return {fx:crop.fx, fy:crop.fy, zoom:crop.zoom};
-  if(t<=K[0].t) return {fx:K[0].fx, fy:K[0].fy, zoom:K[0].zoom};
-  if(t>=K[K.length-1].t){ const k=K[K.length-1]; return {fx:k.fx, fy:k.fy, zoom:k.zoom}; }
+  const z=crop.zoom; // ZOOM é sempre FIXO (não anima) — evita o "efeito estranho" de reduzir/ampliar sozinho no play
+  const K=crop.keys; if(!K.length || t==null) return {fx:crop.fx, fy:crop.fy, zoom:z};
+  if(t<=K[0].t) return {fx:K[0].fx, fy:K[0].fy, zoom:z};
+  if(t>=K[K.length-1].t){ const k=K[K.length-1]; return {fx:k.fx, fy:k.fy, zoom:z}; }
   for(let i=0;i<K.length-1;i++){ if(t>=K[i].t && t<K[i+1].t){ const a=K[i],b=K[i+1],u=(t-a.t)/((b.t-a.t)||1);
-    return {fx:a.fx+(b.fx-a.fx)*u, fy:a.fy+(b.fy-a.fy)*u, zoom:a.zoom+(b.zoom-a.zoom)*u}; } }
-  return {fx:crop.fx, fy:crop.fy, zoom:crop.zoom};
+    return {fx:a.fx+(b.fx-a.fx)*u, fy:a.fy+(b.fy-a.fy)*u, zoom:z}; } } // só a POSIÇÃO anima entre pontos; o zoom fica fixo
+  return {fx:crop.fx, fy:crop.fy, zoom:z};
 }
 // retorna o sub-retângulo de origem (cx,cy,cw,ch) + o tamanho de SAÍDA (cw0,ch0, zoom=1)
 function cropRect(t){
@@ -1073,12 +1074,12 @@ function setKeyAt(t){ // grava/atualiza ponto no instante t com posição+zoom a
   crop.keys.sort((a,b)=>a.t-b.t); updateKeyUI();
 }
 $("#fmt").onchange=()=>{ crop.ar=parseFloat($("#fmt").value)||0; crop.fx=0.5; crop.fy=0.5; crop.keys=[]; refreshStage(); updateKeyUI();
-  setStatus(crop.ar?'Arraste o quadro pra enquadrar. Pra te acompanhar/dar zoom ao longo do vídeo, posicione e clique "📍 Marcar posição" em vários momentos.':'Saída no formato original.'); };
-$("#zoom").oninput=e=>{ crop.zoom=parseFloat(e.target.value)||1; $("#vZoom").textContent=crop.zoom.toFixed(1)+"×"; if(crop.keys.length) setKeyAt(curTime()); refreshStage(); };
+  setStatus(crop.ar?'Arraste o quadro pra enquadrar. Ajuste o zoom (fixo). Se quiser que o quadro te ACOMPANHE ao longo do vídeo, posicione e clique "📍 Marcar posição" em vários momentos.':'Saída no formato original.'); };
+$("#zoom").oninput=e=>{ crop.zoom=parseFloat(e.target.value)||1; $("#vZoom").textContent=crop.zoom.toFixed(1)+"×"; refreshStage(); }; // zoom fixo pra todo o clipe (não cria ponto/animação)
 $("#fillH").onchange=e=>{ crop.fillHeight=e.target.checked; refreshStage();
   setStatus(crop.fillHeight?'Altura cheia: mantém 100% da altura e corta só os lados.':'Recorte normal pelo formato escolhido.'); };
 $("#mkKey").onclick=()=>{ const t=curTime(); setKeyAt(t); refreshStage();
-  setStatus(`📍 Ponto em ${fmt(t)} (${crop.keys.length} no total) — posição e zoom gravados. Avance, ajuste e marque de novo: move/amplia suave entre os pontos.`); };
+  setStatus(`📍 Posição do quadro marcada em ${fmt(t)} (${crop.keys.length} no total). Avance, arraste o quadro e marque de novo: ele se move suave entre os pontos. (O zoom continua fixo.)`); };
 $("#clrKeys").onclick=()=>{ crop.keys=[]; updateKeyUI(); refreshStage(); setStatus("Pontos limpos."); };
 function refreshStage(){ renderStage(curTime(), preview.on || !vid.paused); }
 window.addEventListener("resize", refreshStage);

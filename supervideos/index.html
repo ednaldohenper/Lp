@@ -83,10 +83,13 @@
   .time{font-variant-numeric:tabular-nums; color:var(--suave); font-size:12px; min-width:96px}
   /* timeline */
   #tl{flex:1; height:46px; position:relative; background:var(--preto3); border-radius:8px; overflow:hidden; cursor:pointer; border:1px solid var(--linha)}
-  #tl .seg{position:absolute; top:0; bottom:0}
+  #tl .seg{position:absolute; top:0; bottom:15px}
   #tl .seg.keep{background:linear-gradient(180deg,rgba(63,174,122,.5),rgba(63,174,122,.22))}
   #tl .seg.cut{background:repeating-linear-gradient(45deg,rgba(215,99,79,.45),rgba(215,99,79,.45) 6px,rgba(215,99,79,.25) 6px,rgba(215,99,79,.25) 12px)}
-  #tl #ph{position:absolute; top:-2px; bottom:-2px; width:2px; background:var(--ouro); box-shadow:0 0 8px var(--ouro)}
+  #tl .ovrow{position:absolute; left:0; right:0; bottom:0; height:14px; border-top:1px solid rgba(255,255,255,.08); background:rgba(0,0,0,.25)}
+  #tl .ovseg{position:absolute; bottom:1px; height:12px; border-radius:3px; background:linear-gradient(180deg,#d9a85b,#8a6d34); border:1px solid rgba(0,0,0,.35); box-shadow:0 0 4px rgba(217,168,91,.5); display:flex; align-items:center; overflow:hidden}
+  #tl .ovseg b{font-size:9px; color:#1a1206; padding:0 3px; white-space:nowrap; font-weight:800}
+  #tl #ph{position:absolute; top:-2px; bottom:-2px; width:2px; background:var(--ouro); box-shadow:0 0 8px var(--ouro); z-index:3}
 
   /* RIGHT */
   .controls{padding:12px 14px; border-bottom:1px solid var(--linha); background:var(--preto2)}
@@ -627,7 +630,7 @@ function openTrim(seg, card){
 }
 
 function renderTimeline(){
-  const tl=$("#tl"); [...tl.querySelectorAll(".seg")].forEach(n=>n.remove());
+  const tl=$("#tl"); [...tl.querySelectorAll(".seg,.ovrow,.ovseg")].forEach(n=>n.remove());
   if(!S.duration) return;
   for(const seg of S.segs){
     const d=document.createElement("div");
@@ -636,6 +639,16 @@ function renderTimeline(){
     d.style.width=((seg.end-seg.start)/S.duration*100)+"%";
     tl.insertBefore(d, $("#ph"));
   }
+  // 2ª linha: onde a MEIA-TELA (vídeo/imagem de cima) está aplicada
+  const row=document.createElement("div"); row.className="ovrow"; tl.insertBefore(row, $("#ph"));
+  OV.forEach((o,i)=>{
+    const d=document.createElement("div"); d.className="ovseg";
+    d.style.left=(Math.max(0,o.start)/S.duration*100)+"%";
+    d.style.width=(Math.max(0.004,(Math.min(o.end,S.duration)-o.start)/S.duration)*100)+"%";
+    d.title=`Meia-tela: ${o.name||o.type} · ${fmt(o.start)}–${fmt(o.end)}`;
+    d.innerHTML=`<b>${o.type==="image"?"🖼️":"🎞️"} ${esc((o.name||"").slice(0,14))}</b>`;
+    tl.insertBefore(d, $("#ph"));
+  });
 }
 
 // ---------- player ----------
@@ -1112,7 +1125,7 @@ $("#ovFile").onchange=e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) 
   const o={id:++ovSeq, type:f.type.startsWith("image")?"image":"video", name:f.name, url, file:f, sound:false, px:0.5, py:0.5, start:t0, end:Math.min(S.duration||t0+3, t0+3)};
   if(o.type==="image"){ o.img=new Image(); o.img.src=url; o.img.onload=()=>refreshStage(); }
   else { o.vid=document.createElement("video"); o.vid.src=url; o.vid.muted=true; o.vid.playsInline=true; o.vid.preload="auto"; }
-  OV.push(o); renderOvList(); refreshStage(); if(autosaveOn) saveMedia();
+  OV.push(o); renderOvList(); renderTimeline(); refreshStage(); if(autosaveOn) saveMedia();
   setStatus(`Meia-tela adicionada (${o.type==="image"?"imagem":"vídeo"}). Ajuste "início aqui / fim aqui" no trecho que quiser.`);
 };
 function renderOvList(){
@@ -1136,7 +1149,7 @@ function renderOvList(){
       if(a==="go"){ stopPreview(); vid.currentTime=o.start; updateUIAt(o.start,false); }
       if(a==="snd"){ o.sound=!o.sound; }
       if(a==="rm"){ if(o.vid) o.vid.pause(); OV=OV.filter(x=>x!==o); if(autosaveOn) saveMedia(); }
-      renderOvList(); refreshStage();
+      renderOvList(); renderTimeline(); refreshStage();
     });
     card.querySelector(".ovx").oninput=e=>{ o.px=parseFloat(e.target.value); refreshStage(); };
     card.querySelector(".ovy").oninput=e=>{ o.py=parseFloat(e.target.value); refreshStage(); };
@@ -1164,20 +1177,19 @@ function drawComposite(ctx, W, H, t, src){
   const r=cropRect(t), m=r||{cx:0,cy:0,cw:src.videoWidth,ch:src.videoHeight,z:1};
   const o=activeOverlay(t);
   if(!o){
-    if(m.z!=null && m.z<0.999){ // AFASTAR: REVELA mais da cena (nítido), encaixado, com desfoque só no topo/base
+    if(m.z!=null && m.z<0.999){ // AFASTAR: encolhe o vídeo no quadro; REVELA mais da cena até o limite da fonte; resto = fundo desfocado
       const Ws=src.videoWidth, Hs=src.videoHeight, z=m.z;
+      const cw0=m.cw0||Ws, ch0=m.ch0||Hs, fB=cropFXY(t);
       // fundo: a própria cena, desfocada, preenchendo (evita barras pretas)
       ctx.save(); ctx.filter=`blur(${Math.max(6,Math.round(W*0.045))}px)`;
       drawCoverB(ctx, src, 0,0,Ws,Hs, 0,0,W,H, 0.5,0.5);
       ctx.filter="none"; ctx.restore();
       ctx.fillStyle="rgba(0,0,0,.15)"; ctx.fillRect(0,0,W,H);
-      // região revelada cresce (mostra as laterais/topo reais), limitada pela fonte
-      const fB=cropFXY(t);
-      const regW=Math.min(Ws, m.cw/z), regH=Math.min(Hs, m.ch/z);
-      const regX=Math.round((Ws-regW)*fB.fx);   // fx escolhe a parte horizontal revelada
-      const regY=Math.round((Hs-regH)*fB.fy);
-      const s=Math.min(W/regW, H/regH), fgW=regW*s, fgH=regH*s; // encaixa inteiro (contain)
-      // fx/fy alinham a imagem no quadro (arraste na tela ou o quadro dourado)
+      // região de origem mostrada: cresce ao afastar (revela laterais/topo reais), limitada à fonte
+      const regW=Math.min(Ws, cw0/z), regH=Math.min(Hs, ch0/z);
+      const regX=Math.round((Ws-regW)*fB.fx), regY=Math.round((Hs-regH)*fB.fy);
+      // tamanho na tela: em z=1 o recorte preenche o quadro; em z<1 ENCOLHE proporcional a z (sempre muda)
+      const s=Math.min(W/cw0, H/ch0)*z, fgW=regW*s, fgH=regH*s;
       ctx.drawImage(src, regX,regY,regW,regH, (W-fgW)*fB.fx, (H-fgH)*fB.fy, fgW,fgH);
     } else {
       ctx.drawImage(src, m.cx,m.cy,m.cw,m.ch, 0,0,W,H);

@@ -80,7 +80,7 @@
   #capOverlay .capgroup{display:inline-block; max-width:100%}
   #ovBadge{position:absolute; left:8px; top:8px; z-index:6; background:rgba(217,168,91,.92); color:#1a1206; font-size:11px; font-weight:800; padding:3px 8px; border-radius:6px; pointer-events:none; box-shadow:0 2px 8px rgba(0,0,0,.4)}
   #capOverlay .capgroup span{margin:0 .12em}
-  .transport{display:flex; align-items:center; gap:10px; padding:10px 14px; border-top:1px solid var(--linha); background:var(--preto2)}
+  .transport{flex:none; display:flex; align-items:center; gap:10px; padding:10px 16px; border-top:1px solid var(--linha); background:var(--preto2)}
   .time{font-variant-numeric:tabular-nums; color:var(--suave); font-size:12px; min-width:96px}
   /* timeline */
   #tl{flex:1; height:84px; position:relative; background:var(--preto3); border-radius:8px; overflow:hidden; cursor:pointer; border:1px solid var(--linha)}
@@ -206,14 +206,6 @@
         <span>ou clique pra escolher o arquivo (.mp4 / .mov)</span>
         <span class="hint">funciona melhor no Chrome · vídeos de até ~2–3 min</span>
       </div>
-    </div>
-    <div class="transport">
-      <button id="play" disabled title="Play/Pausa — toca o RESULTADO (cortes pulados) com legenda, de onde parou. Funciona em qualquer aba. (ESPAÇO)">▶︎</button>
-      <button id="previewResult" class="ghost" disabled title="Toca o vídeo ORIGINAL, com as pausas, sem cortes — pra comparar.">▶︎ original</button>
-      <button id="cutPrev" class="ghost" disabled title="Ponto de corte anterior (tecla ↑). ← / → andam 0,1s.">⟨ corte</button>
-      <button id="cutNext" class="ghost" disabled title="Próximo ponto de corte (tecla ↓). ← / → andam 0,1s.">corte ⟩</button>
-      <div id="tl"><div id="ph"></div></div>
-      <span class="time" id="time">0:00 / 0:00</span>
     </div>
   </section>
 
@@ -362,6 +354,16 @@
     <div class="status" id="status">Pronto.</div>
   </section>
 </main>
+
+<!-- TRILHA: barra de fora a fora, embaixo de tudo -->
+<div class="transport" id="transport">
+  <button id="play" disabled title="Play/Pausa — toca o RESULTADO (cortes pulados) com legenda, de onde parou. Funciona em qualquer aba. (ESPAÇO)">▶︎</button>
+  <button id="previewResult" class="ghost" disabled title="Toca o vídeo ORIGINAL, com as pausas, sem cortes — pra comparar.">▶︎ original</button>
+  <button id="cutPrev" class="ghost" disabled title="Ponto de corte anterior (tecla ↑). ← / → andam 0,1s.">⟨ corte</button>
+  <button id="cutNext" class="ghost" disabled title="Próximo ponto de corte (tecla ↓). ← / → andam 0,1s.">corte ⟩</button>
+  <div id="tl"><div id="ph"></div></div>
+  <span class="time" id="time">0:00 / 0:00</span>
+</div>
 
 <canvas id="work" hidden></canvas>
 <script type="module">

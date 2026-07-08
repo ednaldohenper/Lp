@@ -83,14 +83,19 @@
   .transport{display:flex; align-items:center; gap:10px; padding:10px 14px; border-top:1px solid var(--linha); background:var(--preto2)}
   .time{font-variant-numeric:tabular-nums; color:var(--suave); font-size:12px; min-width:96px}
   /* timeline */
-  #tl{flex:1; height:46px; position:relative; background:var(--preto3); border-radius:8px; overflow:hidden; cursor:pointer; border:1px solid var(--linha)}
-  #tl .seg{position:absolute; top:0; bottom:15px}
+  #tl{flex:1; height:84px; position:relative; background:var(--preto3); border-radius:8px; overflow:hidden; cursor:pointer; border:1px solid var(--linha)}
+  #tl .seg{position:absolute; top:0; bottom:36px}
   #tl .seg.keep{background:linear-gradient(180deg,rgba(63,174,122,.5),rgba(63,174,122,.22))}
   #tl .seg.cut{background:repeating-linear-gradient(45deg,rgba(215,99,79,.45),rgba(215,99,79,.45) 6px,rgba(215,99,79,.25) 6px,rgba(215,99,79,.25) 12px)}
-  #tl .ovrow{position:absolute; left:0; right:0; bottom:0; height:14px; border-top:1px solid rgba(255,255,255,.08); background:rgba(0,0,0,.25)}
-  #tl .ovseg{position:absolute; bottom:1px; height:12px; border-radius:3px; background:linear-gradient(180deg,#d9a85b,#8a6d34); border:1px solid rgba(0,0,0,.35); box-shadow:0 0 4px rgba(217,168,91,.5); display:flex; align-items:center; overflow:hidden}
-  #tl .ovseg b{font-size:9px; color:#1a1206; padding:0 3px; white-space:nowrap; font-weight:800}
-  #tl #ph{position:absolute; top:-2px; bottom:-2px; width:2px; background:var(--ouro); box-shadow:0 0 8px var(--ouro); z-index:3}
+  #tl .ovrow{position:absolute; left:0; right:0; bottom:0; height:34px; border-top:1px solid rgba(255,255,255,.1); background:rgba(0,0,0,.3)}
+  #tl .ovlabel{position:absolute; left:6px; bottom:20px; font-size:9px; color:var(--suave); pointer-events:none; text-transform:uppercase; letter-spacing:.04em}
+  #tl .ovseg{position:absolute; bottom:3px; height:28px; min-width:28px; border-radius:4px; background:linear-gradient(180deg,#e6bd77,#9a7a3c); border:1px solid rgba(0,0,0,.4); box-shadow:0 1px 5px rgba(217,168,91,.55); display:flex; align-items:center; justify-content:center; overflow:hidden; cursor:grab; touch-action:none}
+  #tl .ovseg:active{cursor:grabbing}
+  #tl .ovseg b{font-size:10px; color:#1a1206; padding:0 12px; white-space:nowrap; font-weight:800; pointer-events:none; overflow:hidden; text-overflow:ellipsis}
+  #tl .ovseg .ovh{position:absolute; top:0; bottom:0; width:12px; cursor:ew-resize; background:rgba(26,18,6,.55); touch-action:none}
+  #tl .ovseg .ovh::after{content:""; position:absolute; left:50%; top:50%; width:2px; height:12px; margin:-6px 0 0 -1px; background:rgba(255,255,255,.75); border-radius:1px}
+  #tl .ovseg .ovh-l{left:0; border-radius:4px 0 0 4px} #tl .ovseg .ovh-r{right:0; border-radius:0 4px 4px 0}
+  #tl #ph{position:absolute; top:-2px; bottom:-2px; width:2px; background:var(--ouro); box-shadow:0 0 8px var(--ouro); z-index:3; pointer-events:none}
 
   /* RIGHT */
   .controls{padding:12px 14px; border-bottom:1px solid var(--linha); background:var(--preto2)}
@@ -326,7 +331,7 @@
         <button id="addOvImg" class="ghost" disabled>＋ Imagem em cima</button>
         <input type="file" id="ovFile" accept="video/*,image/*" hidden />
       </div>
-      <div class="hint" style="margin-bottom:8px">A meia-tela aparece só nos trechos que você criar. <b>Atalho:</b> use <b>↑ / ↓</b> pra pular entre os <b>pontos de corte</b> (← / → andam de 0,1s). Pare no começo, clique <b>“⟤ início aqui”</b>; pule pro fim do trecho e clique <b>“fim aqui ⟥”</b>. Enquanto a meia-tela está ativa aparece um selo <b>🖼️ na tela</b> mostrando até quando ela vai, e a faixa dourada na trilha mostra de onde até onde. Em cima o conteúdo; embaixo, você.</div>
+      <div class="hint" style="margin-bottom:8px">Depois de adicionar, <b>arraste a faixa dourada na trilha</b> (embaixo do vídeo): puxe as <b>bordas</b> pra ajustar início/fim, ou o <b>meio</b> pra mover — é o jeito exato. Também dá pra usar os botões <b>“⟤ início aqui / fim aqui ⟥”</b> (ou ↑/↓ pra pular entre cortes). Enquanto está ativa, aparece um selo <b>🖼️ na tela</b> até quando ela vai. Em cima o conteúdo; embaixo, você.</div>
       <div id="ovList" class="empty">Nenhuma meia-tela. Adicione um vídeo ou imagem.</div>
       <div class="stepnav"><button class="ghost" data-goto="caps">← Legenda</button><span class="grow"></span><button class="primary" data-goto="export">Próximo: Salvar &amp; exportar →</button></div>
     </div>
@@ -643,14 +648,32 @@ function renderTimeline(){
     d.style.width=((seg.end-seg.start)/S.duration*100)+"%";
     tl.insertBefore(d, $("#ph"));
   }
-  // 2ª linha: onde a MEIA-TELA (vídeo/imagem de cima) está aplicada
+  // 2ª linha: MEIA-TELA (vídeo/imagem de cima) — ARRASTÁVEL: puxe as bordas pra ajustar início/fim, ou o meio pra mover
   const row=document.createElement("div"); row.className="ovrow"; tl.insertBefore(row, $("#ph"));
-  OV.forEach((o,i)=>{
+  const lbl=document.createElement("div"); lbl.className="ovlabel"; lbl.textContent=OV.length?"meia-tela (arraste)":"meia-tela"; tl.insertBefore(lbl, $("#ph"));
+  const timeAt=cx=>{ const r=tl.getBoundingClientRect(); return Math.min(S.duration, Math.max(0,(cx-r.left)/r.width*S.duration)); };
+  OV.forEach((o)=>{
     const d=document.createElement("div"); d.className="ovseg";
-    d.style.left=(Math.max(0,o.start)/S.duration*100)+"%";
-    d.style.width=(Math.max(0.004,(Math.min(o.end,S.duration)-o.start)/S.duration)*100)+"%";
-    d.title=`Meia-tela: ${o.name||o.type} · ${fmt(o.start)}–${fmt(o.end)}`;
-    d.innerHTML=`<b>${o.type==="image"?"🖼️":"🎞️"} ${esc((o.name||"").slice(0,14))}</b>`;
+    const pos=()=>{ d.style.left=(Math.max(0,o.start)/S.duration*100)+"%"; d.style.width=(Math.max(0.006,(Math.min(o.end,S.duration)-Math.max(0,o.start))/S.duration)*100)+"%"; };
+    pos();
+    d.innerHTML=`<div class="ovh ovh-l"></div><b>${o.type==="image"?"🖼️":"🎞️"} ${esc((o.name||"").slice(0,16))}</b><div class="ovh ovh-r"></div>`;
+    let mode=null, grab=0;
+    const move=e=>{ if(!mode) return; const tt=timeAt(e.clientX);
+      if(mode==="l") o.start=Math.min(Math.max(0,tt), o.end-0.15);
+      else if(mode==="r") o.end=Math.max(Math.min(S.duration,tt), o.start+0.15);
+      else { const dur=o.end-o.start; let ns=Math.max(0, Math.min(S.duration-dur, tt-grab)); o.start=ns; o.end=ns+dur; }
+      pos(); if($("#ovBadge")) $("#ovBadge").hidden=true;
+      setStatus(`🖼️ Meia-tela: ${fmtT(o.start)} → ${fmtT(o.end)}  (${(o.end-o.start).toFixed(2)}s) — solte pra fixar.`); };
+    const up=e=>{ if(!mode) return; mode=null; try{ d.releasePointerCapture(e.pointerId); }catch(_){}
+      renderOvList(); renderTimeline(); refreshStage(); if(autosaveOn) saveMedia&&saveMedia();
+      setStatus(`🖼️ Meia-tela ajustada: ${fmtT(o.start)} → ${fmtT(o.end)}.`); };
+    const start=(m)=>e=>{ e.stopPropagation(); e.preventDefault(); mode=m; grab=timeAt(e.clientX)-o.start; try{ d.setPointerCapture(e.pointerId); }catch(_){} };
+    d.querySelector(".ovh-l").addEventListener("pointerdown", start("l"));
+    d.querySelector(".ovh-r").addEventListener("pointerdown", start("r"));
+    d.addEventListener("pointerdown", e=>{ if(e.target.classList.contains("ovh")) return; start("mv")(e); });
+    d.addEventListener("pointermove", move);
+    d.addEventListener("pointerup", up); d.addEventListener("pointercancel", up);
+    d.addEventListener("click", e=>e.stopPropagation());
     tl.insertBefore(d, $("#ph"));
   });
 }

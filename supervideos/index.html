@@ -1032,9 +1032,8 @@ function cropRect(t){
   } else { cw0=W; ch0=H; }
   cw0=Math.min(W,Math.max(2,Math.round(cw0/2)*2)); ch0=Math.min(H,Math.max(2,Math.round(ch0/2)*2));
   const f=cropFXY(t); const z=Math.min(3, Math.max(0.4, f.zoom||1));
-  let cw, ch;
-  if(z>=1){ cw=Math.max(2,Math.round((cw0/z)/2)*2); ch=Math.max(2,Math.round((ch0/z)/2)*2); }
-  else { cw=cw0; ch=ch0; } // z<1 (afastar): amostra a fatia base e encolhe no desenho
+  // z>1: região MENOR (aproxima). z<1: região MAIOR (afasta/revela), limitada ao vídeo real.
+  let cw=Math.max(2,Math.round((cw0/z)/2)*2), ch=Math.max(2,Math.round((ch0/z)/2)*2);
   cw=Math.min(W,cw); ch=Math.min(H,ch);
   const panX=W-cw, panY=H-ch;
   return {W,H,cw,ch,cw0,ch0,z,cx:Math.round(panX*f.fx),cy:Math.round(panY*f.fy),panX,panY};
@@ -1174,22 +1173,11 @@ function drawOverlayMedia(ctx, o, x,y,w,h){
 // desenha o VÍDEO PRINCIPAL (com seu recorte + zoom in/out) dentro de um retângulo qualquer.
 // usado no quadro inteiro E na metade de baixo da meia-tela — assim seu enquadramento é respeitado nos dois.
 function drawMainInto(ctx, dx, dy, dw, dh, t, src){
-  const r=cropRect(t), m=r||{cx:0,cy:0,cw:src.videoWidth,ch:src.videoHeight,cw0:src.videoWidth,ch0:src.videoHeight,z:1};
-  const fB=cropFXY(t);
-  if(m.z!=null && m.z<0.999){ // AFASTAR: encolhe/revela dentro do retângulo, com fundo desfocado
-    const Ws=src.videoWidth, Hs=src.videoHeight, z=m.z, cw0=m.cw0||Ws, ch0=m.ch0||Hs;
-    ctx.save(); ctx.beginPath(); ctx.rect(dx,dy,dw,dh); ctx.clip();
-    ctx.filter=`blur(${Math.max(6,Math.round(dw*0.045))}px)`;
-    drawCoverB(ctx, src, 0,0,Ws,Hs, dx,dy,dw,dh, 0.5,0.5);
-    ctx.filter="none"; ctx.fillStyle="rgba(0,0,0,.15)"; ctx.fillRect(dx,dy,dw,dh);
-    const regW=Math.min(Ws, cw0/z), regH=Math.min(Hs, ch0/z);
-    const regX=Math.round((Ws-regW)*fB.fx), regY=Math.round((Hs-regH)*fB.fy);
-    const s=Math.min(dw/cw0, dh/ch0)*z, fgW=regW*s, fgH=regH*s;
-    ctx.drawImage(src, regX,regY,regW,regH, dx+(dw-fgW)*fB.fx, dy+(dh-fgH)*fB.fy, fgW,fgH);
-    ctx.restore();
-  } else { // recorte/zoom-in: cover-fit do sub-retângulo escolhido, respeitando o alinhamento vertical (fy)
-    drawCoverB(ctx, src, m.cx,m.cy,m.cw,m.ch, dx,dy,dw,dh, 0.5, fB.fy);
-  }
+  const r=cropRect(t);
+  // usa a MESMA região do quadro dourado (crop + zoom in/out) e preenche o retângulo destino (cover):
+  // sem barras, sem borrado, sem encolher — zoom out mostra MAIS do vídeo preenchendo a tela.
+  const cx=r?r.cx:0, cy=r?r.cy:0, cw=r?r.cw:(src.videoWidth||2), ch=r?r.ch:(src.videoHeight||2);
+  drawCoverB(ctx, src, cx,cy,cw,ch, dx,dy,dw,dh, 0.5,0.5);
 }
 // desenha o frame composto (crop + zoom in/out + meia-tela com fusão), SEM legenda
 // src = vídeo-fonte do frame principal (vid no preview; o vídeo já-cortado no export)

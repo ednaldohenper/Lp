@@ -205,6 +205,8 @@
     <div class="transport">
       <button id="play" disabled title="Play/Pausa — toca o RESULTADO (cortes pulados) com legenda, de onde parou. Funciona em qualquer aba. (ESPAÇO)">▶︎</button>
       <button id="previewResult" class="ghost" disabled title="Toca o vídeo ORIGINAL, com as pausas, sem cortes — pra comparar.">▶︎ original</button>
+      <button id="cutPrev" class="ghost" disabled title="Ponto de corte anterior (tecla ↑). ← / → andam 0,1s.">⟨ corte</button>
+      <button id="cutNext" class="ghost" disabled title="Próximo ponto de corte (tecla ↓). ← / → andam 0,1s.">corte ⟩</button>
       <div id="tl"><div id="ph"></div></div>
       <span class="time" id="time">0:00 / 0:00</span>
     </div>
@@ -404,7 +406,7 @@ async function loadVideo(file){
   setStatus("Carregando vídeo…", true);
   await new Promise(r=> vid.onloadedmetadata=r);
   S.duration=vid.duration;
-  $("#play").disabled=false; $("#previewResult").disabled=false; $("#detect").disabled=false; $("#keepAll").disabled=false; $("#genCaps").disabled=false;
+  $("#play").disabled=false; $("#previewResult").disabled=false; $("#cutPrev").disabled=false; $("#cutNext").disabled=false; $("#detect").disabled=false; $("#keepAll").disabled=false; $("#genCaps").disabled=false;
   $("#expEdl").disabled=false; $("#fmt").disabled=false; $("#findReps").disabled=false;
   $("#zoom").disabled=false; $("#addOvVid").disabled=false; $("#addOvImg").disabled=false; $("#btnSave").disabled=false; $("#btnSave2").disabled=false;
   refreshStage(); updateKeyUI();
@@ -1002,16 +1004,20 @@ function gotoCut(dir){
   const o=activeOverlay(target);
   setStatus(`⏱ Ponto de corte ${fmtT(target)}. ↑ anterior · ↓ próximo · ESPAÇO toca.${o?` — 🖼️ meia-tela ATIVA aqui (${fmtT(o.start)}→${fmtT(o.end)})`:""} Na Meia-tela, use "início aqui"/"fim aqui".`);
 }
-// atalhos de teclado (fora de campos de texto)
+function stepBy(d){ const nt=Math.min(S.duration, Math.max(0,(curTime()+d)));
+  stopPreview(); try{ vid.currentTime=nt; }catch(e){} updateUIAt(nt,false); lastPos=nt; preview.paused=true; preview.posOrig=nt; }
+$("#cutPrev").onclick=()=>gotoCut(-1);
+$("#cutNext").onclick=()=>gotoCut(+1);
+// atalhos de teclado (fora de campos de texto/sliders)
 document.addEventListener("keydown",e=>{
-  const t=e.target; if(t && /^(input|textarea|select)$/i.test(t.tagName)) return;
-  if($("#play").disabled) return;
-  if(e.code==="Space"){ e.preventDefault(); $("#play").click(); return; }   // play/pausa curinga
+  const t=e.target, tag=(t&&t.tagName||"").toLowerCase();
+  if(tag==="textarea" || tag==="input" || tag==="select") return; // deixa digitar / mexer nos sliders
+  if(!S.duration) return;
+  if(e.code==="Space"){ if(!$("#play").disabled){ e.preventDefault(); $("#play").click(); } return; } // play/pausa curinga
   if(e.code==="ArrowUp"){ e.preventDefault(); gotoCut(-1); return; }         // ponto de corte ANTERIOR
   if(e.code==="ArrowDown"){ e.preventDefault(); gotoCut(+1); return; }       // ponto de corte SEGUINTE
-  if(e.code==="ArrowLeft"||e.code==="ArrowRight"){ e.preventDefault();       // passo fino de 0,1s
-    const d=e.code==="ArrowRight"?0.1:-0.1, nt=Math.min(S.duration, Math.max(0,(curTime()+d)));
-    stopPreview(); try{ vid.currentTime=nt; }catch(e2){} updateUIAt(nt,false); lastPos=nt; preview.paused=true; preview.posOrig=nt; return; }
+  if(e.code==="ArrowRight"){ e.preventDefault(); stepBy(0.1); return; }      // passo fino +0,1s
+  if(e.code==="ArrowLeft"){ e.preventDefault(); stepBy(-0.1); return; }      // passo fino -0,1s
 });
 $("#rvNext").onclick=()=> reviewGoto(reviewIdx+1);
 $("#rvPrev").onclick=()=> reviewGoto(reviewIdx-1);

@@ -316,7 +316,8 @@
         <button id="mkKey" class="ghost" disabled title="Grava a POSIÇÃO do quadro neste instante (pra ele te acompanhar ao longo do vídeo). O zoom é fixo, não anima.">📍 Marcar posição</button>
         <span class="lbl" id="keyCount" style="font-size:12px;color:var(--suave)"></span>
         <button id="clrKeys" class="ghost" disabled>limpar pontos</button>
-        <span class="hint" id="cropHint">arraste o quadro no vídeo (à esquerda); o <b>zoom é fixo</b> pro clipe todo; use "📍 Marcar posição" só se quiser que o quadro te <b>acompanhe</b> ao longo do vídeo</span>
+        <button id="resetMove" class="ghost" disabled title="Recentraliza o quadro e apaga qualquer movimento/posição que você arrastou. Zoom e formato ficam.">↺ Remover movimento</button>
+        <span class="hint" id="cropHint">arraste o quadro no vídeo (à esquerda); o <b>zoom é fixo</b> pro clipe todo; use "📍 Marcar posição" só se quiser que o quadro te <b>acompanhe</b>. Puxou torto? clique <b>"↺ Remover movimento"</b>.</span>
       </div>
       <div class="stephead" style="font-size:13px;margin:16px 0 8px">Meia-tela (vídeo/imagem em cima)</div>
       <div class="row" style="margin-bottom:8px">
@@ -416,7 +417,7 @@ async function loadVideo(file){
   S.duration=vid.duration;
   $("#play").disabled=false; $("#previewResult").disabled=false; $("#cutPrev").disabled=false; $("#cutNext").disabled=false; $("#detect").disabled=false; $("#keepAll").disabled=false; $("#genCaps").disabled=false;
   $("#expEdl").disabled=false; $("#fmt").disabled=false; $("#findReps").disabled=false;
-  $("#zoom").disabled=false; $("#addOvVid").disabled=false; $("#addOvImg").disabled=false; $("#btnSave").disabled=false; $("#btnSave2").disabled=false; $("#addCap").disabled=false;
+  $("#zoom").disabled=false; $("#resetMove").disabled=false; $("#addOvVid").disabled=false; $("#addOvImg").disabled=false; $("#btnSave").disabled=false; $("#btnSave2").disabled=false; $("#addCap").disabled=false;
   refreshStage(); updateKeyUI();
   updateTime();
   setStatus("Lendo o áudio pra achar as pausas…", true);
@@ -1134,6 +1135,8 @@ $("#fillH").onchange=e=>{ crop.fillHeight=e.target.checked; refreshStage();
 $("#mkKey").onclick=()=>{ const t=curTime(); setKeyAt(t); refreshStage();
   setStatus(`📍 Posição do quadro marcada em ${fmt(t)} (${crop.keys.length} no total). Avance, arraste o quadro e marque de novo: ele se move suave entre os pontos. (O zoom continua fixo.)`); };
 $("#clrKeys").onclick=()=>{ crop.keys=[]; updateKeyUI(); refreshStage(); setStatus("Pontos limpos."); };
+$("#resetMove").onclick=()=>{ crop.fx=0.5; crop.fy=0.5; crop.keys=[]; updateKeyUI(); refreshStage();
+  setStatus("↺ Movimento removido — quadro recentralizado. (Zoom e formato mantidos.)"); };
 function refreshStage(){ renderStage(curTime(), preview.on || !vid.paused); }
 window.addEventListener("resize", refreshStage);
 if(window.ResizeObserver) new ResizeObserver(refreshStage).observe(vid);
@@ -1394,7 +1397,8 @@ async function genCaptions(){
     });
   }
   setStatus("Transcrevendo o áudio (roda no seu navegador, pode levar alguns minutos)…", true);
-  const mono = await to16kMono(S.audio);
+  const PAD=0.5; // silêncio adicionado no começo pra o Whisper não perder a 1ª palavra quando você já começa falando
+  const mono = await to16kMono(S.audio, PAD);
   // 1ª tentativa: timestamps POR PALAVRA (cada palavra fica na tela no tempo real da fala — segue a cadência)
   let caps=null;
   try{
@@ -1409,6 +1413,10 @@ async function genCaptions(){
       start:c.timestamp[0]||0, end:c.timestamp[1]||((c.timestamp[0]||0)+2), text:c.text.trim()
     }));
   }
+  // desconta o silêncio adicionado (volta os tempos pro vídeo real)
+  caps.forEach(c=>{ c.start=Math.max(0,(c.start||0)-PAD); c.end=Math.max(c.start+0.05,(c.end||0)-PAD);
+    if(c.wtimes) c.wtimes=c.wtimes.map(p=>[Math.max(0,p[0]-PAD), Math.max(0,p[1]-PAD)]); });
+  caps=caps.filter(c=>c.end>0.02);
   S.caps = caps;
   renderCaps(); renderSegs(); refreshExportButtons();
   return S.caps.length>0;
@@ -1417,9 +1425,10 @@ $("#genCaps").onclick=async ()=>{
   try{ const ok=await genCaptions(); setStatus(ok?`Pronto: ${S.caps.length} legenda(s). Revise os textos na aba Legendas.`:"Não encontrei fala pra transcrever."); }
   catch(err){ console.error(err); setStatus("⚠️ Falha na transcrição: "+(err&&err.message||err)+". (Veja o console F12.) Você também pode importar um .srt."); }
 };
-async function to16kMono(ab){
-  const off=new OfflineAudioContext(1, Math.ceil(ab.duration*16000), 16000);
-  const src=off.createBufferSource(); src.buffer=ab; src.connect(off.destination); src.start();
+async function to16kMono(ab, pad=0){
+  const len=Math.ceil((ab.duration+pad)*16000);
+  const off=new OfflineAudioContext(1, len, 16000);
+  const src=off.createBufferSource(); src.buffer=ab; src.connect(off.destination); src.start(pad); // silêncio no começo → Whisper pega a 1ª palavra
   const r=await off.startRendering(); return r.getChannelData(0);
 }
 

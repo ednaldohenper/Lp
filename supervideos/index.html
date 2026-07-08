@@ -277,6 +277,7 @@
           <option value="Xenova/whisper-small">Precisão alta (small · ~240 MB)</option>
           <option value="Xenova/whisper-base">Rápida (base · ~70 MB)</option>
         </select>
+        <button id="addCap" class="ghost" disabled title="Cria uma legenda no ponto atual do vídeo (use pra fala que o automático não pegou — ex.: o comecinho). Depois é só digitar o texto.">➕ Nova legenda (aqui)</button>
         <button id="importSrt" class="ghost">Importar .srt</button>
         <input type="file" id="srtFile" accept=".srt,.vtt,.txt" hidden />
         <button id="findReps" class="ghost" disabled title="Acha falas repetidas (erro + refez) e marca o take anterior pra cortar">🔁 Marcar repetições</button>
@@ -413,7 +414,7 @@ async function loadVideo(file){
   S.duration=vid.duration;
   $("#play").disabled=false; $("#previewResult").disabled=false; $("#cutPrev").disabled=false; $("#cutNext").disabled=false; $("#detect").disabled=false; $("#keepAll").disabled=false; $("#genCaps").disabled=false;
   $("#expEdl").disabled=false; $("#fmt").disabled=false; $("#findReps").disabled=false;
-  $("#zoom").disabled=false; $("#addOvVid").disabled=false; $("#addOvImg").disabled=false; $("#btnSave").disabled=false; $("#btnSave2").disabled=false;
+  $("#zoom").disabled=false; $("#addOvVid").disabled=false; $("#addOvImg").disabled=false; $("#btnSave").disabled=false; $("#btnSave2").disabled=false; $("#addCap").disabled=false;
   refreshStage(); updateKeyUI();
   updateTime();
   setStatus("Lendo o áudio pra achar as pausas…", true);
@@ -1299,6 +1300,17 @@ document.querySelectorAll("[data-goto]").forEach(b=>b.onclick=()=>{ ensureTab(b.
 $("#btnSave2").onclick=()=>$("#btnSave").click();
 
 // ---------- legendas ----------
+let capToFocus=null;
+$("#addCap").onclick=()=>{
+  if(!S.duration){ setStatus("Abra um vídeo primeiro."); return; }
+  const t=Math.max(0, curTime());
+  const next=S.caps.filter(c=>c.start>t+0.05).sort((a,b)=>a.start-b.start)[0];
+  const end=Math.min(S.duration, next ? next.start-0.02 : t+2.5);
+  const cap={ start:+t.toFixed(3), end:Math.max(t+0.6, end), text:"nova legenda" };
+  S.caps.push(cap); S.caps.sort((a,b)=>a.start-b.start);
+  capToFocus=cap; buildWords(); ensureTab("caps"); renderCaps(); refreshExportButtons();
+  setStatus(`➕ Legenda criada em ${fmtT(cap.start)} → ${fmtT(cap.end)}. Digite o texto (ela já aparece na tela). Pra fala do comecinho, fique em 0:00 antes de criar.`);
+};
 $("#importSrt").onclick=()=>$("#srtFile").click();
 $("#srtFile").onchange=e=>{ const f=e.target.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ S.caps=parseSrt(rd.result); renderCaps(); renderSegs(); refreshExportButtons(); setStatus(`Importei ${S.caps.length} legenda(s).`); }; rd.readAsText(f); };
 
@@ -1345,6 +1357,7 @@ function renderCaps(){
     ta.oninput=()=>{ c.text=ta.value; buildWords(); renderCaption(curTime()); refreshExportButtons(); };
     ta.onfocus=()=>{ capEditing=true; stopPreview(); vid.currentTime=c.start; };
     ta.onblur=()=>{ capEditing=false; };
+    if(c===capToFocus){ capToFocus=null; setTimeout(()=>{ ta.focus(); ta.select(); ta.scrollIntoView({block:"nearest"}); },0); }
     row.querySelector(".del").onclick=()=>{ const idx=S.caps.indexOf(c); if(idx>=0) S.caps.splice(idx,1); buildWords(); renderCaps(); refreshExportButtons(); setStatus("Legenda excluída."); };
     el.appendChild(row);
   });

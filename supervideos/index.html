@@ -204,7 +204,7 @@
       <div id="drop">
         <b>Arraste seu reel aqui</b>
         <span>ou clique pra escolher o arquivo (.mp4 / .mov)</span>
-        <span class="hint">funciona melhor no Chrome · vídeos de até ~2–3 min</span>
+        <span class="hint">funciona melhor no Chrome · vídeos longos (5 min+) funcionam, só ficam mais pesados pra transcrever</span>
       </div>
     </div>
   </section>
@@ -415,6 +415,8 @@ async function loadVideo(file){
   setStatus("Carregando vídeo…", true);
   await new Promise(r=> vid.onloadedmetadata=r);
   S.duration=vid.duration;
+  // já mostra o vídeo inteiro na trilha (1 trecho mantido) — dá pra cortar/navegar antes mesmo de detectar pausas
+  S.segs=[{start:0, end:S.duration, keep:true, type:"speech", thumb:null}]; renderSegs(); renderTimeline();
   $("#play").disabled=false; $("#previewResult").disabled=false; $("#cutPrev").disabled=false; $("#cutNext").disabled=false; $("#detect").disabled=false; $("#keepAll").disabled=false; $("#genCaps").disabled=false;
   $("#expEdl").disabled=false; $("#fmt").disabled=false; $("#findReps").disabled=false;
   $("#zoom").disabled=false; $("#resetMove").disabled=false; $("#addOvVid").disabled=false; $("#addOvImg").disabled=false; $("#btnSave").disabled=false; $("#btnSave2").disabled=false; $("#addCap").disabled=false;

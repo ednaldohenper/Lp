@@ -78,6 +78,7 @@
   #capOverlay .w-cur{color:var(--ouro)}
   #capOverlay .capbox{display:inline}
   #capOverlay .capgroup{display:inline-block; max-width:100%}
+  #ovBadge{position:absolute; left:8px; top:8px; z-index:6; background:rgba(217,168,91,.92); color:#1a1206; font-size:11px; font-weight:800; padding:3px 8px; border-radius:6px; pointer-events:none; box-shadow:0 2px 8px rgba(0,0,0,.4)}
   #capOverlay .capgroup span{margin:0 .12em}
   .transport{display:flex; align-items:center; gap:10px; padding:10px 14px; border-top:1px solid var(--linha); background:var(--preto2)}
   .time{font-variant-numeric:tabular-nums; color:var(--suave); font-size:12px; min-width:96px}
@@ -194,6 +195,7 @@
       <canvas id="previewCanvas"></canvas>
       <div id="cropBox" hidden></div>
       <div id="capOverlay"></div>
+      <div id="ovBadge" hidden></div>
       <div id="drop">
         <b>Arraste seu reel aqui</b>
         <span>ou clique pra escolher o arquivo (.mp4 / .mov)</span>
@@ -322,7 +324,7 @@
         <button id="addOvImg" class="ghost" disabled>＋ Imagem em cima</button>
         <input type="file" id="ovFile" accept="video/*,image/*" hidden />
       </div>
-      <div class="hint" style="margin-bottom:8px">A meia-tela aparece só nos trechos que você criar: <b>vai até o ponto do vídeo</b>, adicione o vídeo/imagem, e use <b>“início aqui”/“fim aqui”</b> pra marcar quando ele aparece. Em cima fica o conteúdo; embaixo, você.</div>
+      <div class="hint" style="margin-bottom:8px">A meia-tela aparece só nos trechos que você criar. <b>Atalho:</b> use <b>↑ / ↓</b> pra pular entre os <b>pontos de corte</b> (← / → andam de 0,1s). Pare no começo, clique <b>“⟤ início aqui”</b>; pule pro fim do trecho e clique <b>“fim aqui ⟥”</b>. Enquanto a meia-tela está ativa aparece um selo <b>🖼️ na tela</b> mostrando até quando ela vai, e a faixa dourada na trilha mostra de onde até onde. Em cima o conteúdo; embaixo, você.</div>
       <div id="ovList" class="empty">Nenhuma meia-tela. Adicione um vídeo ou imagem.</div>
       <div class="stepnav"><button class="ghost" data-goto="caps">← Legenda</button><span class="grow"></span><button class="primary" data-goto="export">Próximo: Salvar &amp; exportar →</button></div>
     </div>
@@ -984,12 +986,32 @@ $("#rvAll").onclick=()=>{
 };
 $("#rvRestart").onclick=()=>{ stopPreview(); lastPos=0; preview.paused=false; preview.posOrig=0; ensureTab("segs");
   startPreview(keptRanges()[0]?.start||0, null); };
-// ESPAÇO pausa/retoma o "Ouvir tudo" (sem atrapalhar quando estiver digitando)
+// pontos de corte = todas as bordas dos trechos (+ início e fim). Servem pra "pular" com as setas.
+function cutPoints(){
+  const set=new Set([0]); if(S.duration) set.add(+S.duration.toFixed(3));
+  for(const s of S.segs){ set.add(+(+s.start).toFixed(3)); set.add(+(+s.end).toFixed(3)); }
+  return [...set].sort((a,b)=>a-b);
+}
+function gotoCut(dir){
+  if(!S.duration) return;
+  const pts=cutPoints(), now=curTime();
+  const target = dir>0 ? pts.find(p=>p>now+0.02) : [...pts].reverse().find(p=>p<now-0.02);
+  if(target==null) return;
+  stopPreview(); try{ vid.currentTime=target; }catch(e){} updateUIAt(target,false);
+  lastPos=target; preview.paused=true; preview.posOrig=target;
+  const o=activeOverlay(target);
+  setStatus(`⏱ Ponto de corte ${fmtT(target)}. ↑ anterior · ↓ próximo · ESPAÇO toca.${o?` — 🖼️ meia-tela ATIVA aqui (${fmtT(o.start)}→${fmtT(o.end)})`:""} Na Meia-tela, use "início aqui"/"fim aqui".`);
+}
+// atalhos de teclado (fora de campos de texto)
 document.addEventListener("keydown",e=>{
-  if(e.code!=="Space") return;
   const t=e.target; if(t && /^(input|textarea|select)$/i.test(t.tagName)) return;
   if($("#play").disabled) return;
-  e.preventDefault(); $("#play").click(); // ESPAÇO = play/pause curinga (mesmo botão da esquerda)
+  if(e.code==="Space"){ e.preventDefault(); $("#play").click(); return; }   // play/pausa curinga
+  if(e.code==="ArrowUp"){ e.preventDefault(); gotoCut(-1); return; }         // ponto de corte ANTERIOR
+  if(e.code==="ArrowDown"){ e.preventDefault(); gotoCut(+1); return; }       // ponto de corte SEGUINTE
+  if(e.code==="ArrowLeft"||e.code==="ArrowRight"){ e.preventDefault();       // passo fino de 0,1s
+    const d=e.code==="ArrowRight"?0.1:-0.1, nt=Math.min(S.duration, Math.max(0,(curTime()+d)));
+    stopPreview(); try{ vid.currentTime=nt; }catch(e2){} updateUIAt(nt,false); lastPos=nt; preview.paused=true; preview.posOrig=nt; return; }
 });
 $("#rvNext").onclick=()=> reviewGoto(reviewIdx+1);
 $("#rvPrev").onclick=()=> reviewGoto(reviewIdx-1);
@@ -1137,7 +1159,7 @@ function renderOvList(){
     card.innerHTML=`<div class="thumb" ${o.type==="image"?`style="background-image:url(${o.url})"`:""}>${o.type==="video"?"▶":""}</div>
       <div class="meta"><div class="nm">${esc(o.name)} <span style="color:var(--suave)">(${o.type==="image"?"imagem":"vídeo"})</span></div>
       <div class="t">${fmt(o.start)} → ${fmt(o.end)}</div>
-      <div><button data-a="si" class="ghost">início aqui</button><button data-a="fi" class="ghost">fim aqui</button><button data-a="go" class="ghost">ir ao início</button>${o.type==="video"?`<button data-a="snd" class="ghost">${o.sound?"🔊 com som":"🔇 sem som"}</button>`:""}<button data-a="rm" class="ghost">remover</button></div>
+      <div><button data-a="si" class="ghost">⟤ início aqui</button><button data-a="fi" class="ghost">fim aqui ⟥</button><button data-a="go" class="ghost">⇤ ir ao início</button><button data-a="gf" class="ghost">ir ao fim ⇥</button>${o.type==="video"?`<button data-a="snd" class="ghost">${o.sound?"🔊 com som":"🔇 sem som"}</button>`:""}<button data-a="rm" class="ghost">remover</button></div>
       <div style="margin-top:5px;display:flex;gap:8px;align-items:center" title="Enquadrar o vídeo de cima (o de baixo você enquadra arrastando o quadro dourado)">
         <span class="lbl" style="font-size:11px;color:var(--suave)">enquadrar cima ↔</span><input type="range" class="ovx" min="0" max="1" step="0.02" value="${o.px==null?0.5:o.px}" style="width:70px;accent-color:var(--ouro)">
         <span class="lbl" style="font-size:11px;color:var(--suave)">↕</span><input type="range" class="ovy" min="0" max="1" step="0.02" value="${o.py==null?0.5:o.py}" style="width:70px;accent-color:var(--ouro)">
@@ -1146,7 +1168,8 @@ function renderOvList(){
       const a=b.dataset.a, t=curTime();
       if(a==="si") o.start=Math.min(t, o.end-0.2);
       if(a==="fi") o.end=Math.max(t, o.start+0.2);
-      if(a==="go"){ stopPreview(); vid.currentTime=o.start; updateUIAt(o.start,false); }
+      if(a==="go"){ stopPreview(); vid.currentTime=o.start; updateUIAt(o.start,false); lastPos=o.start; preview.paused=true; preview.posOrig=o.start; }
+      if(a==="gf"){ stopPreview(); vid.currentTime=o.end; updateUIAt(o.end,false); lastPos=o.end; preview.paused=true; preview.posOrig=o.end; }
       if(a==="snd"){ o.sound=!o.sound; }
       if(a==="rm"){ if(o.vid) o.vid.pause(); OV=OV.filter(x=>x!==o); if(autosaveOn) saveMedia(); }
       renderOvList(); renderTimeline(); refreshStage();
@@ -1230,6 +1253,9 @@ function renderStage(t, playing){
     frameRect=frameDisplayRect();
   }
   positionCaption($("#capOverlay"));
+  // badge: mostra quando a meia-tela está ativa e quando ela termina
+  const ob=$("#ovBadge"), ov=activeOverlay(t);
+  if(ob){ if(ov){ ob.hidden=false; ob.textContent=`🖼️ meia-tela ativa · termina ${fmtT(ov.end)}`; } else ob.hidden=true; }
 }
 
 // ---------- tabs ----------

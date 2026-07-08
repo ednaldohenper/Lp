@@ -414,7 +414,7 @@ async function loadVideo(file){
   S.segs=[]; S.caps=[]; renderSegs(); renderCaps(); renderSummary(); renderTimeline();
   setStatus("Carregando vídeo…", true);
   await new Promise(r=> vid.onloadedmetadata=r);
-  S.duration=vid.duration;
+  S.duration=await robustDuration();
   // já mostra o vídeo inteiro na trilha (1 trecho mantido) — dá pra cortar/navegar antes mesmo de detectar pausas
   S.segs=[{start:0, end:S.duration, keep:true, type:"speech", thumb:null}]; renderSegs(); renderTimeline();
   $("#play").disabled=false; $("#previewResult").disabled=false; $("#cutPrev").disabled=false; $("#cutNext").disabled=false; $("#detect").disabled=false; $("#keepAll").disabled=false; $("#genCaps").disabled=false;
@@ -423,8 +423,27 @@ async function loadVideo(file){
   refreshStage(); updateKeyUI();
   updateTime();
   setStatus("Lendo o áudio pra achar as pausas…", true);
-  try{ await decodeAudio(file); setStatus('Vídeo pronto. Clique em "Detectar pausas".'); }
+  try{ await decodeAudio(file);
+    // concilia a duração com o ÁUDIO decodificado (alguns .mp4 reportam duração errada/parcial no vídeo → trilha "parava" antes do fim)
+    if(S.audio && isFinite(S.audio.duration) && S.audio.duration > S.duration+0.3){
+      S.duration=S.audio.duration;
+      if(S.segs.length===1 && S.segs[0].keep) S.segs[0].end=S.duration;
+      renderSegs(); renderTimeline(); updateTime();
+    }
+    setStatus('Vídeo pronto. Clique em "Detectar pausas".'); }
   catch(err){ console.error(err); setStatus("⚠️ Não consegui ler o áudio desse arquivo. Tente um .mp4 (H.264/AAC) ou use o Chrome."); }
+}
+// duração robusta: alguns arquivos (blob/mp4 fragmentado) reportam Infinity/0 no loadedmetadata
+function robustDuration(){
+  if(isFinite(vid.duration) && vid.duration>0) return Promise.resolve(vid.duration);
+  return new Promise(res=>{
+    let done=false;
+    const finish=v=>{ if(done)return; done=true; vid.removeEventListener("durationchange",h); try{ vid.currentTime=0; }catch(e){} res(v); };
+    const h=()=>{ if(isFinite(vid.duration)&&vid.duration>0) finish(vid.duration); };
+    vid.addEventListener("durationchange",h);
+    try{ vid.currentTime=1e7; }catch(e){}
+    setTimeout(()=>finish(isFinite(vid.duration)&&vid.duration>0?vid.duration:0), 3000);
+  });
 }
 
 async function decodeAudio(file){

@@ -1230,13 +1230,21 @@ if(window.ResizeObserver) new ResizeObserver(refreshStage).observe(vid);
 // ---------- #4 meia-tela (overlay vídeo/imagem por trecho) ----------
 let OV=[], ovSeq=0, ovType="video";
 function activeOverlay(t){ return OV.find(o=> t>=o.start && t<o.end) || null; }
+// decodifica o 1º frame do vídeo de cima (senão o primeiro frame sai preto quando ele entra)
+function primeOverlay(o){ return new Promise(res=>{
+  if(!o || o.type!=="video" || !o.vid){ return res(); }
+  const v=o.vid; let done=false; const fin=()=>{ if(done)return; done=true; res(); };
+  const seek0=()=>{ const h=()=>{ v.removeEventListener("seeked",h); fin(); }; v.addEventListener("seeked",h); try{ v.currentTime=0.001; }catch(e){ fin(); } };
+  if(v.readyState>=1) seek0(); else v.addEventListener("loadeddata", seek0, {once:true});
+  setTimeout(fin, 2000);
+}); }
 $("#addOvVid").onclick=()=>{ ovType="video"; $("#ovFile").accept="video/*"; $("#ovFile").click(); };
 $("#addOvImg").onclick=()=>{ ovType="image"; $("#ovFile").accept="image/*"; $("#ovFile").click(); };
 $("#ovFile").onchange=e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return;
   const url=URL.createObjectURL(f); const t0=curTime();
   const o={id:++ovSeq, type:f.type.startsWith("image")?"image":"video", name:f.name, url, file:f, sound:false, mode:"half", px:0.5, py:0.5, start:t0, end:Math.min(S.duration||t0+3, t0+3)};
   if(o.type==="image"){ o.img=new Image(); o.img.src=url; o.img.onload=()=>refreshStage(); }
-  else { o.vid=document.createElement("video"); o.vid.src=url; o.vid.muted=true; o.vid.playsInline=true; o.vid.preload="auto"; }
+  else { o.vid=document.createElement("video"); o.vid.src=url; o.vid.muted=true; o.vid.playsInline=true; o.vid.preload="auto"; o.vid.addEventListener("loadeddata",()=>{ try{o.vid.currentTime=0.001;}catch(e){} refreshStage(); },{once:true}); }
   OV.push(o); renderOvList(); renderTimeline(); refreshStage(); if(autosaveOn) saveMedia();
   setStatus(`Adicionado (${o.type==="image"?"imagem":"vídeo"}). Escolha o modo (meia-tela ou 🎬 tela cheia/b-roll) e ajuste início/fim na trilha.`);
 };
@@ -1817,6 +1825,7 @@ async function exportRealtime(ranges){
   const reachEnd=(endT)=>new Promise(res=>{ const w=()=>{ if(ended||vid.ended||vid.currentTime>=endT-0.02){ res(); return; } requestAnimationFrame(w); }; requestAnimationFrame(w); });
 
   vid.pause(); await seekTo(ranges[0].start); last=vid.currentTime;
+  await Promise.all(OV.map(primeOverlay)); // decodifica o 1º frame dos vídeos de cima (evita frame preto)
   rec.start(); draw();
   try{
     for(let i=0;i<ranges.length && !ended;i++){
@@ -1978,7 +1987,7 @@ async function applyRestore(media, state){
   OV=[]; ovSeq=0; const meta=new Map((state&&state.overlays||[]).map(o=>[o.id,o]));
   for(const om of (media.overlays||[])){ if(!om.blob) continue; const url=URL.createObjectURL(om.blob); const t=meta.get(om.id)||{};
     const ov={id:++ovSeq,type:om.type,name:om.name,url,file:om.blob,sound:!!t.sound,mode:t.mode||"half",px:t.px==null?0.5:t.px,py:t.py==null?0.5:t.py,start:t.start||0,end:t.end||Math.min(S.duration,(t.start||0)+3)};
-    if(om.type==="image"){ ov.img=new Image(); ov.img.src=url; } else { ov.vid=document.createElement("video"); ov.vid.src=url; ov.vid.muted=true; ov.vid.playsInline=true; ov.vid.preload="auto"; }
+    if(om.type==="image"){ ov.img=new Image(); ov.img.src=url; } else { ov.vid=document.createElement("video"); ov.vid.src=url; ov.vid.muted=true; ov.vid.playsInline=true; ov.vid.preload="auto"; ov.vid.addEventListener("loadeddata",()=>{ try{ov.vid.currentTime=0.001;}catch(e){} refreshStage(); },{once:true}); }
     OV.push(ov); }
   // reflete nos controles
   $("#fmt").value=String(crop.ar||0); $("#zoom").value=crop.zoom; $("#vZoom").textContent=crop.zoom.toFixed(1)+"×"; $("#fillH").checked=crop.fillHeight;

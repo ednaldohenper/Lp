@@ -319,13 +319,13 @@
         <button id="resetMove" class="ghost" disabled title="Recentraliza o quadro e apaga qualquer movimento/posição que você arrastou. Zoom e formato ficam.">↺ Remover movimento</button>
         <span class="hint" id="cropHint">arraste o quadro no vídeo (à esquerda); o <b>zoom é fixo</b> pro clipe todo; use "📍 Marcar posição" só se quiser que o quadro te <b>acompanhe</b>. Puxou torto? clique <b>"↺ Remover movimento"</b>.</span>
       </div>
-      <div class="stephead" style="font-size:13px;margin:16px 0 8px">Meia-tela (vídeo/imagem em cima)</div>
+      <div class="stephead" style="font-size:13px;margin:16px 0 8px">Meia-tela ou b-roll (vídeo/imagem)</div>
       <div class="row" style="margin-bottom:8px">
         <button id="addOvVid" class="ghost" disabled>＋ Vídeo em cima</button>
         <button id="addOvImg" class="ghost" disabled>＋ Imagem em cima</button>
         <input type="file" id="ovFile" accept="video/*,image/*" hidden />
       </div>
-      <div class="hint" style="margin-bottom:8px">Depois de adicionar, <b>arraste a faixa dourada na trilha</b> (embaixo do vídeo): puxe as <b>bordas</b> pra ajustar início/fim, ou o <b>meio</b> pra mover — é o jeito exato. Também dá pra usar os botões <b>“⟤ início aqui / fim aqui ⟥”</b> (ou ↑/↓ pra pular entre cortes). Enquanto está ativa, aparece um selo <b>🖼️ na tela</b> até quando ela vai. Em cima o conteúdo; embaixo, você.</div>
+      <div class="hint" style="margin-bottom:8px">Dois modos (botão no cartão): <b>🖼️ meia-tela</b> (você embaixo + conteúdo em cima) ou <b>🎬 tela cheia (b-roll)</b> — o vídeo/imagem ocupa a <b>tela inteira</b> e a <b>sua voz continua por baixo</b> (com a legenda por cima). Depois de adicionar, <b>arraste a faixa dourada na trilha</b>: puxe as <b>bordas</b> pra ajustar início/fim, ou o <b>meio</b> pra mover. (No b-roll, o som do vídeo vem desligado — ligue no <b>🔊</b> se quiser.)</div>
       <div id="ovList" class="empty">Nenhuma meia-tela. Adicione um vídeo ou imagem.</div>
       <div class="stepnav"><button class="ghost" data-goto="caps">← Legenda</button><span class="grow"></span><button class="primary" data-goto="export">Próximo: Salvar &amp; exportar →</button></div>
     </div>
@@ -687,7 +687,7 @@ function renderTimeline(){
     const d=document.createElement("div"); d.className="ovseg";
     const pos=()=>{ d.style.left=(Math.max(0,o.start)/S.duration*100)+"%"; d.style.width=(Math.max(0.006,(Math.min(o.end,S.duration)-Math.max(0,o.start))/S.duration)*100)+"%"; };
     pos();
-    d.innerHTML=`<div class="ovh ovh-l"></div><b>${o.type==="image"?"🖼️":"🎞️"} ${esc((o.name||"").slice(0,16))}</b><div class="ovh ovh-r"></div>`;
+    d.innerHTML=`<div class="ovh ovh-l"></div><b>${o.mode==="full"?"🎬":(o.type==="image"?"🖼️":"🎞️")} ${esc((o.name||"").slice(0,16))}</b><div class="ovh ovh-r"></div>`;
     let mode=null, grab=0;
     const move=e=>{ if(!mode) return; const tt=timeAt(e.clientX);
       if(mode==="l") o.start=Math.min(Math.max(0,tt), o.end-0.15);
@@ -1207,11 +1207,11 @@ $("#addOvVid").onclick=()=>{ ovType="video"; $("#ovFile").accept="video/*"; $("#
 $("#addOvImg").onclick=()=>{ ovType="image"; $("#ovFile").accept="image/*"; $("#ovFile").click(); };
 $("#ovFile").onchange=e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return;
   const url=URL.createObjectURL(f); const t0=curTime();
-  const o={id:++ovSeq, type:f.type.startsWith("image")?"image":"video", name:f.name, url, file:f, sound:false, px:0.5, py:0.5, start:t0, end:Math.min(S.duration||t0+3, t0+3)};
+  const o={id:++ovSeq, type:f.type.startsWith("image")?"image":"video", name:f.name, url, file:f, sound:false, mode:"half", px:0.5, py:0.5, start:t0, end:Math.min(S.duration||t0+3, t0+3)};
   if(o.type==="image"){ o.img=new Image(); o.img.src=url; o.img.onload=()=>refreshStage(); }
   else { o.vid=document.createElement("video"); o.vid.src=url; o.vid.muted=true; o.vid.playsInline=true; o.vid.preload="auto"; }
   OV.push(o); renderOvList(); renderTimeline(); refreshStage(); if(autosaveOn) saveMedia();
-  setStatus(`Meia-tela adicionada (${o.type==="image"?"imagem":"vídeo"}). Ajuste "início aqui / fim aqui" no trecho que quiser.`);
+  setStatus(`Adicionado (${o.type==="image"?"imagem":"vídeo"}). Escolha o modo (meia-tela ou 🎬 tela cheia/b-roll) e ajuste início/fim na trilha.`);
 };
 function renderOvList(){
   const el=$("#ovList");
@@ -1222,7 +1222,7 @@ function renderOvList(){
     card.innerHTML=`<div class="thumb" ${o.type==="image"?`style="background-image:url(${o.url})"`:""}>${o.type==="video"?"▶":""}</div>
       <div class="meta"><div class="nm">${esc(o.name)} <span style="color:var(--suave)">(${o.type==="image"?"imagem":"vídeo"})</span></div>
       <div class="t">${fmt(o.start)} → ${fmt(o.end)}</div>
-      <div><button data-a="si" class="ghost">⟤ início aqui</button><button data-a="fi" class="ghost">fim aqui ⟥</button><button data-a="go" class="ghost">⇤ ir ao início</button><button data-a="gf" class="ghost">ir ao fim ⇥</button>${o.type==="video"?`<button data-a="snd" class="ghost">${o.sound?"🔊 com som":"🔇 sem som"}</button>`:""}<button data-a="rm" class="ghost">remover</button></div>
+      <div><button data-a="mode" class="ghost" title="Meia-tela = você embaixo + conteúdo em cima. Tela cheia (b-roll) = o vídeo/imagem ocupa a tela toda e a sua VOZ continua por baixo.">${o.mode==="full"?"🎬 tela cheia (b-roll)":"🖼️ meia-tela"}</button><button data-a="si" class="ghost">⟤ início aqui</button><button data-a="fi" class="ghost">fim aqui ⟥</button><button data-a="go" class="ghost">⇤ ir ao início</button><button data-a="gf" class="ghost">ir ao fim ⇥</button>${o.type==="video"?`<button data-a="snd" class="ghost">${o.sound?"🔊 com som":"🔇 sem som"}</button>`:""}<button data-a="rm" class="ghost">remover</button></div>
       <div style="margin-top:5px;display:flex;gap:8px;align-items:center" title="Enquadrar o vídeo de cima (o de baixo você enquadra arrastando o quadro dourado)">
         <span class="lbl" style="font-size:11px;color:var(--suave)">enquadrar cima ↔</span><input type="range" class="ovx" min="0" max="1" step="0.02" value="${o.px==null?0.5:o.px}" style="width:70px;accent-color:var(--ouro)">
         <span class="lbl" style="font-size:11px;color:var(--suave)">↕</span><input type="range" class="ovy" min="0" max="1" step="0.02" value="${o.py==null?0.5:o.py}" style="width:70px;accent-color:var(--ouro)">
@@ -1234,6 +1234,7 @@ function renderOvList(){
       if(a==="go"){ stopPreview(); vid.currentTime=o.start; updateUIAt(o.start,false); lastPos=o.start; preview.paused=true; preview.posOrig=o.start; }
       if(a==="gf"){ stopPreview(); vid.currentTime=o.end; updateUIAt(o.end,false); lastPos=o.end; preview.paused=true; preview.posOrig=o.end; }
       if(a==="snd"){ o.sound=!o.sound; }
+      if(a==="mode"){ o.mode = (o.mode==="full") ? "half" : "full"; }
       if(a==="rm"){ if(o.vid) o.vid.pause(); OV=OV.filter(x=>x!==o); if(autosaveOn) saveMedia(); }
       renderOvList(); renderTimeline(); refreshStage();
     });
@@ -1271,6 +1272,7 @@ function drawComposite(ctx, W, H, t, src){
   src=src||vid;
   const o=activeOverlay(t);
   if(!o){ drawMainInto(ctx, 0,0,W,H, t, src); return; }
+  if(o.mode==="full"){ drawOverlayMedia(ctx, o, 0,0,W,H); return; } // B-ROLL tela cheia (sua voz continua por baixo)
   // MEIA-TELA: você embaixo (respeitando seu recorte/zoom), conteúdo em cima, com a base do de cima fundindo
   const halfH=Math.round(H/2), feather=Math.round(H*0.06);
   drawMainInto(ctx, 0, halfH-feather, W, H-(halfH-feather), t, src);
@@ -1318,7 +1320,7 @@ function renderStage(t, playing){
   positionCaption($("#capOverlay"));
   // badge: mostra quando a meia-tela está ativa e quando ela termina
   const ob=$("#ovBadge"), ov=activeOverlay(t);
-  if(ob){ if(ov){ ob.hidden=false; ob.textContent=`🖼️ meia-tela ativa · termina ${fmtT(ov.end)}`; } else ob.hidden=true; }
+  if(ob){ if(ov){ ob.hidden=false; ob.textContent=`${ov.mode==="full"?"🎬 b-roll (tela cheia)":"🖼️ meia-tela"} ativa · termina ${fmtT(ov.end)}`; } else ob.hidden=true; }
 }
 
 // ---------- tabs ----------
@@ -1868,7 +1870,7 @@ async function saveState(){ if(!S.file) return;
     caps:S.caps, capStyle:S.capStyle, capColor:S.capColor, capSize:S.capSize, capPos:S.capPos, capKeys:S.capKeys,
     capOffset:S.capOffset, capSpeed:S.capSpeed, params:S.params,
     crop:{ar:crop.ar,fx:crop.fx,fy:crop.fy,zoom:crop.zoom,fillHeight:crop.fillHeight,keys:crop.keys},
-    overlays:OV.map(o=>({id:o.id,start:o.start,end:o.end,sound:!!o.sound,px:o.px,py:o.py})) }); }
+    overlays:OV.map(o=>({id:o.id,start:o.start,end:o.end,sound:!!o.sound,mode:o.mode||"half",px:o.px,py:o.py})) }); }
 async function saveProject(){ if(!S.file){ setStatus("Abra um vídeo antes de salvar."); return; }
   try{ setStatus("💾 Salvando…",true); await saveMedia(); await saveState();
     autosaveOn=true; if(!autosaveTimer) autosaveTimer=setInterval(()=>{ if(autosaveOn) saveState().catch(()=>{}); }, 4000);
@@ -1893,7 +1895,7 @@ async function restoreProject(){
   // overlays: recria elementos a partir dos blobs guardados
   OV=[]; ovSeq=0; const meta=new Map((state&&state.overlays||[]).map(o=>[o.id,o]));
   for(const om of (media.overlays||[])){ if(!om.blob) continue; const url=URL.createObjectURL(om.blob); const t=meta.get(om.id)||{};
-    const ov={id:++ovSeq,type:om.type,name:om.name,url,file:om.blob,sound:!!t.sound,px:t.px==null?0.5:t.px,py:t.py==null?0.5:t.py,start:t.start||0,end:t.end||Math.min(S.duration,(t.start||0)+3)};
+    const ov={id:++ovSeq,type:om.type,name:om.name,url,file:om.blob,sound:!!t.sound,mode:t.mode||"half",px:t.px==null?0.5:t.px,py:t.py==null?0.5:t.py,start:t.start||0,end:t.end||Math.min(S.duration,(t.start||0)+3)};
     if(om.type==="image"){ ov.img=new Image(); ov.img.src=url; } else { ov.vid=document.createElement("video"); ov.vid.src=url; ov.vid.muted=true; ov.vid.playsInline=true; ov.vid.preload="auto"; }
     OV.push(ov); }
   // reflete nos controles

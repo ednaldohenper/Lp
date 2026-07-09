@@ -168,6 +168,8 @@
   .cap-row .ins,.cap-row .dup{padding:3px 6px; border-radius:6px; font-size:10px; color:var(--ouro); border-color:rgba(217,168,91,.45); white-space:nowrap}
   .cap-row .ins:hover,.cap-row .dup:hover{border-color:var(--ouro); color:#fff}
   .cap-row textarea{flex:1; background:var(--preto3); color:var(--texto); border:1px solid var(--linha); border-radius:8px; padding:6px 8px; font:13px inherit; resize:vertical; min-height:34px}
+  .cap-row.playing textarea{border-color:var(--ouro); box-shadow:0 0 0 1px var(--ouro), 0 0 12px rgba(217,168,91,.35); background:rgba(217,168,91,.07)}
+  .cap-row.playing .ct .seekt{color:var(--ouro); font-weight:800}
   .cap-row .del{flex:none; padding:6px 9px; border-radius:8px; color:var(--suave); font-size:12px; align-self:flex-start}
   .cap-row .del:hover{color:var(--verm); border-color:rgba(215,99,79,.5)}
 
@@ -739,7 +741,7 @@ $("#play").onclick=()=>{
 };
 
 // atualiza overlay/destaque/timeline para um tempo (no relógio ORIGINAL do vídeo)
-let lastPlayIdx=-1, lastPos=0;
+let lastPlayIdx=-1, lastCapIdx=-1, lastPos=0;
 function updateUIAt(t, moving){
   lastPos=t; // memoriza a posição pra "continuar"
   $("#ph").style.left=(t/S.duration*100)+"%";
@@ -750,6 +752,12 @@ function updateUIAt(t, moving){
   const idx=S.segs.findIndex(s=>t>=s.start && t<s.end);
   if(idx>=0){ const c2=document.querySelector(`.seg-card[data-i="${idx}"]`); if(c2){ c2.classList.add("playing"); if(moving && idx!==lastPlayIdx) scrollToCard(idx); } }
   lastPlayIdx=idx;
+  // destaca na lista a LEGENDA ativa agora (pra você saber onde está trabalhando)
+  document.querySelectorAll(".cap-row.playing").forEach(n=>n.classList.remove("playing"));
+  const tcc=t-(S.capOffset||0), aci=S.caps.findIndex(c=> tcc>=c.start-0.15 && tcc<c.end+0.05);
+  if(aci>=0){ const cr=document.querySelector(`.cap-row[data-ci="${aci}"]`);
+    if(cr){ cr.classList.add("playing"); if(moving && aci!==lastCapIdx && !capEditing && !$("#panel-caps").classList.contains("hidden")) cr.scrollIntoView({block:"nearest"}); } }
+  lastCapIdx=aci;
 }
 // reprodução normal (com pausas): só reflete na UI
 vid.ontimeupdate=()=>{ if(!preview.on) updateUIAt(vid.currentTime, false); };
@@ -1383,7 +1391,7 @@ $("#addCap").onclick=()=>{
   setStatus(`➕ Legenda criada em ${fmtT(cap.start)} → ${fmtT(cap.end)}. Digite o texto (ela já aparece na tela). Pra fala do comecinho, fique em 0:00 antes de criar.`);
 };
 $("#importSrt").onclick=()=>$("#srtFile").click();
-$("#srtFile").onchange=e=>{ const f=e.target.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ S.caps=parseSrt(rd.result); renderCaps(); renderSegs(); refreshExportButtons(); setStatus(`Importei ${S.caps.length} legenda(s).`); }; rd.readAsText(f); };
+$("#srtFile").onchange=e=>{ const f=e.target.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ S.caps=parseSrt(rd.result); dedupeCaps(); renderCaps(); renderSegs(); refreshExportButtons(); setStatus(`Importei ${S.caps.length} legenda(s).`); }; rd.readAsText(f); };
 
 function parseSrt(txt){
   const out=[]; const blocks=txt.replace(/\r/g,"").split(/\n\n+/);
@@ -1413,7 +1421,7 @@ function dedupeCaps(){
   S.caps=out;
 }
 function renderCaps(){
-  dedupeCaps(); buildWords();
+  buildWords();
   const el=$("#capList");
   if(!S.caps.length){ el.className="empty"; el.textContent="Nenhuma legenda. Gere automaticamente ou importe um .srt."; return; }
   const keptCap=new Set(S.words.filter(w=>w.keep).map(w=>w.capId)); // legendas que ainda têm conteúdo mantido
@@ -1422,7 +1430,7 @@ function renderCaps(){
   S.caps.forEach((c,i)=>{
     if(S.segs.length && !keptCap.has(i)){ hidden++; return; } // trecho cortado → some da área de edição
     shownN++;
-    const row=document.createElement("div"); row.className="cap-row";
+    const row=document.createElement("div"); row.className="cap-row"; row.dataset.ci=i;
     row.innerHTML=`<div class="ct"><span class="seekt" title="Ir pra este ponto do vídeo">${fmtT(c.start)}</span><button class="ins" title="Reposiciona esta legenda pra começar no ponto atual do vídeo e força ela a aparecer. Use quando ela não apareceu: vá até onde você quer que ela entre e clique aqui.">⤓ inserir aqui</button><button class="dup" title="Cria uma cópia desta legenda no ponto atual do vídeo (novo espaço pra você usar onde faltou). Depois é só editar o texto.">⧉ duplicar aqui</button></div><textarea>${c.text}</textarea><button class="del" title="Excluir esta legenda">🗑</button>`;
     const ta=row.querySelector("textarea");
     ta.oninput=()=>{ c.text=ta.value; buildWords(); renderCaption(curTime()); refreshExportButtons(); };
@@ -1506,7 +1514,7 @@ async function genCaptions(){
   caps.forEach(c=>{ c.start=Math.max(0,(c.start||0)-PAD); c.end=Math.max(c.start+0.05,(c.end||0)-PAD);
     if(c.wtimes) c.wtimes=c.wtimes.map(p=>[Math.max(0,p[0]-PAD), Math.max(0,p[1]-PAD)]); });
   caps=caps.filter(c=>c.end>0.02);
-  S.caps = caps;
+  S.caps = caps; dedupeCaps(); // limpa duplicatas de emenda SÓ na geração (não atrapalha suas cópias manuais)
   renderCaps(); renderSegs(); refreshExportButtons();
   return S.caps.length>0;
 }

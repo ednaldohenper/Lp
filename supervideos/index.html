@@ -165,8 +165,8 @@
   .cap-row{display:flex; gap:8px; align-items:flex-start; margin-bottom:6px}
   .cap-row .ct{font-variant-numeric:tabular-nums; font-size:11px; color:var(--suave); width:104px; flex:none; padding-top:7px; display:flex; flex-direction:column; gap:4px}
   .cap-row .ct .seekt{cursor:pointer} .cap-row .ct .seekt:hover{color:var(--ouro)}
-  .cap-row .ins{padding:3px 6px; border-radius:6px; font-size:10px; color:var(--ouro); border-color:rgba(217,168,91,.45); white-space:nowrap}
-  .cap-row .ins:hover{border-color:var(--ouro); color:#fff}
+  .cap-row .ins,.cap-row .dup{padding:3px 6px; border-radius:6px; font-size:10px; color:var(--ouro); border-color:rgba(217,168,91,.45); white-space:nowrap}
+  .cap-row .ins:hover,.cap-row .dup:hover{border-color:var(--ouro); color:#fff}
   .cap-row textarea{flex:1; background:var(--preto3); color:var(--texto); border:1px solid var(--linha); border-radius:8px; padding:6px 8px; font:13px inherit; resize:vertical; min-height:34px}
   .cap-row .del{flex:none; padding:6px 9px; border-radius:8px; color:var(--suave); font-size:12px; align-self:flex-start}
   .cap-row .del:hover{color:var(--verm); border-color:rgba(215,99,79,.5)}
@@ -1423,7 +1423,7 @@ function renderCaps(){
     if(S.segs.length && !keptCap.has(i)){ hidden++; return; } // trecho cortado → some da área de edição
     shownN++;
     const row=document.createElement("div"); row.className="cap-row";
-    row.innerHTML=`<div class="ct"><span class="seekt" title="Ir pra este ponto do vídeo">${fmtT(c.start)}</span><button class="ins" title="Reposiciona esta legenda pra começar no ponto atual do vídeo e força ela a aparecer. Use quando ela não apareceu: vá até onde você quer que ela entre e clique aqui.">⤓ inserir aqui</button></div><textarea>${c.text}</textarea><button class="del" title="Excluir esta legenda">🗑</button>`;
+    row.innerHTML=`<div class="ct"><span class="seekt" title="Ir pra este ponto do vídeo">${fmtT(c.start)}</span><button class="ins" title="Reposiciona esta legenda pra começar no ponto atual do vídeo e força ela a aparecer. Use quando ela não apareceu: vá até onde você quer que ela entre e clique aqui.">⤓ inserir aqui</button><button class="dup" title="Cria uma cópia desta legenda no ponto atual do vídeo (novo espaço pra você usar onde faltou). Depois é só editar o texto.">⧉ duplicar aqui</button></div><textarea>${c.text}</textarea><button class="del" title="Excluir esta legenda">🗑</button>`;
     const ta=row.querySelector("textarea");
     ta.oninput=()=>{ c.text=ta.value; buildWords(); renderCaption(curTime()); refreshExportButtons(); };
     ta.onfocus=()=>{ capEditing=true; stopPreview(); vid.currentTime=c.start; };
@@ -1440,6 +1440,17 @@ function renderCaps(){
       delete c.wtimes; // recalcula por divisão igual no novo tempo → garante que apareça
       buildWords(); renderCaption(curTime()); refreshExportButtons(); renderCaps();
       setStatus(`✅ Legenda inserida em ${fmtT(c.start)} → ${fmtT(c.end)} — aparece a partir daqui. Suas outras legendas não mudam.`);
+    };
+    row.querySelector(".dup").onclick=()=>{
+      const t=Math.max(0, curTime());
+      const dur=Math.max(0.8, (c.end-c.start)||1.5);
+      const next=S.caps.filter(x=>x.start>t+0.05).sort((a,b)=>a.start-b.start)[0];
+      let e=Math.min(S.duration, next ? Math.min(next.start-0.02, t+dur) : t+dur);
+      if(e<=t+0.2) e=Math.min(S.duration, t+0.8);
+      const nc={ start:+t.toFixed(3), end:e, text:c.text }; // cópia do texto, no ponto atual (sem wtimes → aparece)
+      S.caps.push(nc); S.caps.sort((a,b)=>a.start-b.start);
+      capToFocus=nc; buildWords(); renderCaps(); refreshExportButtons();
+      setStatus(`⧉ Legenda duplicada em ${fmtT(nc.start)} → ${fmtT(nc.end)}. Edite o texto (o campo já abriu). As outras não mudam.`);
     };
     row.querySelector(".del").onclick=()=>{ const idx=S.caps.indexOf(c); if(idx>=0) S.caps.splice(idx,1); buildWords(); renderCaps(); refreshExportButtons(); setStatus("Legenda excluída."); };
     el.appendChild(row);

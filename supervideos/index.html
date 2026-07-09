@@ -1287,11 +1287,15 @@ function drawOverlayMedia(ctx, o, x,y,w,h){
 // desenha o VÍDEO PRINCIPAL (com seu recorte + zoom in/out) dentro de um retângulo qualquer.
 // usado no quadro inteiro E na metade de baixo da meia-tela — assim seu enquadramento é respeitado nos dois.
 function drawMainInto(ctx, dx, dy, dw, dh, t, src){
-  const r=cropRect(t);
-  // usa a MESMA região do quadro dourado (crop + zoom in/out) e preenche o retângulo destino (cover):
-  // sem barras, sem borrado, sem encolher — zoom out mostra MAIS do vídeo preenchendo a tela.
-  const cx=r?r.cx:0, cy=r?r.cy:0, cw=r?r.cw:(src.videoWidth||2), ch=r?r.ch:(src.videoHeight||2);
-  drawCoverB(ctx, src, cx,cy,cw,ch, dx,dy,dw,dh, 0.5,0.5);
+  const r=cropRect(t), fB=cropFXY(t);
+  const Ws=src.videoWidth||2, Hs=src.videoHeight||2;
+  const cw=r?r.cw:Ws, ch=r?r.ch:Hs;
+  // preenche o retângulo destino (cover) amostrando um pedaço da FONTE; fx e fy posicionam nos DOIS eixos
+  // (↔ e ↕) — fluido também na meia-tela, onde antes só andava pros lados. Zoom in/out preservado.
+  const s=Math.max(dw/cw, dh/ch);
+  const sampW=Math.min(Ws, dw/s), sampH=Math.min(Hs, dh/s);
+  const sx=Math.round((Ws-sampW)*fB.fx), sy=Math.round((Hs-sampH)*fB.fy);
+  ctx.drawImage(src, sx, sy, sampW, sampH, dx, dy, dw, dh);
 }
 // "look" cinematográfico: filtro CSS aplicado no frame (GPU, leve) + vinheta opcional
 function lookFilter(){ switch(S.look){

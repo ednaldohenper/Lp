@@ -191,8 +191,11 @@
   <span class="hint">o vídeo fica só no seu navegador · nada é enviado pra internet</span>
   <span id="mtBadge" class="hint" style="color:var(--ouro)"></span>
   <span class="grow"></span>
-  <button id="btnSave" class="ghost" disabled title="Guarda tudo (vídeo + edições) no seu navegador. Depois de salvar, ele passa a auto-salvar.">💾 Salvar</button>
+  <button id="btnSave" class="ghost" disabled title="Guarda tudo (vídeo + edições) NESTE navegador/computador. Depois de salvar, ele passa a auto-salvar.">💾 Salvar</button>
   <button id="btnRestore" class="ghost" disabled title="Recarrega o último projeto salvo neste navegador.">↺ Restaurar</button>
+  <button id="btnExportProj" class="ghost" disabled title="Baixa um ARQUIVO do projeto (vídeo + todas as edições) num arquivo só, pra abrir em OUTRO computador (ex.: renderizar num PC melhor).">📦 Salvar arquivo</button>
+  <button id="btnImportProj" class="ghost" title="Abre um arquivo de projeto (.reelproj) feito em outro computador.">📂 Abrir projeto</button>
+  <input type="file" id="projFile" accept=".reelproj" hidden />
   <button id="btnOpen" class="ghost">📁 Abrir vídeo</button>
   <input type="file" id="file" accept="video/*" hidden />
 </header>
@@ -441,7 +444,7 @@ async function loadVideo(file){
   S.segs=[{start:0, end:S.duration, keep:true, type:"speech", thumb:null}]; renderSegs(); renderTimeline();
   $("#play").disabled=false; $("#previewResult").disabled=false; $("#cutPrev").disabled=false; $("#cutNext").disabled=false; $("#detect").disabled=false; $("#keepAll").disabled=false; $("#genCaps").disabled=false;
   $("#expEdl").disabled=false; $("#fmt").disabled=false; $("#findReps").disabled=false;
-  $("#zoom").disabled=false; $("#resetMove").disabled=false; $("#look").disabled=false; $("#addOvVid").disabled=false; $("#addOvImg").disabled=false; $("#btnSave").disabled=false; $("#btnSave2").disabled=false; $("#addCap").disabled=false;
+  $("#zoom").disabled=false; $("#resetMove").disabled=false; $("#look").disabled=false; $("#addOvVid").disabled=false; $("#addOvImg").disabled=false; $("#btnSave").disabled=false; $("#btnSave2").disabled=false; $("#addCap").disabled=false; $("#btnExportProj").disabled=false;
   refreshStage(); updateKeyUI();
   updateTime();
   setStatus("Lendo o áudio pra achar as pausas…", true);
@@ -1951,7 +1954,13 @@ $("#btnSave").onclick=saveProject;
 async function restoreProject(){
   let media,state; try{ media=await idbGet("media"); state=await idbGet("state"); }catch(e){}
   if(!media||!media.videoBlob){ setStatus("Nada salvo pra restaurar."); return; }
-  setStatus("↺ Restaurando projeto…",true);
+  await applyRestore(media, state);
+  setStatus("↺ Projeto restaurado. (Continua auto-salvando.)");
+}
+// aplica um projeto (vídeo + estado) — usado pelo Restaurar (IndexedDB) e pelo Abrir arquivo (.reelproj)
+async function applyRestore(media, state){
+  if(!media||!media.videoBlob){ setStatus("Projeto vazio."); return; }
+  setStatus("↺ Carregando projeto…",true);
   const file=new File([media.videoBlob], media.videoName||"video.mp4", {type:media.videoBlob.type||"video/mp4"});
   await loadVideo(file);
   if(state){
@@ -1973,9 +1982,52 @@ async function restoreProject(){
   $("#capOff").value=S.capOffset; $("#vCapOff").textContent=(S.capOffset>=0?"+":"")+(+S.capOffset).toFixed(2)+"s"; $("#capSpd").value=S.capSpeed; $("#vCapSpd").textContent=(+S.capSpeed).toFixed(2)+"×";
   buildWords(); renderAll(); makeThumbs(); renderCaps(); renderOvList(); updateKeyUI(); updateCapKeyUI(); refreshExportButtons(); refreshStage();
   autosaveOn=true; if(!autosaveTimer) autosaveTimer=setInterval(()=>{ if(autosaveOn) saveState().catch(()=>{}); }, 4000);
-  setStatus("↺ Projeto restaurado. (Continua auto-salvando.)");
+  setStatus("↺ Projeto carregado.");
 }
 $("#btnRestore").onclick=restoreProject;
+
+// ===== PROJETO PORTÁTIL (.reelproj) — leva pra outro computador =====
+async function exportProjectFile(){
+  if(!S.file){ setStatus("Abra/monte um projeto antes de salvar em arquivo."); return; }
+  setStatus("📦 Montando o arquivo do projeto (vídeo + edições)…", true);
+  const state={ duration:S.duration,
+    segs:S.segs.map(s=>({start:s.start,end:s.end,type:s.type,keep:s.keep})),
+    caps:S.caps, capStyle:S.capStyle, capColor:S.capColor, look:S.look, capSize:S.capSize, capPos:S.capPos, capKeys:S.capKeys,
+    capOffset:S.capOffset, capSpeed:S.capSpeed, params:S.params,
+    crop:{ar:crop.ar,fx:crop.fx,fy:crop.fy,zoom:crop.zoom,fillHeight:crop.fillHeight,keys:crop.keys},
+    overlays:OV.map(o=>({id:o.id,start:o.start,end:o.end,sound:!!o.sound,mode:o.mode||"half",px:o.px,py:o.py})) };
+  const parts=[], media=[];
+  parts.push(S.file); media.push({key:"video", name:S.file.name, blobType:S.file.type||"video/mp4", size:S.file.size});
+  for(const o of OV){ if(o.file){ parts.push(o.file); media.push({key:"ov_"+o.id, type:o.type, name:o.name, blobType:o.file.type||"", size:o.file.size}); } }
+  const manifest={ version:1, videoName:S.file.name, state, media };
+  const enc=new TextEncoder(); const mBytes=enc.encode(JSON.stringify(manifest));
+  const header=enc.encode(String(mBytes.length).padStart(10,"0"));
+  const bundle=new Blob([header, mBytes, ...parts], {type:"application/octet-stream"});
+  const base=(S.file.name||"projeto").replace(/\.[^.]+$/,"");
+  download(bundle, base+".reelproj");
+  setStatus(`📦 Projeto salvo em arquivo (${(bundle.size/1048576).toFixed(0)} MB). Copie pro outro PC e use "📂 Abrir projeto".`);
+}
+async function importProjectFile(file){
+  try{
+    setStatus("📂 Abrindo o arquivo do projeto…", true);
+    const dec=new TextDecoder();
+    const hlen=parseInt(dec.decode(await file.slice(0,10).arrayBuffer()),10);
+    if(!(hlen>0)) throw new Error("cabeçalho inválido");
+    const manifest=JSON.parse(dec.decode(await file.slice(10,10+hlen).arrayBuffer()));
+    let off=10+hlen; const blobs={};
+    for(const m of manifest.media){ blobs[m.key]=file.slice(off,off+m.size,m.blobType||"application/octet-stream"); off+=m.size; } // slice = sem carregar tudo na memória
+    const vmeta=manifest.media.find(m=>m.key==="video");
+    const media={ videoName:manifest.videoName||(vmeta&&vmeta.name)||"video.mp4", videoBlob:blobs["video"],
+      overlays:manifest.media.filter(m=>m.key!=="video").map(m=>({id:parseInt(m.key.slice(3),10)||0, type:m.type, name:m.name, blob:blobs[m.key]})) };
+    if(!media.videoBlob) throw new Error("vídeo não encontrado no arquivo");
+    await applyRestore(media, manifest.state);
+    try{ await saveMedia(); await saveState(); }catch(e){} // já deixa salvo neste PC também
+    setStatus("📂 Projeto aberto do arquivo — pode renderizar aqui.");
+  }catch(e){ console.error(e); setStatus("⚠️ Não consegui abrir esse arquivo de projeto: "+(e.message||e)); }
+}
+$("#btnExportProj").onclick=exportProjectFile;
+$("#btnImportProj").onclick=()=>$("#projFile").click();
+$("#projFile").onchange=e=>{ const f=e.target.files[0]; e.target.value=""; if(f) importProjectFile(f); };
 // na abertura, se houver projeto salvo, habilita Restaurar
 (async()=>{ try{ const media=await idbGet("media"); if(media&&media.videoBlob){ $("#btnRestore").disabled=false;
   setStatus(`↺ Há um projeto salvo ("${media.videoName||"vídeo"}"). Clique em "Restaurar" pra continuar de onde parou.`); } }catch(e){} })();

@@ -163,7 +163,10 @@
   .seg-card .del:hover{color:var(--verm); border-color:rgba(215,99,79,.5)}
 
   .cap-row{display:flex; gap:8px; align-items:flex-start; margin-bottom:6px}
-  .cap-row .ct{font-variant-numeric:tabular-nums; font-size:11px; color:var(--suave); width:92px; flex:none; padding-top:7px}
+  .cap-row .ct{font-variant-numeric:tabular-nums; font-size:11px; color:var(--suave); width:104px; flex:none; padding-top:7px; display:flex; flex-direction:column; gap:4px}
+  .cap-row .ct .seekt{cursor:pointer} .cap-row .ct .seekt:hover{color:var(--ouro)}
+  .cap-row .ins{padding:3px 6px; border-radius:6px; font-size:10px; color:var(--ouro); border-color:rgba(217,168,91,.45); white-space:nowrap}
+  .cap-row .ins:hover{border-color:var(--ouro); color:#fff}
   .cap-row textarea{flex:1; background:var(--preto3); color:var(--texto); border:1px solid var(--linha); border-radius:8px; padding:6px 8px; font:13px inherit; resize:vertical; min-height:34px}
   .cap-row .del{flex:none; padding:6px 9px; border-radius:8px; color:var(--suave); font-size:12px; align-self:flex-start}
   .cap-row .del:hover{color:var(--verm); border-color:rgba(215,99,79,.5)}
@@ -313,6 +316,16 @@
           <input type="checkbox" id="fillH"> altura cheia</label>
         <label class="lbl" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--suave)">Zoom <b id="vZoom" style="color:var(--ouro)">1.0×</b>
           <input type="range" id="zoom" min="0.5" max="3" step="0.05" value="1" disabled style="width:90px;accent-color:var(--ouro)"></label>
+        <label class="lbl" style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--suave)" title="Um tratamento de cor/'look' no vídeo todo (aparece no preview e no export).">🎨 Look
+          <select id="look" disabled>
+            <option value="none">Nenhum</option>
+            <option value="cinema">Cinema (quente + vinheta)</option>
+            <option value="quente">Quente / dourado</option>
+            <option value="frio">Frio / sério</option>
+            <option value="vivido">Vívido (punch)</option>
+            <option value="suave">Suave / clean</option>
+            <option value="pb">Preto & branco</option>
+          </select></label>
         <button id="mkKey" class="ghost" disabled title="Grava a POSIÇÃO do quadro neste instante (pra ele te acompanhar ao longo do vídeo). O zoom é fixo, não anima.">📍 Marcar posição</button>
         <span class="lbl" id="keyCount" style="font-size:12px;color:var(--suave)"></span>
         <button id="clrKeys" class="ghost" disabled>limpar pontos</button>
@@ -392,6 +405,7 @@ const S = {
   words:[],              // palavras com tempo (derivadas das caps) p/ legenda animada
   capStyle:"group",      // "group" (grupo 2 linhas) | "word" (palavra a palavra) | "box" (frase)
   capColor:"#D9A85B",    // cor da palavra em destaque no estilo Grupo (o usuário escolhe)
+  look:"none",           // tratamento de cor/"look" cinematográfico aplicado no vídeo todo
   capSize:1,             // multiplicador do tamanho da legenda
   capPos:{x:0.5, y:0.5}, // posição de trabalho (fração do quadro) — arrastável
   capKeys:[],            // posições por trecho [{t,x,y}] (vazio = fixa em capPos)
@@ -425,7 +439,7 @@ async function loadVideo(file){
   S.segs=[{start:0, end:S.duration, keep:true, type:"speech", thumb:null}]; renderSegs(); renderTimeline();
   $("#play").disabled=false; $("#previewResult").disabled=false; $("#cutPrev").disabled=false; $("#cutNext").disabled=false; $("#detect").disabled=false; $("#keepAll").disabled=false; $("#genCaps").disabled=false;
   $("#expEdl").disabled=false; $("#fmt").disabled=false; $("#findReps").disabled=false;
-  $("#zoom").disabled=false; $("#resetMove").disabled=false; $("#addOvVid").disabled=false; $("#addOvImg").disabled=false; $("#btnSave").disabled=false; $("#btnSave2").disabled=false; $("#addCap").disabled=false;
+  $("#zoom").disabled=false; $("#resetMove").disabled=false; $("#look").disabled=false; $("#addOvVid").disabled=false; $("#addOvImg").disabled=false; $("#btnSave").disabled=false; $("#btnSave2").disabled=false; $("#addCap").disabled=false;
   refreshStage(); updateKeyUI();
   updateTime();
   setStatus("Lendo o áudio pra achar as pausas…", true);
@@ -1165,6 +1179,8 @@ $("#mkKey").onclick=()=>{ const t=curTime(); setKeyAt(t); refreshStage();
 $("#clrKeys").onclick=()=>{ crop.keys=[]; updateKeyUI(); refreshStage(); setStatus("Pontos limpos."); };
 $("#resetMove").onclick=()=>{ crop.fx=0.5; crop.fy=0.5; crop.keys=[]; updateKeyUI(); refreshStage();
   setStatus("↺ Movimento removido — quadro recentralizado. (Zoom e formato mantidos.)"); };
+$("#look").onchange=()=>{ S.look=$("#look").value; refreshStage();
+  setStatus(S.look==="none"?"Look removido (imagem original).":`🎨 Look "${$("#look").selectedOptions[0].textContent}" aplicado — vale no preview e no export.`); };
 function refreshStage(){ renderStage(curTime(), preview.on || !vid.paused); }
 window.addEventListener("resize", refreshStage);
 if(window.ResizeObserver) new ResizeObserver(refreshStage).observe(vid);
@@ -1266,9 +1282,28 @@ function drawMainInto(ctx, dx, dy, dw, dh, t, src){
   const cx=r?r.cx:0, cy=r?r.cy:0, cw=r?r.cw:(src.videoWidth||2), ch=r?r.ch:(src.videoHeight||2);
   drawCoverB(ctx, src, cx,cy,cw,ch, dx,dy,dw,dh, 0.5,0.5);
 }
-// desenha o frame composto (crop + zoom in/out + meia-tela com fusão), SEM legenda
+// "look" cinematográfico: filtro CSS aplicado no frame (GPU, leve) + vinheta opcional
+function lookFilter(){ switch(S.look){
+  case "cinema": return "contrast(1.08) saturate(1.16) brightness(1.02) sepia(0.08)";
+  case "quente": return "saturate(1.12) sepia(0.2) brightness(1.03) contrast(1.03)";
+  case "frio":   return "saturate(0.9) contrast(1.1) brightness(0.98) hue-rotate(-10deg)";
+  case "vivido": return "saturate(1.32) contrast(1.12) brightness(1.02)";
+  case "suave":  return "saturate(1.05) contrast(0.97) brightness(1.05)";
+  case "pb":     return "grayscale(1) contrast(1.12) brightness(1.03)";
+  default: return "";
+}}
+function drawVignette(ctx,W,H){ const g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.34,W/2,H/2,Math.max(W,H)*0.72);
+  g.addColorStop(0,"rgba(0,0,0,0)"); g.addColorStop(1,"rgba(0,0,0,0.30)");
+  ctx.save(); ctx.fillStyle=g; ctx.fillRect(0,0,W,H); ctx.restore(); }
+// desenha o frame composto (crop + zoom in/out + meia-tela + LOOK), SEM legenda
 // src = vídeo-fonte do frame principal (vid no preview; o vídeo já-cortado no export)
 function drawComposite(ctx, W, H, t, src){
+  const lk=lookFilter(); if(lk){ ctx.save(); ctx.filter=lk; }
+  drawFrame(ctx, W, H, t, src);
+  if(lk){ ctx.restore(); }
+  if(S.look==="cinema"||S.look==="frio") drawVignette(ctx, W, H); // vinheta por cima (legenda vem depois, fica limpa)
+}
+function drawFrame(ctx, W, H, t, src){
   src=src||vid;
   const o=activeOverlay(t);
   if(!o){ drawMainInto(ctx, 0,0,W,H, t, src); return; }
@@ -1298,7 +1333,8 @@ function renderStage(t, playing){
   syncOverlays(t, playing);
   // mostra o RESULTADO no canvas quando toca, OU quando há zoom-out (afastar) — pra ver o efeito mesmo parado
   const effZoom = (cropFXY(t).zoom)||1;
-  const useCanvas = (playing || effZoom<0.999) && (cropActive() || activeOverlay(t)) && vid.videoWidth;
+  const lookOn = S.look && S.look!=="none";
+  const useCanvas = vid.videoWidth && ( lookOn || ((playing || effZoom<0.999) && (cropActive() || activeOverlay(t))) );
   if(useCanvas){
     // preview desenha na resolução da TELA (não em 1080) — bem mais leve, não trava
     const base=cropRect(t); const OW=base?base.cw0:vid.videoWidth, OH=base?base.ch0:vid.videoHeight;
@@ -1387,12 +1423,24 @@ function renderCaps(){
     if(S.segs.length && !keptCap.has(i)){ hidden++; return; } // trecho cortado → some da área de edição
     shownN++;
     const row=document.createElement("div"); row.className="cap-row";
-    row.innerHTML=`<div class="ct">${fmtT(c.start)}</div><textarea>${c.text}</textarea><button class="del" title="Excluir esta legenda">🗑</button>`;
+    row.innerHTML=`<div class="ct"><span class="seekt" title="Ir pra este ponto do vídeo">${fmtT(c.start)}</span><button class="ins" title="Reposiciona esta legenda pra começar no ponto atual do vídeo e força ela a aparecer. Use quando ela não apareceu: vá até onde você quer que ela entre e clique aqui.">⤓ inserir aqui</button></div><textarea>${c.text}</textarea><button class="del" title="Excluir esta legenda">🗑</button>`;
     const ta=row.querySelector("textarea");
     ta.oninput=()=>{ c.text=ta.value; buildWords(); renderCaption(curTime()); refreshExportButtons(); };
     ta.onfocus=()=>{ capEditing=true; stopPreview(); vid.currentTime=c.start; };
     ta.onblur=()=>{ capEditing=false; };
     if(c===capToFocus){ capToFocus=null; setTimeout(()=>{ ta.focus(); ta.select(); ta.scrollIntoView({block:"nearest"}); },0); }
+    row.querySelector(".seekt").onclick=()=>{ stopPreview(); try{vid.currentTime=c.start;}catch(e){} updateUIAt(c.start,false); lastPos=c.start; preview.paused=true; preview.posOrig=c.start; };
+    row.querySelector(".ins").onclick=()=>{
+      const t=Math.max(0, curTime());
+      const dur=Math.max(0.8, (c.end||t+1.5)-(c.start||t));
+      const next=S.caps.filter(x=>x!==c && x.start>t+0.05).sort((a,b)=>a.start-b.start)[0];
+      c.start=+t.toFixed(3);
+      c.end=Math.min(S.duration, next ? Math.min(next.start-0.02, t+dur) : t+dur);
+      if(c.end<=c.start+0.2) c.end=Math.min(S.duration, c.start+0.8);
+      delete c.wtimes; // recalcula por divisão igual no novo tempo → garante que apareça
+      buildWords(); renderCaption(curTime()); refreshExportButtons(); renderCaps();
+      setStatus(`✅ Legenda inserida em ${fmtT(c.start)} → ${fmtT(c.end)} — aparece a partir daqui. Suas outras legendas não mudam.`);
+    };
     row.querySelector(".del").onclick=()=>{ const idx=S.caps.indexOf(c); if(idx>=0) S.caps.splice(idx,1); buildWords(); renderCaps(); refreshExportButtons(); setStatus("Legenda excluída."); };
     el.appendChild(row);
   });
@@ -1663,7 +1711,7 @@ async function finalizeExport(chunks, pick){
   try{ setStatus("Convertendo pra MP4 (turbo)…", true);
     const f=await getFF();
     await f.writeFile("cap.webm", new Uint8Array(await blob.arrayBuffer()));
-    await f.exec(["-i","cap.webm","-c:v","libx264","-preset","veryfast","-crf","20","-pix_fmt","yuv420p","-c:a","aac","-b:a","192k","-movflags","+faststart","capout.mp4"]);
+    await f.exec(["-i","cap.webm","-c:v","libx264","-preset","medium","-crf","18","-pix_fmt","yuv420p","-c:a","aac","-b:a","256k","-movflags","+faststart","capout.mp4"]);
     download(new Blob([(await f.readFile("capout.mp4")).buffer],{type:"video/mp4"}), "reel-final.mp4");
     setStatus("✅ MP4 exportado — pronto pro Instagram.");
   }catch(e){ console.error(e); download(blob,"reel-final.webm"); setStatus("⚠️ Gravei em WebM mas a conversão falhou. Converta no CapCut."); }
@@ -1687,8 +1735,10 @@ async function newRecorder(cv){
   const ac=getAC(); if(ac.state==="suspended") await ac.resume();
   const dest=ac.createMediaStreamDestination();
   const pick=pickRecMime();
-  const os={w:cv.width,h:cv.height}; const vbps=Math.min(24_000_000, Math.max(10_000_000, Math.round(os.w*os.h*30*0.18)));
-  const opts={ videoBitsPerSecond:vbps, audioBitsPerSecond:192_000 }; if(pick.mime) opts.mimeType=pick.mime;
+  // bitrate mais alto = imagem mais limpa (menos "quadradinhos" no movimento), com custo pequeno de CPU.
+  // escala com a resolução, então 720p continua leve; 1080p fica ~16 Mbps.
+  const os={w:cv.width,h:cv.height}; const vbps=Math.min(32_000_000, Math.max(12_000_000, Math.round(os.w*os.h*30*0.26)));
+  const opts={ videoBitsPerSecond:vbps, audioBitsPerSecond:256_000 }; if(pick.mime) opts.mimeType=pick.mime;
   return { ac, dest, stream, pick, opts };
 }
 async function exportRealtime(ranges){
@@ -1867,7 +1917,7 @@ async function saveMedia(){ if(!S.file) return;
 async function saveState(){ if(!S.file) return;
   await idbSet("state",{ duration:S.duration,
     segs:S.segs.map(s=>({start:s.start,end:s.end,type:s.type,keep:s.keep})),
-    caps:S.caps, capStyle:S.capStyle, capColor:S.capColor, capSize:S.capSize, capPos:S.capPos, capKeys:S.capKeys,
+    caps:S.caps, capStyle:S.capStyle, capColor:S.capColor, look:S.look, capSize:S.capSize, capPos:S.capPos, capKeys:S.capKeys,
     capOffset:S.capOffset, capSpeed:S.capSpeed, params:S.params,
     crop:{ar:crop.ar,fx:crop.fx,fy:crop.fy,zoom:crop.zoom,fillHeight:crop.fillHeight,keys:crop.keys},
     overlays:OV.map(o=>({id:o.id,start:o.start,end:o.end,sound:!!o.sound,mode:o.mode||"half",px:o.px,py:o.py})) }); }
@@ -1887,7 +1937,7 @@ async function restoreProject(){
   await loadVideo(file);
   if(state){
     S.segs=(state.segs||[]).map(s=>({...s,thumb:null}));
-    S.caps=state.caps||[]; S.capStyle=state.capStyle||"group"; S.capColor=state.capColor||"#D9A85B"; S.capSize=state.capSize||1;
+    S.caps=state.caps||[]; S.capStyle=state.capStyle||"group"; S.capColor=state.capColor||"#D9A85B"; S.look=state.look||"none"; S.capSize=state.capSize||1;
     S.capPos=state.capPos||{x:.5,y:.5}; S.capKeys=state.capKeys||[]; if(state.params) S.params=state.params;
     S.capOffset=state.capOffset||0; S.capSpeed=state.capSpeed||1;
     if(state.crop) Object.assign(crop,{ar:state.crop.ar||0,fx:state.crop.fx??.5,fy:state.crop.fy??.5,zoom:state.crop.zoom||1,fillHeight:!!state.crop.fillHeight,keys:state.crop.keys||[]});
@@ -1900,7 +1950,7 @@ async function restoreProject(){
     OV.push(ov); }
   // reflete nos controles
   $("#fmt").value=String(crop.ar||0); $("#zoom").value=crop.zoom; $("#vZoom").textContent=crop.zoom.toFixed(1)+"×"; $("#fillH").checked=crop.fillHeight;
-  $("#capSize").value=S.capSize; $("#vCapSize").textContent=Math.round(S.capSize*100)+"%"; $("#capStyle").value=S.capStyle; if($("#capColor")) $("#capColor").value=S.capColor||"#D9A85B";
+  $("#capSize").value=S.capSize; $("#vCapSize").textContent=Math.round(S.capSize*100)+"%"; $("#capStyle").value=S.capStyle; if($("#capColor")) $("#capColor").value=S.capColor||"#D9A85B"; if($("#look")) $("#look").value=S.look||"none";
   $("#capOff").value=S.capOffset; $("#vCapOff").textContent=(S.capOffset>=0?"+":"")+(+S.capOffset).toFixed(2)+"s"; $("#capSpd").value=S.capSpeed; $("#vCapSpd").textContent=(+S.capSpeed).toFixed(2)+"×";
   buildWords(); renderAll(); makeThumbs(); renderCaps(); renderOvList(); updateKeyUI(); updateCapKeyUI(); refreshExportButtons(); refreshStage();
   autosaveOn=true; if(!autosaveTimer) autosaveTimer=setInterval(()=>{ if(autosaveOn) saveState().catch(()=>{}); }, 4000);

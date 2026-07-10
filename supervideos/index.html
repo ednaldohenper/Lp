@@ -16,8 +16,18 @@
       if (wantTurbo) {
         window.coi = { coepCredentialless: function(){ return true; }, quiet: true };
         var s=document.createElement("script"); s.src="coi-serviceworker.js"; document.head.appendChild(s);
-      } else if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
-        navigator.serviceWorker.getRegistrations().then(function(rs){ rs.forEach(function(r){ r.unregister(); }); }).catch(function(){});
+        return;
+      }
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+        var hadController = !!navigator.serviceWorker.controller;
+        navigator.serviceWorker.getRegistrations().then(function(rs){
+          if (!rs.length){ sessionStorage.removeItem("coiHeal"); return; }
+          Promise.all(rs.map(function(r){ return r.unregister(); })).then(function(){
+            // havia um service worker PRESO controlando a página → recarrega UMA vez pra sair dele (com trava anti-loop)
+            if (hadController && !sessionStorage.getItem("coiHeal")){ sessionStorage.setItem("coiHeal","1"); location.reload(); }
+          });
+        }).catch(function(){});
+        if (!hadController) sessionStorage.removeItem("coiHeal");
       }
     }catch(e){}
   })();
@@ -88,7 +98,7 @@
     color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.5), 0 1px 2px rgba(0,0,0,.55); z-index:5;
   }
   #capOverlay .w-on{color:#fff}
-  #capOverlay .w-em{color:#fff; font-style:italic; font-weight:600; font-family:'Playfair Display',Georgia,serif; letter-spacing:0; font-size:1.08em}
+  #capOverlay .w-em{color:#fff; font-style:italic; font-weight:600; font-family:'Playfair Display',Georgia,serif; letter-spacing:0; font-size:1.15em}
   #capOverlay .w-cur{color:var(--ouro)}
   #capOverlay .capbox{display:inline}
   #capOverlay .capgroup{display:inline-block; max-width:100%}
@@ -407,8 +417,17 @@
 
 <canvas id="work" hidden></canvas>
 <script type="module">
-import { FFmpeg } from "https://esm.sh/@ffmpeg/ffmpeg@0.12.10";
-import { fetchFile } from "https://esm.sh/@ffmpeg/util@0.12.1";
+// ffmpeg é carregado SÓ quando precisa (lazy). Assim o APP ABRE mesmo se o CDN (esm.sh) estiver fora/bloqueado —
+// antes, esse import no topo derrubava a página inteira quando o CDN falhava. O export em tempo real não usa ffmpeg.
+let FFmpeg=null, fetchFile=null;
+async function loadFFlibs(){
+  if(FFmpeg && fetchFile) return;
+  const ffCdns=["https://esm.sh/@ffmpeg/ffmpeg@0.12.10","https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/+esm","https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js"];
+  const utilCdns=["https://esm.sh/@ffmpeg/util@0.12.1","https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/+esm","https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js"];
+  let e1; for(const u of ffCdns){ try{ FFmpeg=(await import(/* @vite-ignore */ u)).FFmpeg; if(FFmpeg) break; }catch(e){ e1=e; } }
+  let e2; for(const u of utilCdns){ try{ fetchFile=(await import(/* @vite-ignore */ u)).fetchFile; if(fetchFile) break; }catch(e){ e2=e; } }
+  if(!FFmpeg || !fetchFile) throw (e1||e2||new Error("não carregou as libs do ffmpeg (CDN bloqueado?)"));
+}
 
 const $ = s => document.querySelector(s);
 const fmt = t => { t=Math.max(0,t||0); const m=Math.floor(t/60), s=Math.floor(t%60); return m+":"+String(s).padStart(2,"0"); };
@@ -845,7 +864,7 @@ function buildWordsFrom(caps){
 // agrupa palavras em "chunks" que cabem em ~2 linhas: palavra grande → 2-3; palavra pequena → até 6.
 // quebra também no fim de frase (. ! ?) e em pausa longa entre palavras.
 function chunkWords(W){
-  const BUDGET=26, MAXW=6; // orçamento de caracteres (2 linhas) e nº máx de palavras
+  const BUDGET=34, MAXW=8; // orçamento de caracteres (2 linhas) e nº máx de palavras — deixa frases mais longas quebrarem em 2 linhas
   const ids=new Array(W.length); let id=0, len=0, count=0, lastEnd=null;
   for(let i=0;i<W.length;i++){ const w=W[i], add=w.text.length+1;
     const gap = lastEnd!=null ? w.start-lastEnd : 0;
@@ -1698,6 +1717,7 @@ function ffClassWorkerURL(){
 }
 async function getFF(){
   if(ff) return ff;
+  await loadFFlibs(); // carrega as libs do ffmpeg só agora (lazy)
   const inst=new FFmpeg();
   inst.on("progress",({progress})=> setStatus(`Processando vídeo… ${Math.round((progress||0)*100)}%`, true));
   const canMT = (typeof crossOriginIsolated!=="undefined" && crossOriginIsolated) && (typeof SharedArrayBuffer!=="undefined");
@@ -1935,7 +1955,7 @@ function drawCaption(cx,cv,text,posY){
 function drawWordCaption(cx,cv,a,b,posY){
   const fs=Math.round(cv.width*0.078*S.capSize), y=cv.height*(posY!=null?posY:S.capPos.y);
   cx.textAlign="left"; cx.textBaseline="middle";
-  const fontOf=w=> w.emph ? `italic 600 ${Math.round(fs*1.08)}px "Playfair Display",Georgia,serif` : `700 ${fs}px Inter,system-ui,sans-serif`;
+  const fontOf=w=> w.emph ? `italic 600 ${Math.round(fs*1.15)}px "Playfair Display",Georgia,serif` : `700 ${fs}px Inter,system-ui,sans-serif`;
   const items=[a]; if(b) items.push(b);
   const parts=items.map((w,i)=>{ const txt=w.text.toLowerCase()+(i<items.length-1?" ":""); cx.font=fontOf(w); return {txt,font:fontOf(w),wdt:cx.measureText(txt).width}; });
   let x=(cv.width - parts.reduce((s,p)=>s+p.wdt,0))/2;
@@ -1947,7 +1967,7 @@ function drawWordCaption(cx,cv,a,b,posY){
 function drawGroupCaption(cx,cv,gw,curIdx,posY){
   const fs=Math.round(cv.width*0.062*S.capSize), y=cv.height*(posY!=null?posY:S.capPos.y);
   const maxW=cv.width*0.84;
-  const fontOf=w=> w.emph ? `italic 600 ${Math.round(fs*1.08)}px "Playfair Display",Georgia,serif` : `700 ${fs}px Inter,system-ui,sans-serif`;
+  const fontOf=w=> w.emph ? `italic 600 ${Math.round(fs*1.15)}px "Playfair Display",Georgia,serif` : `700 ${fs}px Inter,system-ui,sans-serif`;
   cx.font=`700 ${fs}px Inter,system-ui,sans-serif`; const spaceW=cx.measureText(" ").width;
   const items=gw.map((w,i)=>{ cx.font=fontOf(w); return {txt:w.text.toLowerCase(), font:fontOf(w), cur:i===curIdx, wdt:cx.measureText(w.text.toLowerCase()).width}; });
   const lines=[]; let line=[], lw=0;

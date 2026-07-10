@@ -16,18 +16,8 @@
       if (wantTurbo) {
         window.coi = { coepCredentialless: function(){ return true; }, quiet: true };
         var s=document.createElement("script"); s.src="coi-serviceworker.js"; document.head.appendChild(s);
-        return;
-      }
-      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
-        var hadController = !!navigator.serviceWorker.controller;
-        navigator.serviceWorker.getRegistrations().then(function(rs){
-          if (!rs.length){ sessionStorage.removeItem("coiHeal"); return; }
-          Promise.all(rs.map(function(r){ return r.unregister(); })).then(function(){
-            // havia um service worker PRESO controlando a página → recarrega UMA vez pra sair dele (com trava anti-loop)
-            if (hadController && !sessionStorage.getItem("coiHeal")){ sessionStorage.setItem("coiHeal","1"); location.reload(); }
-          });
-        }).catch(function(){});
-        if (!hadController) sessionStorage.removeItem("coiHeal");
+      } else if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+        navigator.serviceWorker.getRegistrations().then(function(rs){ rs.forEach(function(r){ r.unregister(); }); }).catch(function(){});
       }
     }catch(e){}
   })();
@@ -417,17 +407,8 @@
 
 <canvas id="work" hidden></canvas>
 <script type="module">
-// ffmpeg é carregado SÓ quando precisa (lazy). Assim o APP ABRE mesmo se o CDN (esm.sh) estiver fora/bloqueado —
-// antes, esse import no topo derrubava a página inteira quando o CDN falhava. O export em tempo real não usa ffmpeg.
-let FFmpeg=null, fetchFile=null;
-async function loadFFlibs(){
-  if(FFmpeg && fetchFile) return;
-  const ffCdns=["https://esm.sh/@ffmpeg/ffmpeg@0.12.10","https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/+esm","https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js"];
-  const utilCdns=["https://esm.sh/@ffmpeg/util@0.12.1","https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/+esm","https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js"];
-  let e1; for(const u of ffCdns){ try{ FFmpeg=(await import(/* @vite-ignore */ u)).FFmpeg; if(FFmpeg) break; }catch(e){ e1=e; } }
-  let e2; for(const u of utilCdns){ try{ fetchFile=(await import(/* @vite-ignore */ u)).fetchFile; if(fetchFile) break; }catch(e){ e2=e; } }
-  if(!FFmpeg || !fetchFile) throw (e1||e2||new Error("não carregou as libs do ffmpeg (CDN bloqueado?)"));
-}
+import { FFmpeg } from "https://esm.sh/@ffmpeg/ffmpeg@0.12.10";
+import { fetchFile } from "https://esm.sh/@ffmpeg/util@0.12.1";
 
 const $ = s => document.querySelector(s);
 const fmt = t => { t=Math.max(0,t||0); const m=Math.floor(t/60), s=Math.floor(t%60); return m+":"+String(s).padStart(2,"0"); };
@@ -1717,7 +1698,6 @@ function ffClassWorkerURL(){
 }
 async function getFF(){
   if(ff) return ff;
-  await loadFFlibs(); // carrega as libs do ffmpeg só agora (lazy)
   const inst=new FFmpeg();
   inst.on("progress",({progress})=> setStatus(`Processando vídeo… ${Math.round((progress||0)*100)}%`, true));
   const canMT = (typeof crossOriginIsolated!=="undefined" && crossOriginIsolated) && (typeof SharedArrayBuffer!=="undefined");

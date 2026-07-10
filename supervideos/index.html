@@ -1320,10 +1320,19 @@ function drawVignette(ctx,W,H){ const g=ctx.createRadialGradient(W/2,H/2,Math.mi
   ctx.save(); ctx.fillStyle=g; ctx.fillRect(0,0,W,H); ctx.restore(); }
 // desenha o frame composto (crop + zoom in/out + meia-tela + LOOK), SEM legenda
 // src = vídeo-fonte do frame principal (vid no preview; o vídeo já-cortado no export)
+let _scrLk=null;
+function getScratchLk(w,h){ if(!_scrLk) _scrLk=document.createElement("canvas"); if(_scrLk.width!==w)_scrLk.width=w; if(_scrLk.height!==h)_scrLk.height=h; return _scrLk; }
 function drawComposite(ctx, W, H, t, src){
-  const lk=lookFilter(); if(lk){ ctx.save(); ctx.filter=lk; }
-  drawFrame(ctx, W, H, t, src);
-  if(lk){ ctx.restore(); }
+  const lk=lookFilter();
+  if(lk){
+    // desenha o frame SEM filtro num canvas temporário e aplica o look ao copiá-lo.
+    // (ctx.filter direto num drawImage de VÍDEO não pega no canvas gravado do Chrome — por canvas pega sempre)
+    const tmp=getScratchLk(W,H), tx=tmp.getContext("2d"); tx.imageSmoothingEnabled=true; tx.imageSmoothingQuality="high"; tx.clearRect(0,0,W,H);
+    drawFrame(tx, W, H, t, src);
+    ctx.save(); ctx.filter=lk; ctx.drawImage(tmp,0,0); ctx.restore();
+  } else {
+    drawFrame(ctx, W, H, t, src);
+  }
   if(S.look==="cinema"||S.look==="frio") drawVignette(ctx, W, H); // vinheta por cima (legenda vem depois, fica limpa)
 }
 function drawFrame(ctx, W, H, t, src){

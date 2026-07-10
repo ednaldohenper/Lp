@@ -7,10 +7,21 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Playfair+Display:ital,wght@1,500;1,600&display=swap" rel="stylesheet">
-<!-- Liga o "cross-origin isolation" (COOP/COEP) quando a página é HOSPEDADA, pra habilitar o ffmpeg multi-thread (export mais rápido).
-     Precisa do arquivo coi-serviceworker.js do lado. Aberto por file:// não faz nada (segue single-thread). -->
-<script>window.coi = { coepCredentialless: () => true, quiet: true };</script>
-<script src="coi-serviceworker.js"></script>
+<!-- ⚡ TURBO (cross-origin isolation p/ ffmpeg multi-thread) agora é OPT-IN: só liga se abrir a URL com ?turbo.
+     Sem ?turbo, o app roda puro E descadastra qualquer service worker preso (auto-conserto) — evita o app "sumir". -->
+<script>
+  (function(){
+    try{
+      var wantTurbo = location.search.indexOf("turbo") >= 0;
+      if (wantTurbo) {
+        window.coi = { coepCredentialless: function(){ return true; }, quiet: true };
+        var s=document.createElement("script"); s.src="coi-serviceworker.js"; document.head.appendChild(s);
+      } else if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+        navigator.serviceWorker.getRegistrations().then(function(rs){ rs.forEach(function(r){ r.unregister(); }); }).catch(function(){});
+      }
+    }catch(e){}
+  })();
+</script>
 <style>
   :root{
     --preto:#0a0a0b; --preto2:#121214; --preto3:#1b1b1f;

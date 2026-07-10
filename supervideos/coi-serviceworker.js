@@ -1,28 +1,87 @@
-/* coi-serviceworker DESATIVADO.
-   A versão anterior (COOP/COEP para ffmpeg multi-thread) estava quebrando o
-   carregamento do app: interceptava as requisições e, quando uma falhava,
-   devolvia um valor inválido ("Failed to convert value to 'Response'"),
-   deixando a página em branco.
-   Este arquivo agora NÃO intercepta nada e ainda REMOVE qualquer service
-   worker antigo que tenha ficado registrado. */
+/*! coi-serviceworker v0.1.7 — Guido Zuidhof e colaboradores, licença MIT.
+   Liga o "cross-origin isolation" (COOP/COEP) via Service Worker, sem mexer no servidor,
+   pra habilitar SharedArrayBuffer → ffmpeg.wasm multi-thread (export mais rápido).
+   Só funciona em página HOSPEDADA (https). Em file:// não faz nada. */
+let coepCredentialless = false;
 if (typeof window === "undefined") {
-  // --- contexto do Service Worker ---
   self.addEventListener("install", () => self.skipWaiting());
-  self.addEventListener("activate", (event) => {
-    event.waitUntil((async () => {
-      try { await self.registration.unregister(); } catch (e) {}
-      try {
-        const clients = await self.clients.matchAll({ type: "window" });
-        clients.forEach((c) => { try { c.navigate(c.url); } catch (e) {} });
-      } catch (e) {}
-    })());
+  self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
+
+  self.addEventListener("message", (ev) => {
+    if (!ev.data) return;
+    if (ev.data.type === "deregister") {
+      self.registration.unregister()
+        .then(() => self.clients.matchAll())
+        .then((clients) => clients.forEach((client) => client.navigate(client.url)));
+    } else if (ev.data.type === "coepCredentialless") {
+      coepCredentialless = ev.data.value;
+    }
   });
-  // Sem listener de "fetch": não intercepta requisição nenhuma → não quebra nada.
+
+  self.addEventListener("fetch", function (event) {
+    const r = event.request;
+    if (r.cache === "only-if-cached" && r.mode !== "same-origin") return;
+
+    const request = (coepCredentialless && r.mode === "no-cors")
+      ? new Request(r, { credentials: "omit" })
+      : r;
+
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.status === 0) return response;
+          const newHeaders = new Headers(response.headers);
+          newHeaders.set("Cross-Origin-Embedder-Policy", coepCredentialless ? "credentialless" : "require-corp");
+          if (!coepCredentialless) newHeaders.set("Cross-Origin-Resource-Policy", "cross-origin");
+          newHeaders.set("Cross-Origin-Opener-Policy", "same-origin");
+          return new Response(response.body, { status: response.status, statusText: response.statusText, headers: newHeaders });
+        })
+        .catch((e) => { console.warn("COI SW: fetch falhou, usando a requisição original (fallback):", e && e.message);
+          return fetch(r); }) // NÃO quebra a página se a requisição "credentialless" falhar
+    );
+  });
 } else {
-  // --- contexto da página: desregistra qualquer SW deste escopo ---
-  if (navigator.serviceWorker) {
-    navigator.serviceWorker.getRegistrations()
-      .then((regs) => regs.forEach((r) => { try { r.unregister(); } catch (e) {} }))
-      .catch(() => {});
-  }
+  (() => {
+    const reloadedBySelf = window.sessionStorage.getItem("coiReloadedBySelf");
+    window.sessionStorage.removeItem("coiReloadedBySelf");
+    const coepDegrading = (reloadedBySelf == "coepdegrade");
+
+    const coi = {
+      shouldRegister: () => !reloadedBySelf,
+      shouldDeregister: () => false,
+      coepCredentialless: () => true,
+      coepDegrade: () => true,
+      doReload: () => window.location.reload(),
+      quiet: false,
+      ...window.coi
+    };
+
+    const n = navigator;
+    if (n.serviceWorker && n.serviceWorker.controller) {
+      n.serviceWorker.controller.postMessage({ type: "coepCredentialless", value: coi.coepCredentialless() });
+      if (coi.shouldDeregister()) n.serviceWorker.controller.postMessage({ type: "deregister" });
+    }
+
+    if (window.crossOriginIsolated !== false || !coi.shouldRegister()) return;
+
+    if (!window.isSecureContext) {
+      !coi.quiet && console.log("COOP/COEP Service Worker não registrado — precisa de contexto seguro (https).");
+      return;
+    }
+
+    n.serviceWorker && n.serviceWorker.register(window.document.currentScript.src).then(
+      (registration) => {
+        !coi.quiet && console.log("COOP/COEP Service Worker registrado", registration.scope);
+        registration.addEventListener("updatefound", () => {
+          window.sessionStorage.setItem("coiReloadedBySelf", "updatefound");
+          coi.doReload();
+        });
+        if (registration.active && !n.serviceWorker.controller) {
+          window.sessionStorage.setItem("coiReloadedBySelf", "notcontrolling");
+          coi.doReload();
+        }
+      },
+      (err) => !coi.quiet && console.error("COOP/COEP Service Worker falhou ao registrar:", err)
+    );
+  })();
 }

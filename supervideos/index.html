@@ -856,8 +856,11 @@ function buildWordsFrom(caps){
       toks.forEach((tk,k)=> out.push({text:tk.text, emph:tk.emph, start:st+k*per, end:st+(k+1)*per, capId:ci}));
     }
   });
+  // ordena por LEGENDA primeiro (as caps já estão em ordem cronológica), depois pelo tempo dentro dela.
+  // isso impede que legendas com tempos sobrepostos (ex.: uma inserida à mão colada na seguinte)
+  // tenham as palavras intercaladas — cada legenda mostra exatamente o que está escrito, na ordem.
+  out.sort((a,b)=> (a.capId-b.capId) || (a.start-b.start));
   // continuidade: cada palavra fica na tela até a próxima COMEÇAR (sem piscar, sem repetir), respeitando pausas longas
-  out.sort((a,b)=>a.start-b.start);
   for(let k=0;k<out.length-1;k++){ const gap=out[k+1].start-out[k].start; if(gap>0.02 && gap<1.2) out[k].end=out[k+1].start; }
   return out;
 }
@@ -869,7 +872,8 @@ function chunkWords(W){
   for(let i=0;i<W.length;i++){ const w=W[i], add=w.text.length+1;
     const gap = lastEnd!=null ? w.start-lastEnd : 0;
     const prevSent = i>0 && /[.!?…]$/.test(W[i-1].text);
-    if(count>0 && (count>=MAXW || len+add>BUDGET || gap>0.6 || prevSent)){ id++; len=0; count=0; }
+    const capChanged = i>0 && W[i-1].capId!=null && w.capId!=null && w.capId!==W[i-1].capId;
+    if(count>0 && (capChanged || count>=MAXW || len+add>BUDGET || gap>0.6 || prevSent)){ id++; len=0; count=0; }
     ids[i]=id; len+=add; count++; lastEnd=w.end;
   }
   return ids;
@@ -1500,9 +1504,11 @@ function renderCaps(){
       const t=Math.max(0, curTime());
       const dur=Math.max(0.8, (c.end||t+1.5)-(c.start||t));
       const next=S.caps.filter(x=>x!==c && x.start>t+0.05).sort((a,b)=>a.start-b.start)[0];
+      const hardCap=next ? next.start-0.02 : S.duration; // teto: começo da próxima legenda (nunca sobrepõe)
       c.start=+t.toFixed(3);
-      c.end=Math.min(S.duration, next ? Math.min(next.start-0.02, t+dur) : t+dur);
-      if(c.end<=c.start+0.2) c.end=Math.min(S.duration, c.start+0.8);
+      c.end=Math.min(hardCap, t+dur);
+      if(c.end<=c.start+0.2) c.end=Math.min(hardCap, c.start+0.8);
+      if(c.end<=c.start) c.end=c.start+0.12; // salvaguarda mínima
       delete c.wtimes; // recalcula por divisão igual no novo tempo → garante que apareça
       buildWords(); renderCaption(curTime()); refreshExportButtons(); renderCaps();
       setStatus(`✅ Legenda inserida em ${fmtT(c.start)} → ${fmtT(c.end)} — aparece a partir daqui. Suas outras legendas não mudam.`);
@@ -1511,8 +1517,10 @@ function renderCaps(){
       const t=Math.max(0, curTime());
       const dur=Math.max(0.8, (c.end-c.start)||1.5);
       const next=S.caps.filter(x=>x.start>t+0.05).sort((a,b)=>a.start-b.start)[0];
-      let e=Math.min(S.duration, next ? Math.min(next.start-0.02, t+dur) : t+dur);
-      if(e<=t+0.2) e=Math.min(S.duration, t+0.8);
+      const hardCap=next ? next.start-0.02 : S.duration; // teto: começo da próxima legenda (nunca sobrepõe)
+      let e=Math.min(hardCap, t+dur);
+      if(e<=t+0.2) e=Math.min(hardCap, t+0.8);
+      if(e<=t) e=t+0.12; // salvaguarda mínima
       const nc={ start:+t.toFixed(3), end:e, text:c.text }; // cópia do texto, no ponto atual (sem wtimes → aparece)
       S.caps.push(nc); S.caps.sort((a,b)=>a.start-b.start);
       capToFocus=nc; buildWords(); renderCaps(); refreshExportButtons();

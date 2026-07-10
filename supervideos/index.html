@@ -1655,7 +1655,8 @@ $("#expEdl").onclick=()=>{
 function pickRecMime(){
   const MR=window.MediaRecorder;
   if(!MR||!MR.isTypeSupported) return {mime:"",mp4:false};
-  const mp4=["video/mp4;codecs=avc1.42E01E,mp4a.40.2","video/mp4;codecs=avc1,mp4a","video/mp4;codecs=h264,aac","video/mp4"];
+  // prioriza H.264 HIGH profile (avc1.64xxxx) — bem mais qualidade que o Baseline (avc1.42xxxx) na mesma taxa
+  const mp4=["video/mp4;codecs=avc1.640028,mp4a.40.2","video/mp4;codecs=avc1.640020,mp4a.40.2","video/mp4;codecs=avc1.4D4028,mp4a.40.2","video/mp4;codecs=avc1.42E01E,mp4a.40.2","video/mp4;codecs=avc1,mp4a","video/mp4"];
   const webm=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"];
   for(const t of mp4) if(MR.isTypeSupported(t)) return {mime:t,mp4:true};
   for(const t of webm) if(MR.isTypeSupported(t)) return {mime:t,mp4:false};
@@ -1715,7 +1716,7 @@ $("#expMp4").onclick=async ()=>{
     else   fg+=`;[vc]null[outv]`;
     const moving = crop.keys.length>1 || OV.length;
     setStatus("Renderizando MP4"+(cr?" (recortado)":"")+"…", true);
-    await f.exec(["-i",inName,"-filter_complex",fg,"-map","[outv]","-map","[outa]","-c:v","libx264","-preset","medium","-crf","18","-pix_fmt","yuv420p","-c:a","aac","-b:a","192k","-movflags","+faststart","out.mp4"]);
+    await f.exec(["-i",inName,"-filter_complex",fg,"-map","[outv]","-map","[outa]","-c:v","libx264","-preset","medium","-crf","16","-profile:v","high","-pix_fmt","yuv420p","-colorspace","bt709","-color_primaries","bt709","-color_trc","bt709","-c:a","aac","-b:a","256k","-movflags","+faststart","out.mp4"]);
     const data=await f.readFile("out.mp4");
     download(new Blob([data.buffer],{type:"video/mp4"}), "reel-cortado.mp4");
     setStatus("✅ MP4 exportado"+(moving?" — atenção: quadro móvel/zoom-animado e meia-tela NÃO entram no MP4; pra isso use o WebM com legenda.":". (Legenda? Use o WebM ou suba o .srt.)"));
@@ -1745,7 +1746,7 @@ async function finalizeExport(chunks, pick){
   try{ setStatus("Convertendo pra MP4 (turbo)…", true);
     const f=await getFF();
     await f.writeFile("cap.webm", new Uint8Array(await blob.arrayBuffer()));
-    await f.exec(["-i","cap.webm","-c:v","libx264","-preset","medium","-crf","18","-pix_fmt","yuv420p","-c:a","aac","-b:a","256k","-movflags","+faststart","capout.mp4"]);
+    await f.exec(["-i","cap.webm","-c:v","libx264","-preset","medium","-crf","16","-profile:v","high","-pix_fmt","yuv420p","-colorspace","bt709","-color_primaries","bt709","-color_trc","bt709","-c:a","aac","-b:a","256k","-movflags","+faststart","capout.mp4"]);
     download(new Blob([(await f.readFile("capout.mp4")).buffer],{type:"video/mp4"}), "reel-final.mp4");
     setStatus("✅ MP4 exportado — pronto pro Instagram.");
   }catch(e){ console.error(e); download(blob,"reel-final.webm"); setStatus("⚠️ Gravei em WebM mas a conversão falhou. Converta no CapCut."); }
@@ -1769,9 +1770,9 @@ async function newRecorder(cv){
   const ac=getAC(); if(ac.state==="suspended") await ac.resume();
   const dest=ac.createMediaStreamDestination();
   const pick=pickRecMime();
-  // bitrate mais alto = imagem mais limpa (menos "quadradinhos" no movimento), com custo pequeno de CPU.
-  // escala com a resolução, então 720p continua leve; 1080p fica ~16 Mbps.
-  const os={w:cv.width,h:cv.height}; const vbps=Math.min(32_000_000, Math.max(12_000_000, Math.round(os.w*os.h*30*0.26)));
+  // MASTER de alta taxa: quanto mais alta a taxa que sai daqui, mais limpo o TikTok/IG recomprime (eles sempre recomprimem).
+  // ~24 Mbps em 1080p; escala com a resolução (720p continua bem mais leve). Cap alto pra 4K/60.
+  const os={w:cv.width,h:cv.height}; const vbps=Math.min(48_000_000, Math.max(16_000_000, Math.round(os.w*os.h*30*0.38)));
   const opts={ videoBitsPerSecond:vbps, audioBitsPerSecond:256_000 }; if(pick.mime) opts.mimeType=pick.mime;
   return { ac, dest, stream, pick, opts };
 }

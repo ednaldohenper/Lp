@@ -26,11 +26,14 @@
     display:flex; flex-direction:column; height:100vh; overflow:hidden;
   }
   header{
-    padding:12px 18px; border-bottom:1px solid var(--linha);
-    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    padding:10px 18px; border-bottom:1px solid var(--linha);
+    display:flex; align-items:center; gap:10px; flex-wrap:nowrap; min-width:0;
     background:linear-gradient(180deg,rgba(217,168,91,.06),transparent);
   }
-  header h1{font-size:15px; margin:0; font-weight:600; letter-spacing:.2px}
+  header .hint{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0}
+  .iconbtn{padding:7px 10px; font-size:16px; line-height:1}
+  .hbar{width:1px; align-self:stretch; background:var(--linha); margin:2px 2px}
+  header h1{font-size:15px; margin:0; font-weight:600; letter-spacing:.2px; white-space:nowrap; flex:none}
   header h1 span{color:var(--ouro)}
   .hint{color:var(--suave); font-size:12px}
   .grow{flex:1}
@@ -187,15 +190,16 @@
 </head>
 <body>
 <header>
-  <h1>Editor de <span>Reels</span> — corte por pausa, com revisão</h1>
+  <h1>Editor de <span>Reels</span></h1>
   <span class="hint">o vídeo fica só no seu navegador · nada é enviado pra internet</span>
   <span id="mtBadge" class="hint" style="color:var(--ouro)"></span>
   <span class="grow"></span>
-  <button id="btnSave" class="ghost" disabled title="Guarda tudo (vídeo + edições) NESTE navegador/computador. Depois de salvar, ele passa a auto-salvar.">💾 Salvar</button>
-  <button id="btnRestore" class="ghost" disabled title="Recarrega o último projeto salvo neste navegador.">↺ Restaurar</button>
-  <button id="btnExportProj" class="ghost" disabled title="Baixa um ARQUIVO do projeto (vídeo + todas as edições) num arquivo só, pra abrir em OUTRO computador (ex.: renderizar num PC melhor).">📦 Salvar arquivo</button>
-  <button id="btnImportProj" class="ghost" title="Abre um arquivo de projeto (.reelproj) feito em outro computador.">📂 Abrir projeto</button>
+  <button id="btnSave" class="ghost iconbtn" disabled aria-label="Salvar projeto" title="💾 Salvar projeto — guarda tudo (vídeo + edições) NESTE navegador/computador. Depois passa a auto-salvar.">💾</button>
+  <button id="btnRestore" class="ghost iconbtn" disabled aria-label="Restaurar projeto" title="↺ Restaurar — recarrega o último projeto salvo neste navegador.">↺</button>
+  <button id="btnExportProj" class="ghost iconbtn" disabled aria-label="Salvar projeto em arquivo" title="📦 Salvar em arquivo (.reelproj) — vídeo + todas as edições num arquivo só, pra abrir em OUTRO computador.">📦</button>
+  <button id="btnImportProj" class="ghost iconbtn" aria-label="Abrir projeto de arquivo" title="📂 Abrir projeto — abre um arquivo .reelproj feito em outro computador.">📂</button>
   <input type="file" id="projFile" accept=".reelproj" hidden />
+  <span class="hbar"></span>
   <button id="btnOpen" class="ghost">📁 Abrir vídeo</button>
   <input type="file" id="file" accept="video/*" hidden />
 </header>

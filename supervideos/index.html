@@ -275,6 +275,25 @@
           <span class="hint">menos sensível = corta só pausas longas (mais seguro). A folga evita o "picotado".</span>
         </div>
       </div>
+      <div id="audioSwap" style="border:1px solid var(--linha);border-radius:10px;padding:10px 12px;margin:10px 0">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <b style="font-size:13px">🎙️ Trocar o áudio (gravação da mesa de som)</b>
+          <button id="btnExtAudio" class="ghost" disabled>Carregar áudio…</button>
+          <input type="file" id="extAudioFile" accept="audio/*,.wav,.mp3,.m4a,.aac,.flac,.ogg" hidden />
+          <span class="hint" id="extAudioName">Opcional. Usa o áudio limpo que você gravou na mesa no lugar do áudio da câmera — no preview e no vídeo exportado.</span>
+        </div>
+        <div id="extAudioCtl" class="hidden" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <label class="lbl" style="display:flex;align-items:center;gap:6px;font-size:12px"><input type="checkbox" id="useExtAudio" /> Usar este áudio no vídeo</label>
+          <span class="lbl" style="font-size:12px;color:var(--suave)">Sincronia:</span>
+          <button id="extSyncMM" class="ghost" title="Atrasa o áudio 0,5s">⏪ 0,5s</button>
+          <button id="extSyncM" class="ghost" title="Atrasa o áudio 0,05s">◀</button>
+          <b id="extOffLbl" style="color:var(--ouro);min-width:64px;text-align:center">+0.00s</b>
+          <button id="extSyncP" class="ghost" title="Adianta o áudio 0,05s">▶</button>
+          <button id="extSyncPP" class="ghost" title="Adianta o áudio 0,5s">0,5s ⏩</button>
+          <button id="extSyncReset" class="ghost" title="Zera a sincronia">↺</button>
+          <span class="hint">Toque o <b>▶︎ Ouvir tudo</b> e ajuste até a voz casar com a boca. ▶ adianta o áudio, ◀ atrasa.</span>
+        </div>
+      </div>
       <div class="summary" id="summary">
         <span class="empty" style="padding:6px">Abra um vídeo e clique em <b style="font-size:inherit">Detectar pausas</b> pra começar.</span>
       </div>
@@ -451,6 +470,10 @@ const S = {
   capOffset:0,           // atraso/adianto da legenda (s) — sincronia
   capSpeed:1,            // ritmo da legenda (1 = normal; <1 mais devagar)
   params:{thr:-38, min:600, pad:140},
+  extAudio:null,         // AudioBuffer da gravação externa (mesa de som)
+  extFile:null,          // arquivo/blob original desse áudio (pra salvar/portar)
+  useExtAudio:false,     // trocar o áudio do vídeo por este
+  extOffset:0,           // sincronia (s): amostra lida = tempo + extOffset (+ adianta o áudio externo)
 };
 const esc = s => (s||"").replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 
@@ -470,7 +493,7 @@ async function loadVideo(file){
   S.url=URL.createObjectURL(file);
   vid.src=S.url;
   $("#drop").style.display="none";
-  S.segs=[]; S.caps=[]; renderSegs(); renderCaps(); renderSummary(); renderTimeline();
+  S.segs=[]; S.caps=[]; S.extAudio=null; S.extFile=null; S.useExtAudio=false; S.extOffset=0; resetExtAudioUI(); renderSegs(); renderCaps(); renderSummary(); renderTimeline();
   setStatus("Carregando vídeo…", true);
   await new Promise(r=> vid.onloadedmetadata=r);
   S.duration=await robustDuration();
@@ -478,7 +501,7 @@ async function loadVideo(file){
   S.segs=[{start:0, end:S.duration, keep:true, type:"speech", thumb:null}]; renderSegs(); renderTimeline();
   $("#play").disabled=false; $("#previewResult").disabled=false; $("#cutPrev").disabled=false; $("#cutNext").disabled=false; $("#detect").disabled=false; $("#keepAll").disabled=false; $("#genCaps").disabled=false;
   $("#expEdl").disabled=false; $("#fmt").disabled=false; $("#findReps").disabled=false;
-  $("#zoom").disabled=false; $("#resetMove").disabled=false; $("#look").disabled=false; $("#addOvVid").disabled=false; $("#addOvImg").disabled=false; $("#btnSave").disabled=false; $("#btnSave2").disabled=false; $("#addCap").disabled=false; $("#btnExportProj").disabled=false;
+  $("#zoom").disabled=false; $("#resetMove").disabled=false; $("#look").disabled=false; $("#addOvVid").disabled=false; $("#addOvImg").disabled=false; $("#btnSave").disabled=false; $("#btnSave2").disabled=false; $("#addCap").disabled=false; $("#btnExportProj").disabled=false; $("#btnExtAudio").disabled=false;
   refreshStage(); updateKeyUI();
   updateTime();
   setStatus("Lendo o áudio pra achar as pausas…", true);
@@ -511,6 +534,56 @@ async function decodeAudio(file){
   S.audio = await ac.decodeAudioData(buf.slice(0));
   ac.close();
 }
+
+// ---------- áudio externo (mesa de som): trocar o áudio do vídeo ----------
+// monta um buffer contínuo (já com as pausas cortadas) a partir de um AudioBuffer,
+// aplicando a sincronia: a amostra lida para o tempo t do vídeo é (t + offsetSec).
+function buildGapless(ac, srcBuf, ranges, offsetSec){
+  const sr=srcBuf.sampleRate, ch=srcBuf.numberOfChannels;
+  let total=0; ranges.forEach(r=> total+=Math.max(0, Math.floor(r.end*sr)-Math.floor(r.start*sr)));
+  const out=ac.createBuffer(ch, Math.max(1,total), sr);
+  const offS=Math.round((offsetSec||0)*sr);
+  for(let c=0;c<ch;c++){ const dst=out.getChannelData(c), src=srcBuf.getChannelData(c); let off=0;
+    for(const r of ranges){ const rs=Math.floor(r.start*sr), re=Math.floor(r.end*sr), n=re-rs; if(n<=0) continue;
+      const ss=rs+offS; // início no áudio externo (deslocado pela sincronia)
+      const cs=Math.max(0, ss), ce=Math.min(src.length, ss+n); // parte válida dentro do buffer (fora = silêncio)
+      if(ce>cs) dst.set(src.subarray(cs,ce), off+(cs-ss));
+      off+=n; } }
+  return out;
+}
+function resetExtAudioUI(){
+  if($("#extAudioCtl")) $("#extAudioCtl").classList.add("hidden");
+  if($("#useExtAudio")) $("#useExtAudio").checked=false;
+  if($("#extAudioName")) $("#extAudioName").textContent="Opcional. Usa o áudio limpo que você gravou na mesa no lugar do áudio da câmera — no preview e no vídeo exportado.";
+  updateExtOffLbl();
+}
+function updateExtOffLbl(){ const v=S.extOffset||0; if($("#extOffLbl")) $("#extOffLbl").textContent=(v>=0?"+":"")+v.toFixed(2)+"s"; }
+async function loadExtAudio(f){
+  setStatus("Lendo o áudio da mesa…", true);
+  try{
+    const ac=new (window.AudioContext||window.webkitAudioContext)();
+    S.extAudio=await ac.decodeAudioData((await f.arrayBuffer()).slice(0)); ac.close();
+    S.extFile=f; S.useExtAudio=true;
+    $("#extAudioName").innerHTML=`🎙️ <b>${esc(f.name)}</b> — ${S.extAudio.duration.toFixed(1)}s`;
+    $("#extAudioCtl").classList.remove("hidden"); $("#useExtAudio").checked=true; updateExtOffLbl();
+    if(autosaveOn){ saveMedia().catch(()=>{}); saveState().catch(()=>{}); }
+    setStatus('🎙️ Áudio da mesa carregado e ativado. Toque "▶︎ Ouvir tudo" e ajuste a Sincronia até a voz casar com a boca.');
+  }catch(err){ console.error(err); setStatus("⚠️ Não consegui ler esse áudio. Use .wav, .mp3, .m4a, .aac, .flac ou .ogg."); }
+}
+function nudgeExt(d){ S.extOffset=Math.round(((S.extOffset||0)+d)*100)/100; updateExtOffLbl();
+  if(preview.on) startPreview(preview.posOrig||0);   // reaplica na hora, do ponto atual
+  if(autosaveOn) saveState().catch(()=>{}); }
+$("#btnExtAudio").onclick=()=>$("#extAudioFile").click();
+$("#extAudioFile").onchange=e=>{ const f=e.target.files[0]; e.target.value=""; if(f) loadExtAudio(f); };
+$("#useExtAudio").onchange=e=>{ S.useExtAudio=e.target.checked && !!S.extAudio;
+  if(preview.on) startPreview(preview.posOrig||0);
+  if(autosaveOn) saveState().catch(()=>{});
+  setStatus(S.useExtAudio?"✅ Usando o áudio da mesa (no preview e no export).":"Voltei pro áudio da câmera."); };
+$("#extSyncMM").onclick=()=>nudgeExt(-0.5);
+$("#extSyncM").onclick=()=>nudgeExt(-0.05);
+$("#extSyncP").onclick=()=>nudgeExt(0.05);
+$("#extSyncPP").onclick=()=>nudgeExt(0.5);
+$("#extSyncReset").onclick=()=>{ S.extOffset=0; updateExtOffLbl(); if(preview.on) startPreview(preview.posOrig||0); if(autosaveOn) saveState().catch(()=>{}); };
 
 // ---------- detecção de pausas ----------
 $("#thr").oninput = e=>{ S.params.thr=+e.target.value; $("#vThr").textContent=e.target.value+" dB"; };
@@ -981,18 +1054,17 @@ function cutToOrig(ct, R){ let acc=0; for(const r of R){ const d=r.end-r.start; 
 
 function startPreview(fromOrig, stopOrig){
   stopPreview();
-  if(!S.audio){ setStatus("⚠️ Áudio não carregado pra pré-escuta."); return; }
+  const useExt = S.useExtAudio && S.extAudio;
+  const srcBuf = useExt ? S.extAudio : S.audio;
+  if(!srcBuf){ setStatus("⚠️ Áudio não carregado pra pré-escuta."); return; }
   const R=keptRanges(); if(!R.length){ setStatus("Tudo está cortado — não há conteúdo pra ouvir."); return; }
-  const sr=S.audio.sampleRate, ch=S.audio.numberOfChannels;
-  let total=0; R.forEach(r=> total+=Math.max(0, Math.floor(r.end*sr)-Math.floor(r.start*sr)));
   const ac=new (window.AudioContext||window.webkitAudioContext)();
-  const buf=ac.createBuffer(ch, total, sr);
-  for(let c=0;c<ch;c++){ const dst=buf.getChannelData(c), src=S.audio.getChannelData(c); let off=0;
-    for(const r of R){ const s=Math.max(0,Math.floor(r.start*sr)), e=Math.min(src.length,Math.floor(r.end*sr)); if(e>s){ dst.set(src.subarray(s,e), off); off+=e-s; } } }
+  const buf=buildGapless(ac, srcBuf, R, useExt ? S.extOffset : 0);
+  const total=buf.length;
   const node=ac.createBufferSource(); node.buffer=buf; node.connect(ac.destination);
   const offCut=origToCut(Math.max(0, fromOrig||0), R);
   preview.on=true; preview.paused=false; preview.posOrig=Math.max(0,fromOrig||0);
-  preview.ac=ac; preview.node=node; preview.ranges=R; preview.total=total/sr;
+  preview.ac=ac; preview.node=node; preview.ranges=R; preview.total=total/buf.sampleRate;
   preview.stopCut=(stopOrig!=null)? origToCut(stopOrig,R)+0.8 : Infinity;
   preview.t0=ac.currentTime-offCut;
   node.onended=()=>{ if(preview.on) stopPreview(); };
@@ -1834,9 +1906,15 @@ async function exportRealtime(ranges){
   const cv=document.createElement("canvas"); cv.width=os.w; cv.height=os.h;
   const cx=cv.getContext("2d"); cx.imageSmoothingEnabled=true; cx.imageSmoothingQuality="high";
   const { ac, dest, stream, pick, opts } = await newRecorder(cv);
-  if(!vidSrc){ try{ vidSrc=ac.createMediaElementSource(vid); }catch(e){ vidSrc=null; } }
-  if(vidSrc){ try{ vidSrc.connect(dest); vidSrc.connect(ac.destination); }catch(e){} }
-  else { try{ vid.captureStream().getAudioTracks().forEach(t=>stream.addTrack(t)); }catch(e){} } // fallback se o nó WebAudio não pôde ser criado
+  // áudio da mesa: se ativo, NÃO usa o áudio da câmera — toca o buffer externo (já cortado + sincronizado) trecho a trecho
+  const useExt = S.useExtAudio && S.extAudio;
+  const extGap = useExt ? buildGapless(ac, S.extAudio, ranges, S.extOffset) : null;
+  const extNodes=[];
+  if(!useExt){
+    if(!vidSrc){ try{ vidSrc=ac.createMediaElementSource(vid); }catch(e){ vidSrc=null; } }
+    if(vidSrc){ try{ vidSrc.connect(dest); vidSrc.connect(ac.destination); }catch(e){} }
+    else { try{ vid.captureStream().getAudioTracks().forEach(t=>stream.addTrack(t)); }catch(e){} } // fallback se o nó WebAudio não pôde ser criado
+  }
   const ovNodes=[];
   for(const o of OV){ if(o.type==="video"&&o.vid&&o.sound){ if(!o.srcNode){ try{o.srcNode=ac.createMediaElementSource(o.vid);}catch(e){o.srcNode=null;} } if(o.srcNode){ o.vid.muted=false; try{o.srcNode.connect(dest);o.srcNode.connect(ac.destination);}catch(e){} ovNodes.push(o.srcNode);} } }
   dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
@@ -1844,7 +1922,7 @@ async function exportRealtime(ranges){
   const done=new Promise(r=>rec.onstop=r);
   const caps=capsForCut(); const words=buildCutWords(ranges);
   try{ await document.fonts.load('700 40px Inter'); await document.fonts.load('italic 600 40px "Playfair Display"'); await document.fonts.ready; }catch(e){}
-  const wasMuted=vid.muted; vid.muted=false; vid.volume=1; // NÃO mutar: mutar o elemento silencia o nó WebAudio no Chrome (ficava sem voz)
+  const wasMuted=vid.muted; if(useExt){ vid.muted=true; } else { vid.muted=false; vid.volume=1; } // com áudio da mesa, silencia a câmera; senão NÃO muta (mutar silenciaria o nó WebAudio no Chrome)
   const totalCut=Math.max(0.1, finalDuration()); const fmtLbl = pick.mp4?"MP4":"WebM";
   const seekTo=(t)=>new Promise(r=>{ const h=()=>{ vid.removeEventListener("seeked",h); r(); }; vid.addEventListener("seeked",h); try{ vid.currentTime=t; }catch(e){ vid.removeEventListener("seeked",h); r(); } });
 
@@ -1871,6 +1949,7 @@ async function exportRealtime(ranges){
     // desconecta só do GRAVADOR (dest); mantém vidSrc → alto-falante, senão o vídeo toca MUDO depois do export
     try{ vidSrc&&vidSrc.disconnect(dest); }catch(e){}
     ovNodes.forEach(n=>{ try{ n.disconnect(); }catch(e){} });
+    extNodes.forEach(n=>{ try{ n.stop(); }catch(e){} try{ n.disconnect(); }catch(e){} });
     vid.muted=wasMuted;
     setStatus("Finalizando o arquivo…", true);
     await finalizeExport(chunks, pick);
@@ -1886,6 +1965,13 @@ async function exportRealtime(ranges){
       capturing=true;
       await vid.play();
       if(rec.state==="paused") try{ rec.resume(); }catch(e){} // retoma a captura só depois que já está tocando
+      if(useExt && extGap){ // toca a fatia do áudio da mesa correspondente a este trecho, no instante em que a captura volta
+        const offCut=origToCut(ranges[i].start, ranges), dur=Math.max(0.01, ranges[i].end-ranges[i].start);
+        const n=ac.createBufferSource(); n.buffer=extGap;
+        try{ n.connect(dest); n.connect(ac.destination); }catch(e){}
+        try{ n.start(0, Math.max(0, offCut), dur); }catch(e){}
+        extNodes.push(n);
+      }
       await reachEnd(ranges[i].end);
       capturing=false; vid.pause();
       if(i<ranges.length-1 && !ended && rec.state==="recording") try{ rec.pause(); }catch(e){} // pausa a captura ANTES do próximo seek
@@ -2001,12 +2087,14 @@ async function idbGet(k){ const db=await idb(); return new Promise((res,rej)=>{ 
 
 async function saveMedia(){ if(!S.file) return;
   await idbSet("media",{ videoName:S.file.name, videoBlob:S.file,
+    extAudioName:S.extFile?S.extFile.name:null, extAudioBlob:S.extFile||null,
     overlays:OV.map(o=>({id:o.id,type:o.type,name:o.name,blob:o.file||null})) }); }
 async function saveState(){ if(!S.file) return;
   await idbSet("state",{ duration:S.duration,
     segs:S.segs.map(s=>({start:s.start,end:s.end,type:s.type,keep:s.keep})),
     caps:S.caps, capStyle:S.capStyle, capColor:S.capColor, look:S.look, capSize:S.capSize, capPos:S.capPos, capKeys:S.capKeys,
     capOffset:S.capOffset, capSpeed:S.capSpeed, params:S.params,
+    useExtAudio:S.useExtAudio, extOffset:S.extOffset,
     crop:{ar:crop.ar,fx:crop.fx,fy:crop.fy,zoom:crop.zoom,fillHeight:crop.fillHeight,keys:crop.keys},
     overlays:OV.map(o=>({id:o.id,start:o.start,end:o.end,sound:!!o.sound,mode:o.mode||"half",px:o.px,py:o.py})) }); }
 async function saveProject(){ if(!S.file){ setStatus("Abra um vídeo antes de salvar."); return; }
@@ -2036,6 +2124,15 @@ async function applyRestore(media, state){
     S.capOffset=state.capOffset||0; S.capSpeed=state.capSpeed||1;
     if(state.crop) Object.assign(crop,{ar:state.crop.ar||0,fx:state.crop.fx??.5,fy:state.crop.fy??.5,zoom:state.crop.zoom||1,fillHeight:!!state.crop.fillHeight,keys:state.crop.keys||[]});
   }
+  // áudio da mesa (se estava salvo): decodifica e restaura sincronia/ativação
+  resetExtAudioUI();
+  if(media.extAudioBlob){ try{
+    const f=new File([media.extAudioBlob], media.extAudioName||"audio-mesa.wav", {type:media.extAudioBlob.type||"audio/wav"});
+    const ac2=new (window.AudioContext||window.webkitAudioContext)(); S.extAudio=await ac2.decodeAudioData((await f.arrayBuffer()).slice(0)); ac2.close();
+    S.extFile=f; S.extOffset=(state&&state.extOffset)||0; S.useExtAudio=!!(state&&state.useExtAudio)&&!!S.extAudio;
+    $("#extAudioName").innerHTML=`🎙️ <b>${esc(f.name)}</b> — ${S.extAudio.duration.toFixed(1)}s`;
+    $("#extAudioCtl").classList.remove("hidden"); $("#useExtAudio").checked=S.useExtAudio; updateExtOffLbl();
+  }catch(e){ console.error("áudio da mesa não carregou:",e); } }
   // overlays: recria elementos a partir dos blobs guardados
   OV=[]; ovSeq=0; const meta=new Map((state&&state.overlays||[]).map(o=>[o.id,o]));
   for(const om of (media.overlays||[])){ if(!om.blob) continue; const url=URL.createObjectURL(om.blob); const t=meta.get(om.id)||{};
@@ -2060,10 +2157,12 @@ async function exportProjectFile(){
     segs:S.segs.map(s=>({start:s.start,end:s.end,type:s.type,keep:s.keep})),
     caps:S.caps, capStyle:S.capStyle, capColor:S.capColor, look:S.look, capSize:S.capSize, capPos:S.capPos, capKeys:S.capKeys,
     capOffset:S.capOffset, capSpeed:S.capSpeed, params:S.params,
+    useExtAudio:S.useExtAudio, extOffset:S.extOffset,
     crop:{ar:crop.ar,fx:crop.fx,fy:crop.fy,zoom:crop.zoom,fillHeight:crop.fillHeight,keys:crop.keys},
     overlays:OV.map(o=>({id:o.id,start:o.start,end:o.end,sound:!!o.sound,mode:o.mode||"half",px:o.px,py:o.py})) };
   const parts=[], media=[];
   parts.push(S.file); media.push({key:"video", name:S.file.name, blobType:S.file.type||"video/mp4", size:S.file.size});
+  if(S.extFile){ parts.push(S.extFile); media.push({key:"extaudio", name:S.extFile.name, blobType:S.extFile.type||"audio/wav", size:S.extFile.size}); }
   for(const o of OV){ if(o.file){ parts.push(o.file); media.push({key:"ov_"+o.id, type:o.type, name:o.name, blobType:o.file.type||"", size:o.file.size}); } }
   const manifest={ version:1, videoName:S.file.name, state, media };
   const enc=new TextEncoder(); const mBytes=enc.encode(JSON.stringify(manifest));
@@ -2083,8 +2182,10 @@ async function importProjectFile(file){
     let off=10+hlen; const blobs={};
     for(const m of manifest.media){ blobs[m.key]=file.slice(off,off+m.size,m.blobType||"application/octet-stream"); off+=m.size; } // slice = sem carregar tudo na memória
     const vmeta=manifest.media.find(m=>m.key==="video");
+    const emeta=manifest.media.find(m=>m.key==="extaudio");
     const media={ videoName:manifest.videoName||(vmeta&&vmeta.name)||"video.mp4", videoBlob:blobs["video"],
-      overlays:manifest.media.filter(m=>m.key!=="video").map(m=>({id:parseInt(m.key.slice(3),10)||0, type:m.type, name:m.name, blob:blobs[m.key]})) };
+      extAudioName:emeta&&emeta.name, extAudioBlob:blobs["extaudio"]||null,
+      overlays:manifest.media.filter(m=>m.key!=="video"&&m.key!=="extaudio").map(m=>({id:parseInt(m.key.slice(3),10)||0, type:m.type, name:m.name, blob:blobs[m.key]})) };
     if(!media.videoBlob) throw new Error("vídeo não encontrado no arquivo");
     await applyRestore(media, manifest.state);
     try{ await saveMedia(); await saveState(); }catch(e){} // já deixa salvo neste PC também

@@ -1635,7 +1635,10 @@ async function genCaptions(){
   }
   setStatus("Transcrevendo o áudio (roda no seu navegador, pode levar alguns minutos)…", true);
   const PAD=0.5; // silêncio adicionado no começo pra o Whisper não perder a 1ª palavra quando você já começa falando
-  const mono = await to16kMono(S.audio, PAD);
+  // transcreve SÓ o que sobrou (com os cortes/repetições já removidos) — assim o Whisper não legenda
+  // trechos que você excluiu, e o tempo bate com o vídeo final. Os tempos saem em "tempo cortado".
+  const capRanges = keptRanges();
+  const mono = await to16kMonoKept(S.audio, capRanges, PAD);
   // 1ª tentativa: timestamps POR PALAVRA (cada palavra fica na tela no tempo real da fala — segue a cadência)
   let caps=null;
   try{
@@ -1650,9 +1653,11 @@ async function genCaptions(){
       start:c.timestamp[0]||0, end:c.timestamp[1]||((c.timestamp[0]||0)+2), text:c.text.trim()
     }));
   }
-  // desconta o silêncio adicionado (volta os tempos pro vídeo real)
-  caps.forEach(c=>{ c.start=Math.max(0,(c.start||0)-PAD); c.end=Math.max(c.start+0.05,(c.end||0)-PAD);
-    if(c.wtimes) c.wtimes=c.wtimes.map(p=>[Math.max(0,p[0]-PAD), Math.max(0,p[1]-PAD)]); });
+  // desconta o silêncio adicionado E converte de "tempo cortado" → tempo ORIGINAL do vídeo
+  // (o resto do sistema guarda os tempos em original e remapeia pro corte na hora de mostrar).
+  const c2o = t => cutToOrig(Math.max(0, (t||0)-PAD), capRanges);
+  caps.forEach(c=>{ const s=c2o(c.start); let e=c2o(c.end); if(!(e>s)) e=s+0.05; c.start=s; c.end=e;
+    if(c.wtimes) c.wtimes=c.wtimes.map(p=>{ const a=c2o(p[0]); let b=c2o(p[1]); if(!(b>a)) b=a+0.05; return [a,b]; }); });
   caps=caps.filter(c=>c.end>0.02);
   S.caps = caps; dedupeCaps(); // limpa duplicatas de emenda SÓ na geração (não atrapalha suas cópias manuais)
   renderCaps(); renderSegs(); refreshExportButtons();
@@ -1667,6 +1672,21 @@ async function to16kMono(ab, pad=0){
   const off=new OfflineAudioContext(1, len, 16000);
   const src=off.createBufferSource(); src.buffer=ab; src.connect(off.destination); src.start(pad); // silêncio no começo → Whisper pega a 1ª palavra
   const r=await off.startRendering(); return r.getChannelData(0);
+}
+// mesmo que to16kMono, mas SÓ com os trechos mantidos (cortes já aplicados), concatenados —
+// o Whisper transcreve exatamente o que vai pro vídeo final, sem os pedaços removidos.
+async function to16kMonoKept(ab, ranges, pad=0){
+  if(!ranges || !ranges.length) return to16kMono(ab, pad);
+  let cutDur=0; ranges.forEach(r=> cutDur += Math.max(0, r.end-r.start));
+  const len=Math.ceil((cutDur+pad)*16000);
+  const off=new OfflineAudioContext(1, Math.max(1,len), 16000);
+  let acc=pad;
+  for(const r of ranges){ const d=r.end-r.start; if(d<=0) continue;
+    const s=off.createBufferSource(); s.buffer=ab; s.connect(off.destination);
+    try{ s.start(acc, Math.max(0,r.start), d); }catch(e){}   // toca [r.start, r.start+d] na posição 'acc' da saída (resample p/ 16k)
+    acc+=d;
+  }
+  const rr=await off.startRendering(); return rr.getChannelData(0);
 }
 
 // remapeia tempos das legendas pro vídeo CORTADO

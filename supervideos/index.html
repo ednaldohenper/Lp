@@ -917,22 +917,24 @@ function buildWordsFrom(caps){
   const out=[]; const spd=Math.max(0.5, S.capSpeed||1);
   caps.forEach((c,ci)=>{
     const toks=tokenize(c.text); if(!toks.length) return;
+    // início cronológico da legenda (mesmo que ela esteja fora de ordem no array — ex.: fala inicial adicionada à mão)
+    const cStart = (c.start!=null) ? c.start : ((c.wtimes && c.wtimes[0]) ? c.wtimes[0][0] : 0);
     if(c.wtimes && c.wtimes.length===toks.length){
       // texto igual ao transcrito (ou só corrigido, sem mudar a contagem): usa o tempo REAL de cada palavra
       toks.forEach((tk,k)=>{ let s=c.wtimes[k][0], e=c.wtimes[k][1]; if(!(e>s)) e=s+0.12;
-        out.push({text:tk.text, emph:tk.emph, start:s, end:e, capId:ci}); });
+        out.push({text:tk.text, emph:tk.emph, start:s, end:e, capId:ci, capStart:cStart}); });
     } else {
       // você mudou a QUANTIDADE de palavras (inseriu/removeu) — redistribui TODAS igualmente dentro
       // do tempo desta legenda, então a palavra nova entra NA ORDEM e sempre aparece
       const st=c.start, en=Math.max(st+0.24, (c.end!=null?c.end:st+toks.length*0.3));
       const per=((en-st)/toks.length)/spd;
-      toks.forEach((tk,k)=> out.push({text:tk.text, emph:tk.emph, start:st+k*per, end:st+(k+1)*per, capId:ci}));
+      toks.forEach((tk,k)=> out.push({text:tk.text, emph:tk.emph, start:st+k*per, end:st+(k+1)*per, capId:ci, capStart:cStart}));
     }
   });
-  // ordena por LEGENDA primeiro (as caps já estão em ordem cronológica), depois pelo tempo dentro dela.
-  // isso impede que legendas com tempos sobrepostos (ex.: uma inserida à mão colada na seguinte)
-  // tenham as palavras intercaladas — cada legenda mostra exatamente o que está escrito, na ordem.
-  out.sort((a,b)=> (a.capId-b.capId) || (a.start-b.start));
+  // ordena pelo INÍCIO da legenda (cronológico de verdade — funciona mesmo com legenda adicionada à
+  // mão fora de ordem no array), depois pelo capId (desempate) e pelo tempo da palavra dentro da legenda.
+  // isso mantém cada legenda íntegra (sem intercalar com a vizinha) E na posição certa da linha do tempo.
+  out.sort((a,b)=> (a.capStart-b.capStart) || (a.capId-b.capId) || (a.start-b.start));
   // continuidade: cada palavra fica na tela até a próxima COMEÇAR (sem piscar, sem repetir), respeitando pausas longas
   for(let k=0;k<out.length-1;k++){ const gap=out[k+1].start-out[k].start; if(gap>0.02 && gap<1.2) out[k].end=out[k+1].start; }
   return out;

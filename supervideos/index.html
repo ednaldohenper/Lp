@@ -915,6 +915,7 @@ function capsFromWords(wc){
 }
 function buildWordsFrom(caps){
   const out=[]; const spd=Math.max(0.5, S.capSpeed||1);
+  const R=keptRanges();
   caps.forEach((c,ci)=>{
     const toks=tokenize(c.text); if(!toks.length) return;
     // início cronológico da legenda (mesmo que ela esteja fora de ordem no array — ex.: fala inicial adicionada à mão)
@@ -924,11 +925,15 @@ function buildWordsFrom(caps){
       toks.forEach((tk,k)=>{ let s=c.wtimes[k][0], e=c.wtimes[k][1]; if(!(e>s)) e=s+0.12;
         out.push({text:tk.text, emph:tk.emph, start:s, end:e, capId:ci, capStart:cStart}); });
     } else {
-      // você mudou a QUANTIDADE de palavras (inseriu/removeu) — redistribui TODAS igualmente dentro
-      // do tempo desta legenda, então a palavra nova entra NA ORDEM e sempre aparece
-      const st=c.start, en=Math.max(st+0.24, (c.end!=null?c.end:st+toks.length*0.3));
-      const per=((en-st)/toks.length)/spd;
-      toks.forEach((tk,k)=> out.push({text:tk.text, emph:tk.emph, start:st+k*per, end:st+(k+1)*per, capId:ci, capStart:cStart}));
+      // você mudou a QUANTIDADE de palavras (inseriu/removeu) — redistribui TODAS igualmente,
+      // mas SOBRE A LINHA CORTADA (pulando os trechos removidos). Se distribuísse no tempo original,
+      // uma legenda que atravessa um corte jogaria palavras dentro do trecho excluído → elas sumiam.
+      const cs=origToCut(c.start, R);
+      let ce=origToCut(c.end!=null?c.end:c.start+toks.length*0.3, R);
+      if(!(ce>cs)) ce=cs+Math.max(0.24, toks.length*0.24);
+      const per=((ce-cs)/toks.length)/spd;
+      toks.forEach((tk,k)=>{ const a=cutToOrig(Math.min(ce, cs+k*per), R), b=cutToOrig(Math.min(ce, cs+(k+1)*per), R);
+        out.push({text:tk.text, emph:tk.emph, start:a, end:(b>a?b:a+0.05), capId:ci, capStart:cStart}); });
     }
   });
   // ordena pelo INÍCIO da legenda (cronológico de verdade — funciona mesmo com legenda adicionada à

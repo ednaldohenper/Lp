@@ -402,8 +402,10 @@
       <div class="seg-card" style="flex-direction:column; align-items:stretch; gap:10px">
         <div><b>1. Completo — MP4 pronto pro Instagram</b><div class="hint">Legenda queimada, meia-tela, zoom e quadro que te acompanha. Grava em tempo real (~a duração do vídeo) e entrega <b>MP4 (H.264/AAC)</b> que o Instagram aceita. Inclui o áudio do vídeo de cima na meia-tela.</div></div>
         <label class="lbl" style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--suave)">Qualidade:
-          <select id="expQuality" title="720p é bem mais leve — use se travar/picotar na gravação, principalmente com meia-tela (dois vídeos). 1080p é o padrão do Instagram.">
+          <select id="expQuality" title="1080p é o padrão do Instagram. 'Alta 1440' e 'Máxima' aproveitam mais do seu 4K (útil quando você corta paisagem→vertical) — o Instagram recomprime a partir de mais detalhe, fica mais nítido. Arquivo maior e a gravação pesa mais. 720p é o mais leve, se travar/picotar (principalmente com meia-tela).">
             <option value="1080">1080p (padrão Instagram)</option>
+            <option value="1440">Alta 1440 (aproveita o 4K)</option>
+            <option value="native">Máxima nativa (usa todo o 4K — pesado)</option>
             <option value="720">720p (mais leve — se travar com meia-tela)</option>
           </select>
         </label>
@@ -1263,12 +1265,17 @@ function cropRect(t){
   const panX=W-cw, panY=H-ch;
   return {W,H,cw,ch,cw0,ch0,z,cx:Math.round(panX*f.fx),cy:Math.round(panY*f.fy),panX,panY};
 }
-// resolução PADRÃO de saída (1080 no lado curto → qualidade certa pro Instagram)
+// resolução de saída. Base = o RECORTE em pixels nativos (cw0×ch0) — assim, quando você corta um
+// vídeo 4K de paisagem pra vertical, a saída usa toda a largura que sobrou (ex.: ~1215px) em vez de
+// jogar tudo pra 1080. O alvo do lado curto nunca passa do nativo (sem upscale/borrão) nem do teto escolhido.
 function outputSize(){
   const r=cropRect();
   let sw = r?r.cw0:(vid.videoWidth||1080), sh = r?r.ch0:(vid.videoHeight||1920);
   const ar = sw/sh;
-  const short = +(($("#expQuality") && $("#expQuality").value) || 1080); // lado curto alvo (1080 padrão, 720 mais leve)
+  const sel = (($("#expQuality") && $("#expQuality").value) || "1080");
+  const nativeShort = Math.min(sw, sh);                 // menor lado do que vai pra tela, em pixels reais
+  const cap = (sel==="native") ? 2160 : (+sel || 1080); // teto do lado curto
+  const short = Math.max(720, Math.min(nativeShort, cap)); // sem upscale (não passa do nativo), sem passar do teto
   let w,h;
   if(ar<=1){ w=short; h=Math.round(w/ar); } else { h=short; w=Math.round(h*ar); }
   return { w:Math.round(w/2)*2, h:Math.round(h/2)*2 };

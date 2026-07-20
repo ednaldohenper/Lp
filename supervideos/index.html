@@ -1517,13 +1517,17 @@ function renderStage(t, playing){
   const lookOn = S.look && S.look!=="none";
   const useCanvas = vid.videoWidth && ( lookOn || ((playing || effZoom<0.999) && (cropActive() || activeOverlay(t))) );
   if(useCanvas){
-    // preview desenha na resolução da TELA (não em 1080) — bem mais leve, não trava.
-    // MAS multiplica pelo device pixel ratio: sem isso, em tela de celular/Retina (DPR 2–3×)
-    // o canvas saía em 1× e era esticado → rosto borrado/pixelado. Agora fica nítido.
+    // o canvas de preview é EXIBIDO no tamanho do palco (dw×dh), mas RENDERIZADO numa resolução
+    // bem maior (supersampling) — senão, em palco pequeno / tela DPR 1, ele saía com poucos pixels
+    // e o rosto ficava borrado/pixelado. Piso ~1080 no lado curto, teto 1440 e nunca acima da fonte.
     const base=cropRect(t); const OW=base?base.cw0:vid.videoWidth, OH=base?base.ch0:vid.videoHeight;
     const ar=OW/OH; let dw=st.width, dh=dw/ar; if(dh>st.height){ dh=st.height; dw=dh*ar; }
     const dpr=Math.min(3, window.devicePixelRatio||1);
-    const cw=Math.max(2,Math.round(dw*dpr)), ch=Math.max(2,Math.round(dh*dpr));
+    const dispShort=Math.max(2, Math.min(dw,dh)), nativeShort=Math.min(OW,OH)||dispShort;
+    let ss=Math.max(dispShort*dpr, 1080);           // piso: nítido mesmo em palco pequeno / DPR 1
+    ss=Math.min(ss, 1440, nativeShort);             // teto de performance e não passa da resolução real
+    const k=Math.max(1, ss/dispShort);
+    const cw=Math.max(2,Math.round(dw*k)), ch=Math.max(2,Math.round(dh*k));
     if(cvp.width!==cw) cvp.width=cw; if(cvp.height!==ch) cvp.height=ch;
     const cctx=cvp.getContext("2d"); cctx.imageSmoothingEnabled=true; cctx.imageSmoothingQuality="high";
     drawComposite(cctx, cw, ch, t);

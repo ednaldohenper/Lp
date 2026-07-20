@@ -1517,12 +1517,15 @@ function renderStage(t, playing){
   const lookOn = S.look && S.look!=="none";
   const useCanvas = vid.videoWidth && ( lookOn || ((playing || effZoom<0.999) && (cropActive() || activeOverlay(t))) );
   if(useCanvas){
-    // preview desenha na resolução da TELA (não em 1080) — bem mais leve, não trava
+    // preview desenha na resolução da TELA (não em 1080) — bem mais leve, não trava.
+    // MAS multiplica pelo device pixel ratio: sem isso, em tela de celular/Retina (DPR 2–3×)
+    // o canvas saía em 1× e era esticado → rosto borrado/pixelado. Agora fica nítido.
     const base=cropRect(t); const OW=base?base.cw0:vid.videoWidth, OH=base?base.ch0:vid.videoHeight;
     const ar=OW/OH; let dw=st.width, dh=dw/ar; if(dh>st.height){ dh=st.height; dw=dh*ar; }
-    const cw=Math.max(2,Math.round(dw)), ch=Math.max(2,Math.round(dh));
+    const dpr=Math.min(3, window.devicePixelRatio||1);
+    const cw=Math.max(2,Math.round(dw*dpr)), ch=Math.max(2,Math.round(dh*dpr));
     if(cvp.width!==cw) cvp.width=cw; if(cvp.height!==ch) cvp.height=ch;
-    const cctx=cvp.getContext("2d"); cctx.imageSmoothingQuality="high";
+    const cctx=cvp.getContext("2d"); cctx.imageSmoothingEnabled=true; cctx.imageSmoothingQuality="high";
     drawComposite(cctx, cw, ch, t);
     const left=(st.width-dw)/2, top=(st.height-dh)/2;
     cvp.style.display="block"; cvp.style.left=left+"px"; cvp.style.top=top+"px"; cvp.style.width=dw+"px"; cvp.style.height=dh+"px";

@@ -369,6 +369,7 @@
           <select id="look" disabled>
             <option value="none">Nenhum</option>
             <option value="cinema">Cinema (quente + vinheta)</option>
+            <option value="cinegrao">Cinema granulado (grão de filme)</option>
             <option value="quente">Quente / dourado</option>
             <option value="frio">Frio / sério</option>
             <option value="vivido">Vívido (punch)</option>
@@ -1432,6 +1433,7 @@ function drawMainInto(ctx, dx, dy, dw, dh, t, src){
 // "look" cinematográfico: filtro CSS aplicado no frame (GPU, leve) + vinheta opcional
 function lookFilter(){ switch(S.look){
   case "cinema": return "contrast(1.08) saturate(1.16) brightness(1.02) sepia(0.08)";
+  case "cinegrao": return "contrast(1.12) saturate(0.94) brightness(1.0) sepia(0.06)"; // gradação filmica (o grão entra depois, por cima)
   case "quente": return "saturate(1.12) sepia(0.2) brightness(1.03) contrast(1.03)";
   case "frio":   return "saturate(0.9) contrast(1.1) brightness(0.98) hue-rotate(-10deg)";
   case "vivido": return "saturate(1.32) contrast(1.12) brightness(1.02)";
@@ -1442,6 +1444,28 @@ function lookFilter(){ switch(S.look){
 function drawVignette(ctx,W,H){ const g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.34,W/2,H/2,Math.max(W,H)*0.72);
   g.addColorStop(0,"rgba(0,0,0,0)"); g.addColorStop(1,"rgba(0,0,0,0.30)");
   ctx.save(); ctx.fillStyle=g; ctx.fillRect(0,0,W,H); ctx.restore(); }
+// grão de filme: alguns tiles de ruído gerados uma vez; a cada frame sorteia um e desloca,
+// então o grão "anda" como em filme de verdade. Blend "overlay" = clareia/escurece sutil (grão real).
+let _grainTiles=null;
+function grainTiles(){
+  if(_grainTiles) return _grainTiles;
+  _grainTiles=[]; const N=4, SZ=160;
+  for(let n=0;n<N;n++){
+    const c=document.createElement("canvas"); c.width=SZ; c.height=SZ; const g=c.getContext("2d");
+    const img=g.createImageData(SZ,SZ), d=img.data;
+    for(let i=0;i<d.length;i+=4){ const v=(Math.random()*255)|0; d[i]=d[i+1]=d[i+2]=v; d[i+3]=255; }
+    g.putImageData(img,0,0); _grainTiles.push(c);
+  }
+  return _grainTiles;
+}
+function drawGrain(ctx,W,H,strength){
+  const tiles=grainTiles(); const t=tiles[(Math.random()*tiles.length)|0];
+  const scale=1.6, tw=t.width*scale, th=t.height*scale;              // grão um pouco maior que 1px = mais "filme"
+  const ox=-((Math.random()*tw)|0), oy=-((Math.random()*th)|0);       // deslocamento aleatório → grão anda
+  ctx.save(); ctx.globalAlpha=strength; ctx.globalCompositeOperation="overlay";
+  for(let y=oy;y<H;y+=th){ for(let x=ox;x<W;x+=tw){ ctx.drawImage(t,x,y,tw,th); } }
+  ctx.restore();
+}
 // desenha o frame composto (crop + zoom in/out + meia-tela + LOOK), SEM legenda
 // src = vídeo-fonte do frame principal (vid no preview; o vídeo já-cortado no export)
 let _scrLk=null;
@@ -1457,7 +1481,8 @@ function drawComposite(ctx, W, H, t, src){
   } else {
     drawFrame(ctx, W, H, t, src);
   }
-  if(S.look==="cinema"||S.look==="frio") drawVignette(ctx, W, H); // vinheta por cima (legenda vem depois, fica limpa)
+  if(S.look==="cinema"||S.look==="frio"||S.look==="cinegrao") drawVignette(ctx, W, H); // vinheta por cima (legenda vem depois, fica limpa)
+  if(S.look==="cinegrao") drawGrain(ctx, W, H, 0.07); // grão de filme sutil e animado (só neste look)
 }
 function drawFrame(ctx, W, H, t, src){
   src=src||vid;

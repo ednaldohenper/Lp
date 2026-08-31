@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Slides · Área protegida</title>
+<title>Material protegido</title>
 <style>
-  :root{--grafite:#161A20;--grafite2:#20262E;--creme:#F5F1E8;--dourado:#C9A24A;--cinza:#8B93A1}
+  :root{--grafite:#161A20;--creme:#F5F1E8;--dourado:#C9A24A;--cinza:#8B93A1}
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{background:radial-gradient(ellipse at 50% 30%,#20262E,#12151A 70%);color:var(--creme);
@@ -14,20 +14,19 @@
   .box{width:100%;max-width:400px;background:rgba(32,38,46,.7);border:1px solid rgba(201,162,74,.28);border-radius:16px;
     padding:34px 30px;box-shadow:0 20px 60px rgba(0,0,0,.5);text-align:center}
   .lock{font-size:34px;margin-bottom:10px}
-  h1{font-size:19px;font-weight:700;letter-spacing:.01em;margin-bottom:6px}
+  h1{font-size:19px;font-weight:700;margin-bottom:6px}
   p.sub{font-size:13.5px;color:var(--cinza);line-height:1.5;margin-bottom:22px}
   input{width:100%;background:#12151A;border:1px solid rgba(245,241,232,.16);border-radius:9px;color:var(--creme);
     font-size:16px;padding:13px 15px;outline:none;text-align:center;letter-spacing:.05em}
   input:focus{border-color:var(--dourado)}
   button{width:100%;margin-top:12px;background:var(--dourado);color:var(--grafite);border:0;border-radius:9px;
-    font-size:15px;font-weight:700;letter-spacing:.04em;padding:14px;cursor:pointer;transition:background .2s}
+    font-size:15px;font-weight:700;padding:14px;cursor:pointer}
   button:hover{background:#B98F33}
   button:disabled{opacity:.6;cursor:default}
   .msg{margin-top:14px;font-size:13.5px;min-height:18px}
-  .err{color:#E8896B}
-  .ok{color:#7BD08A}
+  .err{color:#E8896B}.ok{color:#7BD08A}
   .result{display:none;margin-top:18px;flex-direction:column;gap:10px}
-  .result a{display:block;background:var(--grafite2);border:1px solid rgba(201,162,74,.4);color:var(--dourado);
+  .result a{display:block;background:#20262E;border:1px solid rgba(201,162,74,.4);color:var(--dourado);
     text-decoration:none;border-radius:9px;padding:13px;font-size:14px;font-weight:600}
   .foot{margin-top:20px;font-size:11px;color:#5B6675;letter-spacing:.08em;text-transform:uppercase}
 </style>
@@ -35,8 +34,8 @@
 <body>
   <div class="box">
     <div class="lock">🔒</div>
-    <h1>Slides · Área protegida</h1>
-    <p class="sub">Material interno. Digite a senha para abrir a apresentação.</p>
+    <h1>Material protegido</h1>
+    <p class="sub">Conteúdo interno. Digite a senha para abrir.</p>
     <form id="f">
       <input id="pw" type="password" placeholder="Senha" autocomplete="off" autofocus>
       <button id="btn" type="submit">Abrir</button>
@@ -51,32 +50,40 @@
 <script>
   var f=document.getElementById('f'), pw=document.getElementById('pw'),
       btn=document.getElementById('btn'), msg=document.getElementById('msg'), result=document.getElementById('result');
-  // arquivo a abrir: ?f=alicerce  (só letras/números/hífen)
-  var name=(new URLSearchParams(location.search).get('f')||'alicerce').replace(/[^a-z0-9-]/gi,'');
-  var encUrl=name+'.enc', pdfName=name+'.pdf';
-
-  function buf2bytes(b){return new Uint8Array(b);}
+  var params=new URLSearchParams(location.search);
+  var name=(params.get('f')||'').replace(/[^a-z0-9-]/gi,'');
+  var type=(params.get('t')||'pdf').replace(/[^a-z]/gi,'');   // 'pdf' | 'html'
+  var encUrl=name+'.enc';
 
   f.addEventListener('submit', async function(e){
     e.preventDefault();
+    if(!name){ msg.textContent='Link inválido.'; msg.className='msg err'; return; }
     msg.textContent=''; msg.className='msg'; btn.disabled=true; btn.textContent='Abrindo…';
     try{
-      var resp=await fetch(encUrl, {cache:'no-store'});
-      if(!resp.ok) throw new Error('arquivo não encontrado');
-      var all=buf2bytes(await resp.arrayBuffer());
-      var salt=all.slice(0,16), iv=all.slice(16,28), ct=all.slice(28); // ct inclui a tag no fim
+      var resp=await fetch(encUrl,{cache:'no-store'});
+      if(!resp.ok) throw new Error('nao-encontrado');
+      var all=new Uint8Array(await resp.arrayBuffer());
+      var salt=all.slice(0,16), iv=all.slice(16,28), ct=all.slice(28);
       var base=await crypto.subtle.importKey('raw', new TextEncoder().encode(pw.value), 'PBKDF2', false, ['deriveKey']);
       var key=await crypto.subtle.deriveKey({name:'PBKDF2', salt:salt, iterations:200000, hash:'SHA-256'},
         base, {name:'AES-GCM', length:256}, false, ['decrypt']);
-      var pt=await crypto.subtle.decrypt({name:'AES-GCM', iv:iv}, key, ct); // erro se senha errada
+      var pt=await crypto.subtle.decrypt({name:'AES-GCM', iv:iv}, key, ct);  // erro = senha errada
+
+      if(type==='html'){
+        // renderiza o deck na MESMA origem https (evita origem opaca de blob)
+        var html=new TextDecoder().decode(pt);
+        document.open('text/html','replace'); document.write(html); document.close();
+        return;
+      }
+      // PDF: abre em nova aba + botão baixar
       var blob=new Blob([pt], {type:'application/pdf'});
       var url=URL.createObjectURL(blob);
       document.getElementById('view').href=url;
-      var dl=document.getElementById('dl'); dl.href=url; dl.setAttribute('download', pdfName);
+      var dl=document.getElementById('dl'); dl.href=url; dl.setAttribute('download', name+'.pdf');
       f.style.display='none'; msg.textContent='Liberado ✓'; msg.className='msg ok'; result.style.display='flex';
       window.open(url,'_blank');
     }catch(err){
-      msg.textContent=(err && /não encontrado/.test(err.message)) ? 'Material indisponível.' : 'Senha incorreta.';
+      msg.textContent=(err && err.message==='nao-encontrado') ? 'Material indisponível.' : 'Senha incorreta.';
       msg.className='msg err'; btn.disabled=false; btn.textContent='Abrir'; pw.select();
     }
   });

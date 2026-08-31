@@ -25,10 +25,13 @@
     .ladder h2.lt{font-size:22px;text-align:center;margin-bottom:4px;}
     .ladder .lsub{text-align:center;color:var(--cinza);font-size:14px;margin-bottom:24px;}
     .stairs{display:flex;align-items:flex-end;gap:8px;min-height:300px;position:relative;padding-bottom:48px;}
-    .fcap{position:absolute;left:0;bottom:6px;width:calc((100% - 48px)/7*4 + 24px);border-top:2px solid #A65A38;padding-top:9px;display:flex;align-items:center;justify-content:center;}
+    .fcap{position:absolute;left:0;bottom:6px;width:calc((100% - 56px)/8*5 + 32px);border-top:2px solid #A65A38;padding-top:9px;display:flex;align-items:center;justify-content:center;}
     .fcap .lbl{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#A65A38;text-align:center;line-height:1.3;}
     .fcap::before,.fcap::after{content:'';position:absolute;top:-2px;width:2px;height:10px;background:#A65A38;}
     .fcap::before{left:0;} .fcap::after{right:0;}
+    .block{position:relative;}
+    .block.hero{box-shadow:0 0 0 2px #C9A24A, 0 12px 34px rgba(201,162,74,.30);}
+    .block.hero .star{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:#C9A24A;color:#161A20;font-size:9.5px;font-weight:800;letter-spacing:.07em;padding:3px 10px;border-radius:999px;white-space:nowrap;box-shadow:0 3px 10px rgba(201,162,74,.45);z-index:2;}
     .stair{flex:1;display:flex;flex-direction:column;justify-content:flex-end;}
     .stair .block{background:#fff;border:1px solid rgba(22,26,32,.10);border-top:4px solid var(--ac,#C9A24A);border-radius:12px 12px 0 0;padding:13px 13px 15px;display:flex;flex-direction:column;justify-content:flex-end;min-height:var(--h,120px);box-shadow:0 6px 18px rgba(22,26,32,.06);}
     .stair .sn{font-size:10.5px;font-weight:700;letter-spacing:.04em;color:var(--ac,#C9A24A);text-transform:uppercase;}
@@ -71,6 +74,7 @@
     .card.ciclo { border-top:3px solid #1E40AF; }
     .card.conselho { border-top:3px solid #C9A24A; }
     .card.alicerce { border-top:3px solid #A65A38; }
+    .card.palestras { border-top:3px solid #2E9E8F; }
     .card.ascensao { border-top:3px solid #E2742E; }
     .card.maestria { border-top:3px solid #7C6BFF; }
     .section-title { font-size:18px; margin:40px 0 14px; padding-top:28px; border-top:1px solid rgba(22,26,32,.10); }
@@ -94,12 +98,13 @@
       <p class="lsub">Da entrada ao topo: onde cada produto entra na esteira, o nível de consciência e o ticket.</p>
       <p style="text-align:center;margin:-16px 0 24px;"><a href="portfolio/" target="_blank" rel="noopener" style="color:var(--dourado-esc);font-weight:700;font-size:13px;text-decoration:none;">📊 Ver portfólio completo (interativo) ↗</a></p>
       <div class="stairs">
+        <div class="stair"><div class="block" style="--ac:#2E9E8F;--h:76px"><span class="sn">◆ · Palestra</span><span class="pn">Palestras</span><span class="pr">Gratuito</span><span class="fm">Evento isca</span></div></div>
         <div class="stair"><div class="block" style="--ac:#A65A38;--h:88px"><span class="sn">00 · Parceria</span><span class="pn">O Alicerce</span><span class="pr">Gratuito</span><span class="fm">Movimentos de casais</span></div></div>
         <div class="stair"><div class="block" style="--ac:#E2742E;--h:110px"><span class="sn">01 · Nível 3</span><span class="pn">Ascensão Empresarial</span><span class="pr">R$ 67</span><span class="fm">Evento de entrada</span></div></div>
         <div class="stair"><div class="block" style="--ac:#22A8F0;--h:142px"><span class="sn">02 · Nível 3–4</span><span class="pn">A Chave do Tempo</span><span class="pr">R$197–297</span><span class="fm">Desafio 7 dias</span></div></div>
         <div class="stair"><div class="block" style="--ac:#7B5EA8;--h:178px"><span class="sn">03 · Nível 3</span><span class="pn">Imersão Foco</span><span class="pr">R$987–1.497</span><span class="fm">Presencial 2 dias</span></div></div>
         <div class="fcap"><span class="lbl">Funil de captura · capta, aquece e leva ao Protocolo &rarr;</span></div>
-        <div class="stair"><div class="block" style="--ac:#7C6BFF;--h:214px"><span class="sn">04 · Nível 4</span><span class="pn">Protocolo Maestria</span><span class="pr">R$14k</span><span class="fm">Mentoria 90 dias</span></div></div>
+        <div class="stair"><div class="block hero" style="--ac:#7C6BFF;--h:214px"><span class="star">★ Principal</span><span class="sn">04 · Nível 4</span><span class="pn">Protocolo Maestria</span><span class="pr">R$14k</span><span class="fm">Mentoria 90 dias</span></div></div>
         <div class="stair"><div class="block" style="--ac:#1E40AF;--h:250px"><span class="sn">05 · Nível 5</span><span class="pn">Ciclo da Inovação</span><span class="pr">R$40k/ano</span><span class="fm">Continuidade · por aplicação</span></div></div>
         <div class="stair"><div class="block" style="--ac:#C9A24A;--h:286px"><span class="sn">06 · Nível 5</span><span class="pn">O Conselho</span><span class="pr">R$8k/mês</span><span class="fm">Premium · por aplicação</span></div></div>
       </div>
@@ -187,6 +192,16 @@
         <div class="actions">
           <a class="btn btn-lp" href="/alicerce/" target="_blank" rel="noopener">Ver LP</a>
           <a class="btn btn-pdf" href="pdfs/alicerce.pdf" download>Baixar PDF</a>
+        </div>
+      </div>
+
+      <div class="card palestras">
+        <div class="top"><span class="num">◆</span><h2>Palestras</h2></div>
+        <div class="meta"><span class="chip">Evento isca · topo de funil</span><span class="chip">Presencial / online</span><span class="chip price">Gratuito</span></div>
+        <div class="persona"><span class="qc">Papel na esteira</span><p>Eventos-isca de alto valor percebido (ex.: <strong>Liderança Situacional</strong>). Captam público novo, geram autoridade e <strong>aquecem pro Protocolo</strong>. Entrada gratuita e alcance amplo — leváveis a empresas, associações e palcos.</p></div>
+        <div class="actions">
+          <a class="btn btn-lp" href="/palestras/lideranca-situacional/" target="_blank" rel="noopener">Ver palestra</a>
+          <span class="btn btn-off" title="Mais palestras em breve">+ em breve</span>
         </div>
       </div>
 

@@ -30,11 +30,11 @@
 
     /* ---- Visão A: escada em degraus ---- */
     .stairs{display:flex;align-items:flex-end;gap:8px;min-height:300px;position:relative;padding-bottom:52px;}
-    .fcap{position:absolute;left:0;bottom:6px;width:calc((100% - 64px)/9*5 + 32px);border-top:2px solid #A65A38;padding-top:9px;display:flex;align-items:center;justify-content:center;}
+    .fcap{position:absolute;left:0;bottom:6px;width:calc((100% - 48px)/7*3 + 16px);border-top:2px solid #A65A38;padding-top:9px;display:flex;align-items:center;justify-content:center;}
     .fcap .lbl{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#A65A38;text-align:center;line-height:1.3;}
     .fcap::before,.fcap::after{content:'';position:absolute;top:-2px;width:2px;height:10px;background:#A65A38;}
     .fcap::before{left:0;} .fcap::after{right:0;}
-    .mcap{position:absolute;bottom:6px;left:calc((100% - 64px)/9*6 + 48px);width:calc((100% - 64px)/9*3 + 16px);border-top:2px solid #1E40AF;padding-top:9px;display:flex;align-items:center;justify-content:center;}
+    .mcap{position:absolute;bottom:6px;left:calc((100% - 48px)/7*4 + 32px);width:calc((100% - 48px)/7*3 + 16px);border-top:2px solid #1E40AF;padding-top:9px;display:flex;align-items:center;justify-content:center;}
     .mcap .lbl{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#1E40AF;text-align:center;line-height:1.3;}
     .mcap::before,.mcap::after{content:'';position:absolute;top:-2px;width:2px;height:10px;background:#1E40AF;}
     .mcap::before{left:0;} .mcap::after{right:0;}
@@ -144,11 +144,9 @@
     <section class="vis">
       <span class="vis-label">A esteira <small>— captação → evento → mentoria</small></span>
       <div class="stairs">
-        <div class="stair"><div class="block" style="--ac:#2E9E8F;--h:96px"><span class="sn">◆ Captação</span><span class="pn">Palestras / Workshops</span><span class="pr">Gratuito</span><span class="fm">Evento isca</span></div></div>
-        <div class="stair"><div class="block" style="--ac:#E2742E;--h:112px"><span class="sn">Captação</span><span class="pn">Ascensão Empresarial</span><span class="pr">R$ 67</span><span class="fm">Online recorrente</span></div></div>
-        <div class="stair"><div class="block" style="--ac:#22A8F0;--h:128px"><span class="sn">Captação</span><span class="pn">A Chave do Tempo</span><span class="pr">R$ 67–97</span><span class="fm">Desafio 7 dias</span></div></div>
-        <div class="stair"><div class="block" style="--ac:#8A6D3B;--h:144px"><span class="sn">Captação</span><span class="pn">Livros</span><span class="pr">Baixo</span><span class="fm">Autoridade · topo</span></div></div>
-        <div class="stair"><div class="block" style="--ac:#6B7280;--h:160px"><span class="sn">Captação</span><span class="pn">Diagnóstico</span><span class="pr">Grátis</span><span class="fm">Análise Maestria</span></div></div>
+        <div class="stair"><div class="block" style="--ac:#2E9E8F;--h:100px"><span class="sn">◆ Captação</span><span class="pn">Palestras, Workshops &amp; Low-tickets</span><span class="pr">Grátis / baixo</span><span class="fm">Iscas · livros · diagnóstico</span></div></div>
+        <div class="stair"><div class="block" style="--ac:#E2742E;--h:124px"><span class="sn">Captação</span><span class="pn">Ascensão Empresarial</span><span class="pr">R$ 67</span><span class="fm">Online recorrente</span></div></div>
+        <div class="stair"><div class="block" style="--ac:#22A8F0;--h:148px"><span class="sn">Captação</span><span class="pn">A Chave do Tempo</span><span class="pr">R$ 67–97</span><span class="fm">Desafio 7 dias</span></div></div>
         <div class="fcap"><span class="lbl">Funil de captura · capta, aquece e leva ao evento &rarr;</span></div>
         <div class="stair"><div class="block" style="--ac:#4A7FA5;--h:196px"><span class="sn">1º movimento · a venda acontece aqui</span><span class="pn">Imersão Método GNC</span><span class="pr">R$3.997 · 4.997 · 9.997</span><span class="fm">Presencial · 2 dias</span></div></div>
         <div class="stair"><div class="block mut" style="--ac:#7C6BFF;--h:214px"><span class="tagm">Peça · downsell</span><span class="sn">Dentro da mentoria</span><span class="pn">Protocolo Maestria</span><span class="pr">1º trecho / downsell</span><span class="fm">Não é mais produto solto</span></div></div>

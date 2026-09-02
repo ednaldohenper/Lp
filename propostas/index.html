@@ -24,9 +24,6 @@
     .dot { width:11px; height:11px; border-radius:3px; display:inline-block; }
     .dot.on { background:var(--dourado); } .dot.off { background:#D9D6CF; }
 
-    /* ---- comparador de visões ---- */
-    .pick { display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; margin:0 auto 8px; background:#FBEFD9; border:1px solid rgba(181,100,46,.35); border-radius:10px; padding:10px 14px; font-size:13px; color:#8A5426; max-width:760px; text-align:center; }
-    .pick b { color:#6E3F17; }
     .vis { margin:26px 0 40px; }
     .vis-label { display:inline-block; font-size:11px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; color:#fff; background:var(--grafite); padding:5px 12px; border-radius:999px; margin-bottom:16px; }
     .vis-label small { font-weight:600; opacity:.75; letter-spacing:.02em; text-transform:none; }
@@ -62,30 +59,10 @@
       .stair .pn{margin:0;flex:1;}
     }
 
-    /* ---- Visão B: mapa de 3 trilhas ---- */
-    .map{display:grid;grid-template-columns:1fr auto 1fr auto 1.05fr;gap:12px;align-items:stretch;}
-    .lane{background:#fff;border:1px solid rgba(22,26,32,.10);border-radius:14px;padding:16px 16px 14px;display:flex;flex-direction:column;box-shadow:0 6px 18px rgba(22,26,32,.05);}
-    .lane-h{font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:800;margin-bottom:4px;}
-    .lane-s{font-size:11.5px;color:var(--cinza);margin-bottom:12px;line-height:1.4;}
-    .lane.cap{border-top:4px solid #2E9E8F;} .lane.cap .lane-h{color:#2E9E8F;}
-    .lane.mov{border-top:4px solid #4A7FA5;} .lane.mov .lane-h{color:#3E6B8C;}
-    .lane.dest{border-top:4px solid #1E40AF;} .lane.dest .lane-h{color:#1E40AF;}
-    .li{background:var(--creme);border-radius:9px;padding:9px 11px;margin-bottom:7px;}
-    .li .t{font-weight:700;font-size:13px;display:block;line-height:1.25;}
-    .li .p{color:var(--dourado-esc);font-weight:700;font-size:11.5px;}
-    .li .r{color:var(--cinza);font-size:11px;display:block;margin-top:2px;line-height:1.35;}
-    .li.star{background:#EEF2FB;border:1px solid rgba(30,64,175,.4);position:relative;}
-    .li.star .t{color:#1E40AF;}
-    .li.star .badge{position:absolute;top:-9px;right:10px;background:#1E40AF;color:#fff;font-size:8.5px;font-weight:800;letter-spacing:.06em;padding:2px 8px;border-radius:999px;}
-    .li.down{background:#F3F1FB;border:1px dashed rgba(124,107,255,.55);}
-    .li.down .t{color:#5B4CC0;}
     .faixa{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px;padding:6px 0;border-bottom:1px dashed rgba(22,26,32,.14);}
     .faixa:last-of-type{border-bottom:0;}
     .faixa .fk{color:var(--grafite-2);} .faixa .fk b{color:var(--grafite);}
     .faixa .fp{font-weight:800;color:#3E6B8C;white-space:nowrap;}
-    .map .arrow{display:flex;align-items:center;justify-content:center;color:#A65A38;font-size:24px;font-weight:800;}
-    .map-note{font-size:11.5px;color:var(--cinza);font-style:italic;margin-top:9px;line-height:1.45;}
-    @media(max-width:760px){ .map{grid-template-columns:1fr;} .map .arrow{transform:rotate(90deg);font-size:20px;padding:0;} }
 
     /* ---- cards ---- */
     .group-h{font-size:12px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--grafite);margin:34px 0 4px;display:flex;align-items:center;gap:10px;}
@@ -161,13 +138,11 @@
 
     <p class="rule"><strong>A regra em uma frase:</strong> existe <strong>um produto</strong> — a mentoria. Todo o resto existe para levar alguém até o primeiro movimento dela. A venda da mentoria acontece <strong>no palco do evento</strong>.</p>
 
-    <p class="pick">🔀 <b>Duas visões da esteira abaixo</b> — Visão A (escada) e Visão B (mapa de trilhas). Escolha a que preferir e me diga qual excluir.</p>
-
     <p style="text-align:center;margin:0 0 8px;"><a href="portfolio/" target="_blank" rel="noopener" style="color:var(--dourado-esc);font-weight:700;font-size:13px;text-decoration:none;">📊 Ver portfólio completo (interativo) ↗</a></p>
 
-    <!-- ===================== VISÃO A — ESCADA ===================== -->
+    <!-- ===================== ESCADA ===================== -->
     <section class="vis">
-      <span class="vis-label">Visão A · Escada <small>— captação → evento → mentoria</small></span>
+      <span class="vis-label">A esteira <small>— captação → evento → mentoria</small></span>
       <div class="stairs">
         <div class="stair"><div class="block" style="--ac:#2E9E8F;--h:96px"><span class="sn">◆ Captação</span><span class="pn">Palestras / Workshops</span><span class="pr">Gratuito</span><span class="fm">Evento isca</span></div></div>
         <div class="stair"><div class="block" style="--ac:#E2742E;--h:112px"><span class="sn">Captação</span><span class="pn">Ascensão Empresarial</span><span class="pr">R$ 67</span><span class="fm">Online recorrente</span></div></div>
@@ -180,42 +155,6 @@
         <div class="stair"><div class="block hero" style="--ac:#1E40AF;--h:250px"><span class="star">★ O produto</span><span class="sn">Destino</span><span class="pn">Mentoria · Ciclo da Inovação</span><span class="pr">R$2k/mês fundador</span><span class="fm">Trimestral · contínuo</span></div></div>
         <div class="stair"><div class="block" style="--ac:#C9A24A;--h:286px"><span class="sn">Destino · individual</span><span class="pn">O Conselho</span><span class="pr">~R$8k/mês</span><span class="fm">O Ednaldo sozinho</span></div></div>
         <div class="mcap"><span class="lbl">O destino · a mentoria</span></div>
-      </div>
-    </section>
-
-    <!-- ===================== VISÃO B — MAPA DE TRILHAS ===================== -->
-    <section class="vis">
-      <span class="vis-label">Visão B · Mapa de trilhas <small>— fiel ao documento da esteira</small></span>
-      <div class="map">
-        <div class="lane cap">
-          <span class="lane-h">Captação</span>
-          <span class="lane-s">Tudo serve pra encher o evento.</span>
-          <div class="li"><span class="t">Palestras / Workshops</span><span class="p">Gratuito</span><span class="r">Levam ao Ascensão ou direto ao evento</span></div>
-          <div class="li"><span class="t">Ascensão Empresarial</span><span class="p">R$ 67 · recorrente</span><span class="r">Vende o evento do palco</span></div>
-          <div class="li"><span class="t">A Chave do Tempo</span><span class="p">R$ 67–97</span><span class="r">Desafio 7 dias · pico periódico</span></div>
-          <div class="li"><span class="t">Livros</span><span class="p">Baixo</span><span class="r">Divisor de Águas · Mate Suas Ideias</span></div>
-          <div class="li"><span class="t">Diagnóstico</span><span class="p">Grátis</span><span class="r">Análise Maestria · captura</span></div>
-        </div>
-        <div class="arrow">→</div>
-        <div class="lane mov">
-          <span class="lane-h">Primeiro movimento</span>
-          <span class="lane-s">Um produto só: o ingresso do evento. Presencial, 2 dias, Monte Sião.</span>
-          <div class="li star"><span class="badge">o evento</span><span class="t">Imersão Método GNC</span></div>
-          <div class="faixas" style="margin-top:8px">
-            <div class="faixa"><span class="fk"><b>Faixa 1</b> · só o evento</span><span class="fp">R$ 3.997</span></div>
-            <div class="faixa"><span class="fk"><b>Faixa 2</b> · evento + Jornada NT</span><span class="fp">R$ 4.997</span></div>
-            <div class="faixa"><span class="fk"><b>Faixa 3</b> · + 30 dias de implementação</span><span class="fp">R$ 9.997</span></div>
-          </div>
-          <p class="map-note">A Jornada <strong>Negócio nos Trilhos</strong> (4 meses) vem <strong>dentro</strong> das faixas 2 e 3 — não é vendida à parte.</p>
-        </div>
-        <div class="arrow">→</div>
-        <div class="lane dest">
-          <span class="lane-h">O destino · a mentoria</span>
-          <span class="lane-s">É o produto. A venda acontece no palco do evento.</span>
-          <div class="li star"><span class="badge">★ o produto</span><span class="t">Mentoria · Ciclo da Inovação</span><span class="p">R$2.000/mês fundador · ref. R$4.000/mês</span><span class="r">Ciclos trimestrais · o calendário segura, não o contrato</span></div>
-          <div class="li down"><span class="t">Protocolo Maestria</span><span class="r">1º trecho da mentoria <strong>ou</strong> downsell de quem não fecha o ano</span></div>
-          <div class="li"><span class="t">O Conselho</span><span class="p">~R$8k/mês</span><span class="r">Versão individual — o Ednaldo sozinho</span></div>
-        </div>
       </div>
     </section>
 

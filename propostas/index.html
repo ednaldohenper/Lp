@@ -75,6 +75,10 @@
     .group-h::after{content:'';flex:1;height:1px;background:rgba(22,26,32,.12);}
     .group-h .gc{width:11px;height:11px;border-radius:3px;display:inline-block;}
     .group-s{font-size:12.5px;color:var(--cinza);margin:0 0 14px;line-height:1.5;}
+    .pillar-h{display:flex;align-items:center;gap:10px;margin:40px 0 4px;font-size:15px;font-weight:800;color:var(--grafite);}
+    .pillar-h .pdot{width:13px;height:13px;border-radius:4px;flex:none;}
+    .pillar-h .stage{font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--cinza);background:var(--creme);border:1px solid rgba(201,162,74,.3);padding:2px 9px;border-radius:999px;}
+    .pillar-h::after{content:'';flex:1;height:1px;background:rgba(22,26,32,.12);}
     .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(460px,1fr)); gap:16px; }
     .card { background:#fff; border:1px solid rgba(22,26,32,0.10); border-radius:14px; padding:20px 22px; transition:box-shadow .15s, transform .15s; display:flex; flex-direction:column; }
     .card:hover { box-shadow:0 8px 24px rgba(22,26,32,0.08); transform:translateY(-1px); }
@@ -179,25 +183,13 @@
       <span><i class="dot off"></i> Pendente (falta colocar online)</span>
     </div>
 
-    <!-- ---- CAPTAÇÃO ---- -->
-    <div class="group-h"><span class="gc" style="background:#2E9E8F"></span>Captação · leva ao evento</div>
-    <p class="group-s">Eventos e materiais de entrada. O trabalho de todos é o mesmo: encher o primeiro movimento (a Imersão). <strong>O conteúdo da captação existe para vender o evento — não deve reaparecer de graça dentro dele.</strong></p>
+    <!-- ===== blocos por pilar (ordem/cor da escada) ===== -->
+    <div class="pillar-h"><span class="pdot" style="background:#2E9E8F"></span>Low-tickets &amp; iscas<span class="stage">Captação</span></div>
+    <p class="group-s">Entradas de baixo (ou zero) ticket. O trabalho é o mesmo: encher o evento. <strong>Não devem reaparecer de graça dentro dele.</strong></p>
     <div class="grid">
 
-      <div class="card ascensao">
-        <div class="top"><span class="num">1</span><h2>Ascensão Empresarial</h2></div>
-        <div class="meta"><span class="chip">Captação · online recorrente</span><span class="chip price">R$ 67</span></div>
-        <div class="persona"><span class="qc">Papel na esteira</span><p>Dono de PME curioso, que quer “ver o Ednaldo ao vivo” antes de se comprometer. Ticket baixo derruba a objeção. <strong>O palco vende o evento (a Imersão)</strong>, não entrega o método completo de graça.</p></div>
-        <a class="kit-link" href="kits/ascensao-empresarial.html" target="_blank" rel="noopener">🎨 Guia de estilo ↗</a>
-        <div class="actions">
-          <a class="btn btn-lp" href="/ascensaoempresarial/" target="_blank" rel="noopener">Ver LP</a>
-          <span class="btn btn-off" title="PDF ainda não enviado">PDF pendente</span>
-          <a class="btn btn-slides" href="slides/?f=ascensao&amp;t=html" target="_blank" rel="noopener">🔒 Slides</a>
-        </div>
-      </div>
-
       <div class="card palestras">
-        <div class="top"><span class="num">2</span><h2>Palestras</h2></div>
+        <div class="top"><span class="num">1</span><h2>Palestras</h2></div>
         <div class="meta"><span class="chip">Captação · palestra-isca</span><span class="chip price">Grátis</span></div>
         <div class="persona"><span class="qc">Papel na esteira</span><p>Palestras de alto valor percebido que captam público novo e geram autoridade. <strong>Levam ao Ascensão ou direto para a Imersão.</strong> Cada linha com LP, PDF e Slides conforme disponível (🔒 = protegido por senha).</p></div>
         <div class="pal-list">
@@ -214,7 +206,7 @@
       </div>
 
       <div class="card palestras">
-        <div class="top"><span class="num">3</span><h2>Workshops</h2></div>
+        <div class="top"><span class="num">2</span><h2>Workshops</h2></div>
         <div class="meta"><span class="chip">Captação · workshop-isca</span><span class="chip price">Grátis</span></div>
         <div class="persona"><span class="qc">Papel na esteira</span><p>Workshops e encontros de imersão curta que aproximam o público e geram relação. Cada linha com LP, PDF e Slides conforme disponível (🔒 = protegido por senha).</p></div>
         <div class="pal-list">
@@ -231,7 +223,7 @@
       </div>
 
       <div class="card livros">
-        <div class="top"><span class="num">4</span><h2>Livros</h2></div>
+        <div class="top"><span class="num">3</span><h2>Livros</h2></div>
         <div class="meta"><span class="chip">Captação · topo de funil</span><span class="chip price">Ticket baixo</span></div>
         <div class="persona"><span class="qc">Papel na esteira</span><p>Autoridade e topo de funil: entram cedo, geram confiança e alimentam a captação para o evento.</p></div>
         <div class="books">
@@ -249,7 +241,7 @@
       </div>
 
       <div class="card diag">
-        <div class="top"><span class="num">5</span><h2>Diagnóstico · Análise Maestria</h2></div>
+        <div class="top"><span class="num">4</span><h2>Diagnóstico · Análise Maestria</h2></div>
         <div class="meta"><span class="chip">Captação · captura</span><span class="chip price">Grátis</span></div>
         <div class="persona"><span class="qc">Papel na esteira</span><p>Ferramenta de diagnóstico gratuita (as 9 Janelas). Captura o lead, gera consciência do problema e abre caminho para o evento.</p></div>
         <div class="actions">
@@ -258,26 +250,32 @@
         </div>
       </div>
 
-      <div class="card chave">
-        <div class="top"><span class="num">6</span><h2>A Chave do Tempo</h2></div>
-        <div class="meta"><span class="chip">Captação · desafio 7 dias</span><span class="chip price">R$ 67–97</span><span class="chip warn">checkout + vídeo pendentes</span></div>
-        <div class="persona"><span class="qc">Papel na esteira</span><p>Dono sufocado pela falta de tempo, que quer uma <strong>vitória rápida</strong>: recuperar horas e sentir que “funciona” em 7 dias. Impulso de baixo risco e <strong>pico de venda periódico</strong>. No encerramento, a ponte pro evento.</p></div>
-        <a class="kit-link" href="kits/chave-do-tempo.html" target="_blank" rel="noopener">🎨 Guia de estilo ↗</a>
+    </div>
+
+    <div class="pillar-h"><span class="pdot" style="background:#E2742E"></span>Ascensão Empresarial<span class="stage">Captação</span></div>
+    <p class="group-s">Evento online recorrente. O palco vende a Imersão.</p>
+    <div class="grid">
+
+      <div class="card ascensao">
+        <div class="top"><span class="num">5</span><h2>Ascensão Empresarial</h2></div>
+        <div class="meta"><span class="chip">Captação · online recorrente</span><span class="chip price">R$ 67</span></div>
+        <div class="persona"><span class="qc">Papel na esteira</span><p>Dono de PME curioso, que quer “ver o Ednaldo ao vivo” antes de se comprometer. Ticket baixo derruba a objeção. <strong>O palco vende o evento (a Imersão)</strong>, não entrega o método completo de graça.</p></div>
+        <a class="kit-link" href="kits/ascensao-empresarial.html" target="_blank" rel="noopener">🎨 Guia de estilo ↗</a>
         <div class="actions">
-          <a class="btn btn-lp" href="/achavedotempo/" target="_blank" rel="noopener">Ver LP</a>
-          <a class="btn btn-pdf" href="pdfs/achavedotempo.pdf" download>Baixar PDF</a>
+          <a class="btn btn-lp" href="/ascensaoempresarial/" target="_blank" rel="noopener">Ver LP</a>
+          <span class="btn btn-off" title="PDF ainda não enviado">PDF pendente</span>
+          <a class="btn btn-slides" href="slides/?f=ascensao&amp;t=html" target="_blank" rel="noopener">🔒 Slides</a>
         </div>
       </div>
 
     </div>
 
-    <!-- ---- PRIMEIRO MOVIMENTO ---- -->
-    <div class="group-h"><span class="gc" style="background:#4A7FA5"></span>Primeiro movimento · o evento</div>
+    <div class="pillar-h"><span class="pdot" style="background:#4A7FA5"></span>Imersão Método GNC<span class="stage">Primeiro movimento</span></div>
     <p class="group-s">Um produto só: o ingresso da Imersão. É onde a mentoria é vendida, no palco.</p>
     <div class="grid">
 
       <div class="card gnc">
-        <div class="top"><span class="num">7</span><h2>Imersão Método GNC</h2></div>
+        <div class="top"><span class="num">6</span><h2>Imersão Método GNC</h2></div>
         <div class="meta"><span class="chip">Primeiro movimento</span><span class="chip">Presencial · 2 dias · Monte Sião</span><span class="chip warn">nome do evento e LP a definir</span></div>
         <div class="persona"><span class="qc">Papel na esteira</span><p>O <strong>primeiro movimento</strong> da mentoria. Dois dias trabalhando três áreas (o dono, o relacionamento e o negócio). <strong>É aqui que a mentoria é vendida, no palco.</strong> A Jornada Negócio nos Trilhos (4 meses, gravada) vem dentro das faixas 2 e 3 — não é vendida à parte.</p></div>
         <div class="faixas">
@@ -293,13 +291,12 @@
 
     </div>
 
-    <!-- ---- DESTINO · A MENTORIA ---- -->
-    <div class="group-h"><span class="gc" style="background:#1E40AF"></span>O destino · a mentoria</div>
-    <p class="group-s">É o produto. Acompanhamento contínuo em ciclos trimestrais. O Protocolo é peça dela; O Conselho é a versão individual.</p>
+    <div class="pillar-h"><span class="pdot" style="background:#1E40AF"></span>A Mentoria · Ciclo da Inovação<span class="stage">Destino · o produto</span></div>
+    <p class="group-s">É o produto. Acompanhamento contínuo em ciclos trimestrais. O Protocolo é peça dela (downsell).</p>
     <div class="grid">
 
       <div class="card mentoria">
-        <div class="top"><span class="num">8</span><h2>Mentoria · Ciclo da Inovação</h2></div>
+        <div class="top"><span class="num">7</span><h2>Mentoria · Ciclo da Inovação</h2></div>
         <div class="meta"><span class="chip star">★ O produto</span><span class="chip">Continuidade · trimestral</span><span class="chip price">R$50k/ano</span><span class="chip">fundador R$24k/ano</span><span class="chip warn">LP ainda diz R$40k/ano — corrigir</span></div>
         <div class="persona"><span class="qc">Papel na esteira</span><p><strong>É o produto.</strong> Acompanhamento contínuo, em ciclos trimestrais — o calendário segura, não o contrato. A venda acontece no palco do evento. Quem comprou a faixa 3 já entra com o 1º mês pago.</p></div>
         <a class="kit-link" href="kits/ciclo-da-inovacao.html" target="_blank" rel="noopener">🎨 Guia de estilo ↗</a>
@@ -311,7 +308,7 @@
       </div>
 
       <div class="card maestria">
-        <div class="top"><span class="num">9</span><h2>Protocolo Maestria</h2></div>
+        <div class="top"><span class="num">8</span><h2>Protocolo Maestria</h2></div>
         <div class="meta"><span class="chip">Peça da mentoria</span><span class="chip">1º trecho · ou downsell</span><span class="chip price">R$18k/ano</span></div>
         <div class="persona"><span class="qc">Papel na esteira</span><p>Deixou de ser produto de receita vendido solto. Agora é <strong>o primeiro trecho da mentoria</strong> — ou o <strong>downsell</strong> para quem não fecha o ano. Como parte de algo que continua, o mesmo conteúdo respira e não empurra a pessoa para “terminar e voltar depois”. LP e PDF seguem disponíveis pro time como referência.</p></div>
         <a class="kit-link" href="kits/protocolo-maestria.html" target="_blank" rel="noopener">🎨 Guia de estilo ↗</a>
@@ -321,8 +318,14 @@
         </div>
       </div>
 
+    </div>
+
+    <div class="pillar-h"><span class="pdot" style="background:#C9A24A"></span>O Conselho<span class="stage">Destino · individual</span></div>
+    <p class="group-s">A versão individual da mentoria — o Ednaldo sozinho.</p>
+    <div class="grid">
+
       <div class="card conselho">
-        <div class="top"><span class="num">10</span><h2>O Conselho</h2></div>
+        <div class="top"><span class="num">9</span><h2>O Conselho</h2></div>
         <div class="meta"><span class="chip">Destino · individual</span><span class="chip price">R$120k/ano</span></div>
         <div class="persona"><span class="qc">Papel na esteira</span><p>A <strong>versão individual da mentoria</strong>, para quem quer o Ednaldo sozinho como conselheiro do negócio. Proximidade máxima e exclusividade — uma sala de um. Poucas cadeiras, por curadoria.</p></div>
         <a class="kit-link" href="kits/o-conselho.html" target="_blank" rel="noopener">🎨 Guia de estilo ↗</a>
@@ -334,10 +337,20 @@
 
     </div>
 
-    <!-- ---- FORA DA ESTEIRA ---- -->
-    <div class="group-h"><span class="gc" style="background:#7B5EA8"></span>Fora da esteira</div>
-    <p class="group-s">Não faz parte do funil da mentoria. Evento próprio, com público e promessa distintos.</p>
+    <div class="pillar-h"><span class="pdot" style="background:#7B5EA8"></span>Fora da esteira<span class="stage">Não faz parte do funil</span></div>
+    <p class="group-s">Produtos próprios, com público e promessa distintos — não fazem parte do funil da mentoria.</p>
     <div class="grid">
+
+      <div class="card chave">
+        <div class="top"><span class="num">◆</span><h2>A Chave do Tempo</h2></div>
+        <div class="meta"><span class="chip">Fora da esteira · desafio 7 dias</span><span class="chip price">R$ 67–97</span><span class="chip warn">checkout + vídeo pendentes</span></div>
+        <div class="persona"><span class="qc">Papel</span><p>Dono sufocado pela falta de tempo, que quer uma <strong>vitória rápida</strong>: recuperar horas e sentir que “funciona” em 7 dias. Impulso de baixo risco e <strong>pico de venda periódico</strong>. Produto próprio, <strong>fora do funil da mentoria</strong>.</p></div>
+        <a class="kit-link" href="kits/chave-do-tempo.html" target="_blank" rel="noopener">🎨 Guia de estilo ↗</a>
+        <div class="actions">
+          <a class="btn btn-lp" href="/achavedotempo/" target="_blank" rel="noopener">Ver LP</a>
+          <a class="btn btn-pdf" href="pdfs/achavedotempo.pdf" download>Baixar PDF</a>
+        </div>
+      </div>
 
       <div class="card foco">
         <div class="top"><span class="num">◆</span><h2>Imersão Foco no Essencial</h2></div>

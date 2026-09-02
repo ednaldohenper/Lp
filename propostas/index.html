@@ -79,6 +79,17 @@
     .pillar-h .pdot{width:13px;height:13px;border-radius:4px;flex:none;}
     .pillar-h .stage{font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--cinza);background:var(--creme);border:1px solid rgba(201,162,74,.3);padding:2px 9px;border-radius:999px;}
     .pillar-h::after{content:'';flex:1;height:1px;background:rgba(22,26,32,.12);}
+    /* laminas por etapa: escurecem descendo ate a mentoria individual */
+    .slab{border-radius:16px;padding:10px 20px 20px;margin:0 0 16px;box-shadow:0 6px 20px rgba(22,26,32,.05);position:relative;}
+    .slab::before{content:'';position:absolute;left:24px;right:24px;top:0;height:3px;border-radius:0 0 4px 4px;background:rgba(0,0,0,.10);}
+    .slab .pillar-h{margin:10px 0 4px;}
+    .slab.dark .pillar-h{color:#F5F1E8;}
+    .slab.dark .pillar-h::after{background:rgba(245,241,232,.20);}
+    .slab.dark .pillar-h .stage{color:#F0EADD;background:rgba(255,255,255,.10);border-color:rgba(245,241,232,.25);}
+    .slab.dark .group-s{color:rgba(245,241,232,.78);}
+    .slab.dark .group-s strong{color:#fff;}
+    .slab.off{border:1px dashed rgba(123,94,168,.55);box-shadow:none;}
+    .slab.off::before{background:rgba(123,94,168,.35);}
     .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(460px,1fr)); gap:16px; }
     .card { background:#fff; border:1px solid rgba(22,26,32,0.10); border-radius:14px; padding:20px 22px; transition:box-shadow .15s, transform .15s; display:flex; flex-direction:column; }
     .card:hover { box-shadow:0 8px 24px rgba(22,26,32,0.08); transform:translateY(-1px); }
@@ -184,6 +195,7 @@
     </div>
 
     <!-- ===== blocos por pilar (ordem/cor da escada) ===== -->
+    <div class="slab" style="background:#F4F1E9">
     <div class="pillar-h"><span class="pdot" style="background:#2E9E8F"></span>Low-tickets &amp; iscas<span class="stage">Captação</span></div>
     <p class="group-s">Entradas de baixo (ou zero) ticket. O trabalho é o mesmo: encher o evento. <strong>Não devem reaparecer de graça dentro dele.</strong></p>
     <div class="grid">
@@ -251,7 +263,10 @@
       </div>
 
     </div>
+    </div>
 
+
+    <div class="slab" style="background:#ECE6D9">
     <div class="pillar-h"><span class="pdot" style="background:#E2742E"></span>Ascensão Empresarial<span class="stage">Captação</span></div>
     <p class="group-s">Evento online recorrente. O palco vende a Imersão.</p>
     <div class="grid">
@@ -269,7 +284,10 @@
       </div>
 
     </div>
+    </div>
 
+
+    <div class="slab" style="background:#E3DAC8">
     <div class="pillar-h"><span class="pdot" style="background:#4A7FA5"></span>Imersão Método GNC<span class="stage">Primeiro movimento</span></div>
     <p class="group-s">Um produto só: o ingresso da Imersão. É onde a mentoria é vendida, no palco.</p>
     <div class="grid">
@@ -290,7 +308,10 @@
       </div>
 
     </div>
+    </div>
 
+
+    <div class="slab dark" style="background:#2E3542">
     <div class="pillar-h"><span class="pdot" style="background:#1E40AF"></span>A Mentoria · Ciclo da Inovação<span class="stage">Destino · o produto</span></div>
     <p class="group-s">É o produto. Acompanhamento contínuo em ciclos trimestrais. O Protocolo é peça dela (downsell).</p>
     <div class="grid">
@@ -319,7 +340,10 @@
       </div>
 
     </div>
+    </div>
 
+
+    <div class="slab dark" style="background:#15181E">
     <div class="pillar-h"><span class="pdot" style="background:#C9A24A"></span>O Conselho<span class="stage">Destino · individual</span></div>
     <p class="group-s">A versão individual da mentoria — o Ednaldo sozinho.</p>
     <div class="grid">
@@ -336,7 +360,10 @@
       </div>
 
     </div>
+    </div>
 
+
+    <div class="slab off" style="background:#EFEDE7">
     <div class="pillar-h"><span class="pdot" style="background:#7B5EA8"></span>Fora da esteira<span class="stage">Não faz parte do funil</span></div>
     <p class="group-s">Produtos próprios, com público e promessa distintos — não fazem parte do funil da mentoria.</p>
     <div class="grid">
@@ -364,6 +391,8 @@
       </div>
 
     </div>
+    </div>
+
 
     <h2 class="section-title">Materiais de apoio</h2>
     <div class="materials">

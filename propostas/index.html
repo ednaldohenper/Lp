@@ -43,12 +43,12 @@
     .block.hero .star{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:#1E40AF;color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.07em;padding:3px 10px;border-radius:999px;white-space:nowrap;box-shadow:0 3px 10px rgba(30,64,175,.45);z-index:2;}
     .block.mut{opacity:.9;background:repeating-linear-gradient(135deg,#fff,#fff 8px,#FAF7F1 8px,#FAF7F1 16px);}
     .block.mut .tagm{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#7C6BFF;color:#fff;font-size:8.5px;font-weight:800;letter-spacing:.05em;padding:2px 8px;border-radius:999px;white-space:nowrap;z-index:2;}
-    /* peça removível (Protocolo) dentro do degrau da Mentoria */
-    .piece{flex-basis:100%;width:100%;margin:9px -11px -14px;padding:8px 11px 9px;border-top:2px dashed #7C6BFF;border-radius:0 0 11px 11px;background:repeating-linear-gradient(135deg,#F4F2FC,#F4F2FC 7px,#ECE8FA 7px,#ECE8FA 14px);position:relative;}
-    .piece::before{content:'✂';position:absolute;top:-9px;left:12px;background:#fff;color:#7C6BFF;font-size:11px;line-height:1;padding:0 3px;}
-    .piece .pt{display:block;font-size:11.5px;font-weight:800;color:#5B4CC0;line-height:1.15;}
-    .piece .ps{display:block;font-size:9.5px;color:#7A72A8;margin-top:2px;}
-    .piece .ptag{display:inline-block;font-size:8px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:#7C6BFF;padding:1px 6px;border-radius:999px;margin-bottom:4px;}
+    /* mini-pilar do Protocolo (downsell) dentro do degrau da Mentoria */
+    .subpillar{align-self:flex-start;width:62%;margin:9px 0 -14px;padding:8px 10px 10px;background:#F4F2FC;border:1px solid rgba(124,107,255,.4);border-top:3px solid #7C6BFF;border-radius:9px 9px 0 0;position:relative;box-shadow:0 -2px 8px rgba(124,107,255,.10);}
+    .subpillar .stag{display:inline-block;font-size:8px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#fff;background:#7C6BFF;padding:1px 7px;border-radius:999px;margin-bottom:4px;}
+    .subpillar .pt{display:block;font-size:11.5px;font-weight:800;color:#5B4CC0;line-height:1.15;}
+    .subpillar .ps{display:block;font-size:9.5px;color:#7A72A8;margin-top:2px;}
+    @media(max-width:760px){ .subpillar{width:100%;align-self:stretch;margin:8px 0 0;border-radius:8px;} }
     .stair{flex:1;display:flex;flex-direction:column;justify-content:flex-end;}
     .stair .block{background:#fff;border:1px solid rgba(22,26,32,.10);border-top:4px solid var(--ac,#C9A24A);border-radius:12px 12px 0 0;padding:12px 11px 14px;display:flex;flex-direction:column;justify-content:flex-end;min-height:var(--h,120px);box-shadow:0 6px 18px rgba(22,26,32,.06);}
     .stair .sn{font-size:10px;font-weight:700;letter-spacing:.03em;color:var(--ac,#C9A24A);text-transform:uppercase;}
@@ -154,7 +154,7 @@
         <div class="stair"><div class="block" style="--ac:#E2742E;--h:140px"><span class="sn">Captação</span><span class="pn">Ascensão Empresarial</span><span class="pr">R$ 67</span><span class="fm">Online recorrente</span></div></div>
         <div class="fcap"><span class="lbl">Funil de captura · capta, aquece e leva ao evento &rarr;</span></div>
         <div class="stair"><div class="block" style="--ac:#4A7FA5;--h:180px"><span class="sn">1º movimento · a venda acontece aqui</span><span class="pn">Imersão Método GNC</span><span class="pr">R$3.997 · 4.997 · 9.997</span><span class="fm">Presencial · 2 dias</span></div></div>
-        <div class="stair"><div class="block hero" style="--ac:#1E40AF;--h:288px"><span class="star">★ O produto</span><span class="sn">Destino</span><span class="pn">Mentoria · Ciclo da Inovação</span><span class="pr">R$4k/mês</span><span class="fm">Trimestral · contínuo</span><div class="piece"><span class="ptag">✂ pedaço removível</span><span class="pt">Protocolo Maestria</span><span class="ps">1º trecho · ou downsell · R$15k</span></div></div></div>
+        <div class="stair"><div class="block hero" style="--ac:#1E40AF;--h:288px"><span class="star">★ O produto</span><span class="sn">Destino</span><span class="pn">Mentoria · Ciclo da Inovação</span><span class="pr">R$4k/mês</span><span class="fm">Trimestral · contínuo</span><div class="subpillar"><span class="stag">Downsell</span><span class="pt">Protocolo Maestria</span><span class="ps">1º trecho da mentoria · R$15k</span></div></div></div>
         <div class="stair"><div class="block" style="--ac:#C9A24A;--h:300px"><span class="sn">Destino · individual</span><span class="pn">O Conselho</span><span class="pr">~R$8k/mês</span><span class="fm">O Ednaldo sozinho</span></div></div>
         <div class="mcap"><span class="lbl">O destino · a mentoria</span></div>
       </div>

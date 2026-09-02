@@ -11,25 +11,25 @@
       --creme:#F5F1E8; --fundo:#faf9f5; --cinza:#5B6675;
     }
     * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--fundo); color:var(--grafite); min-height:100vh; padding:48px 20px; }
+    body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--fundo); color:var(--grafite); min-height:100vh; padding:26px 20px; }
     .wrap { max-width:1040px; margin:0 auto; }
     header { text-align:center; margin-bottom:6px; }
-    .tag { display:inline-block; font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--dourado-esc); font-weight:700; margin-bottom:10px; }
-    h1 { font-size:30px; margin-bottom:8px; }
+    .tag { display:inline-block; font-size:11.5px; letter-spacing:2px; text-transform:uppercase; color:var(--dourado-esc); font-weight:700; margin-bottom:6px; }
+    h1 { font-size:25px; margin-bottom:4px; }
     .sub { color:var(--cinza); font-size:15px; margin-bottom:18px; text-align:center; }
-    .rule { max-width:720px; margin:0 auto 30px; text-align:center; font-size:14px; color:var(--grafite-2); line-height:1.55; background:var(--creme); border:1px solid rgba(201,162,74,.3); border-radius:12px; padding:14px 18px; }
+    .rule { max-width:760px; margin:8px auto 14px; text-align:center; font-size:13px; color:var(--grafite-2); line-height:1.5; background:var(--creme); border:1px solid rgba(201,162,74,.3); border-radius:10px; padding:9px 16px; }
     .rule strong { color:var(--grafite); }
     .legend { display:flex; justify-content:center; gap:18px; flex-wrap:wrap; margin-bottom:34px; font-size:12.5px; color:var(--cinza); }
     .legend span { display:inline-flex; align-items:center; gap:6px; }
     .dot { width:11px; height:11px; border-radius:3px; display:inline-block; }
     .dot.on { background:var(--dourado); } .dot.off { background:#D9D6CF; }
 
-    .vis { margin:26px 0 40px; }
-    .vis-label { display:inline-block; font-size:11px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; color:#fff; background:var(--grafite); padding:5px 12px; border-radius:999px; margin-bottom:16px; }
+    .vis { margin:8px 0 20px; }
+    .vis-label { display:inline-block; font-size:11px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; color:#fff; background:var(--grafite); padding:5px 12px; border-radius:999px; margin-bottom:10px; }
     .vis-label small { font-weight:600; opacity:.75; letter-spacing:.02em; text-transform:none; }
 
     /* ---- Visão A: escada em degraus ---- */
-    .stairs{display:flex;align-items:flex-end;gap:8px;min-height:300px;position:relative;padding-bottom:52px;}
+    .stairs{display:flex;align-items:flex-end;gap:8px;min-height:240px;position:relative;padding-bottom:42px;}
     .fcap{position:absolute;left:0;bottom:6px;width:calc((100% - 32px)/5*2 + 8px);border-top:2px solid #A65A38;padding-top:9px;display:flex;align-items:center;justify-content:center;}
     .fcap .lbl{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#A65A38;text-align:center;line-height:1.3;}
     .fcap::before,.fcap::after{content:'';position:absolute;top:-2px;width:2px;height:10px;background:#A65A38;}
@@ -151,7 +151,7 @@
     .card.ascensao { border-top:3px solid #E2742E; }
     .card.maestria { border-top:3px solid #7C6BFF; }
     .card.palestras { border-top:3px solid #2E9E8F; }
-    .section-title { font-size:18px; margin:44px 0 14px; padding-top:28px; border-top:1px solid rgba(22,26,32,.10); }
+    .section-title { font-size:18px; margin:22px 0 12px; padding-top:16px; border-top:1px solid rgba(22,26,32,.10); }
     .materials { display:grid; grid-template-columns:repeat(auto-fill,minmax(460px,1fr)); gap:16px; }
     .mat-card { background:#fff; border:1px solid rgba(22,26,32,0.10); border-radius:14px; padding:18px 22px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
     .mat-card:hover { box-shadow:0 8px 24px rgba(22,26,32,0.08); }
@@ -176,12 +176,12 @@
     <section class="vis">
       <span class="vis-label">A esteira <small>— captação → evento → mentoria</small></span>
       <div class="stairs">
-        <div class="stair"><div class="block" style="--ac:#2E9E8F;--h:100px"><span class="sn">◆ Captação</span><span class="pn">Palestras, Workshops &amp; Low-tickets</span><span class="pr">Grátis / baixo</span><span class="fm">Iscas · livros · diagnóstico</span></div></div>
-        <div class="stair"><div class="block" style="--ac:#E2742E;--h:122px"><span class="sn">Captação</span><span class="pn">Ascensão Empresarial</span><span class="pr">R$ 67</span><span class="fm">Online recorrente</span></div></div>
+        <div class="stair"><div class="block" style="--ac:#2E9E8F;--h:90px"><span class="sn">◆ Captação</span><span class="pn">Palestras, Workshops &amp; Low-tickets</span><span class="pr">Grátis / baixo</span><span class="fm">Iscas · livros · diagnóstico</span></div></div>
+        <div class="stair"><div class="block" style="--ac:#E2742E;--h:110px"><span class="sn">Captação</span><span class="pn">Ascensão Empresarial</span><span class="pr">R$ 67</span><span class="fm">Online recorrente</span></div></div>
         <div class="fcap"><span class="lbl">Funil de captura · capta, aquece e leva ao evento &rarr;</span></div>
-        <div class="stair"><div class="block" style="--ac:#4A7FA5;--h:166px"><span class="sn">1º movimento · a venda acontece aqui</span><span class="pn">Imersão Método GNC</span><span class="pr">R$3.997 · 4.997 · 9.997</span><span class="fm">Presencial · 2 dias</span></div></div>
-        <div class="stair"><div class="block hero" style="--ac:#1E40AF;--h:250px"><span class="star">★ O produto</span><span class="sn">Destino</span><span class="pn">Mentoria · Ciclo da Inovação</span><span class="pr">R$50k/ano</span><span class="fm">Trimestral · contínuo</span><div class="subpillar"><span class="stag">Downsell</span><span class="pt">Protocolo Maestria</span><span class="ps">1º trecho da mentoria · R$18k/ano</span></div></div></div>
-        <div class="stair"><div class="block" style="--ac:#C9A24A;--h:390px"><span class="sn">Destino · individual</span><span class="pn">O Conselho</span><span class="pr">R$120k/ano</span><span class="fm">O Ednaldo sozinho</span></div></div>
+        <div class="stair"><div class="block" style="--ac:#4A7FA5;--h:148px"><span class="sn">1º movimento · a venda acontece aqui</span><span class="pn">Imersão Método GNC</span><span class="pr">R$3.997 · 4.997 · 9.997</span><span class="fm">Presencial · 2 dias</span></div></div>
+        <div class="stair"><div class="block hero" style="--ac:#1E40AF;--h:222px"><span class="star">★ O produto</span><span class="sn">Destino</span><span class="pn">Mentoria · Ciclo da Inovação</span><span class="pr">R$50k/ano</span><span class="fm">Trimestral · contínuo</span><div class="subpillar"><span class="stag">Downsell</span><span class="pt">Protocolo Maestria</span><span class="ps">1º trecho da mentoria · R$18k/ano</span></div></div></div>
+        <div class="stair"><div class="block" style="--ac:#C9A24A;--h:340px"><span class="sn">Destino · individual</span><span class="pn">O Conselho</span><span class="pr">R$120k/ano</span><span class="fm">O Ednaldo sozinho</span></div></div>
         <div class="mcap"><span class="lbl">O destino · a mentoria</span></div>
       </div>
     </section>

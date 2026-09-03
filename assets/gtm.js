@@ -39,16 +39,8 @@
     });
   };
 
-  // GA4 direto (garante a coleta independentemente da tag dentro do container).
-  // Respeita o Consent Mode definido acima.
-  var GA4_ID = "G-F5ZKX2H0ZM";
-  (function (d, s, i) {
-    var g = d.createElement(s); g.async = true;
-    g.src = "https://www.googletagmanager.com/gtag/js?id=" + i;
-    var f = d.getElementsByTagName(s)[0]; f.parentNode.insertBefore(g, f);
-  })(document, "script", GA4_ID);
-  gtag("js", new Date());
-  gtag("config", GA4_ID);
+  // GA4 é configurado DENTRO do container GTM (Tag do Google · G-F5ZKX2H0ZM,
+  // acionamento "Inicialização - Todas as páginas"). Não duplicar aqui.
 
   // Loader do GTM
   (function (w, d, s, l, i) {

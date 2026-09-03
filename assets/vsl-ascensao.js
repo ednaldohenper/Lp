@@ -47,15 +47,8 @@
     // esconde todas as seções/irmãos depois do hero
     var n = hero.nextElementSibling;
     while (n) { hide(n); n = n.nextElementSibling; }
-    // placeholder logo abaixo do vídeo (antes do CTA)
-    var anchor = wrapper || player;
-    ph = document.createElement("div");
-    ph.id = "vsl-lock";
-    ph.innerHTML =
-      '<div class="vsl-ic">🔒</div>' +
-      '<div class="vsl-tx">Continue assistindo — o conteúdo abaixo <b>libera sozinho</b> conforme você avança no vídeo.</div>' +
-      '<div class="vsl-bar"><i></i></div>';
-    anchor.parentNode.insertBefore(ph, anchor.nextSibling);
+    // Sem placeholder/aviso: durante o vídeo fica só o vídeo; o conteúdo
+    // aparece sozinho aos 8 min. (ph permanece null.)
   }
 
   function reveal() {

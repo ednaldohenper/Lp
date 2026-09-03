@@ -7,7 +7,7 @@
 
   var GATE_SECONDS = 480;                              // 8 minutos
   var PLAYER_ID    = "vid-6a7e764df58befd718ababd5";   // player converteai/vturb
-  var SS_KEY       = "vsl_ascensao_unlocked";          // lembra na aba (refresh não re-tranca)
+  var SS_KEY       = "vsl_ascensao_unlocked";          // lembra no navegador entre visitas (não re-tranca ao voltar)
   var HARD_CAP_MS  = 20 * 60 * 1000;                   // trava de segurança: libera após 20 min de qualquer forma
 
   var hidden = [], ph = null, unlocked = false, bootAt = Date.now();
@@ -54,7 +54,7 @@
   function reveal() {
     if (unlocked) return;
     unlocked = true;
-    try { sessionStorage.setItem(SS_KEY, "1"); } catch (e) {}
+    try { localStorage.setItem(SS_KEY, "1"); } catch (e) {}
     for (var i = 0; i < hidden.length; i++) {
       hidden[i].classList.remove("vsl-hidden");
       hidden[i].classList.add("vsl-reveal");
@@ -98,7 +98,7 @@
 
   function boot() {
     // já assistiu nesta aba? não tranca.
-    try { if (sessionStorage.getItem(SS_KEY) === "1") return; } catch (e) {}
+    try { if (localStorage.getItem(SS_KEY) === "1") return; } catch (e) {}
 
     var tries = 0;
     var wait = setInterval(function () {

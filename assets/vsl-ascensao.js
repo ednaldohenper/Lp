@@ -34,21 +34,28 @@
 
   function hide(el) { if (el) { el.classList.add("vsl-hidden"); hidden.push(el); } }
 
-  function buildGate(hero, block) {
-    // esconde tudo DEPOIS do bloco do vídeo dentro do hero (CTA, legenda...)
-    var n = block.nextElementSibling;
-    while (n) { hide(n); n = n.nextElementSibling; }
+  function buildGate(hero, player) {
+    // Sobe do vídeo até o hero escondendo, em CADA nível, tudo que vem DEPOIS.
+    // Assim pega o CTA/legenda que ficam dentro do container interno do hero.
+    var wrapper = null, cur = player;
+    while (cur && cur !== hero) {
+      var sib = cur.nextElementSibling;
+      if (sib && !wrapper) wrapper = cur;   // 1º nível com irmão seguinte = wrapper do vídeo
+      while (sib) { hide(sib); sib = sib.nextElementSibling; }
+      cur = cur.parentNode;
+    }
     // esconde todas as seções/irmãos depois do hero
-    n = hero.nextElementSibling;
+    var n = hero.nextElementSibling;
     while (n) { hide(n); n = n.nextElementSibling; }
-    // placeholder logo abaixo do vídeo
+    // placeholder logo abaixo do vídeo (antes do CTA)
+    var anchor = wrapper || player;
     ph = document.createElement("div");
     ph.id = "vsl-lock";
     ph.innerHTML =
       '<div class="vsl-ic">🔒</div>' +
       '<div class="vsl-tx">Continue assistindo — o conteúdo abaixo <b>libera sozinho</b> conforme você avança no vídeo.</div>' +
       '<div class="vsl-bar"><i></i></div>';
-    hero.insertBefore(ph, block.nextSibling);
+    anchor.parentNode.insertBefore(ph, anchor.nextSibling);
   }
 
   function reveal() {
@@ -74,9 +81,9 @@
     if (bar) bar.style.width = Math.max(0, Math.min(100, (t / GATE_SECONDS) * 100)) + "%";
   }
 
-  function start(hero, block) {
+  function start(hero, player) {
     injectCSS();
-    buildGate(hero, block);
+    buildGate(hero, player);
     var videoSeenAt = 0;
     var iv = setInterval(function () {
       try {
@@ -106,13 +113,8 @@
       var player = document.getElementById(PLAYER_ID);
       var hero = player ? player.closest("section") : null;
       if (player && hero) {
-        // bloco do vídeo = filho direto do hero que contém o player
-        var block = player;
-        while (block.parentNode && block.parentNode !== hero) block = block.parentNode;
-        if (block.parentNode === hero) {
-          clearInterval(wait);
-          start(hero, block);
-        }
+        clearInterval(wait);
+        start(hero, player);
       }
       // se o player não aparecer em ~15s, aborta: NÃO tranca (não quebra a página)
       if (tries > 60) clearInterval(wait);

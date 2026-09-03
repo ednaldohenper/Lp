@@ -3,6 +3,18 @@
    Container: GTM-NMC7PDM9  |  GA4 é configurado DENTRO do GTM. */
 (function () {
   "use strict";
+
+  // Limpa a tela de carregamento do bundler: some com o preview vetorial (ícone/
+  // "esferas") e o "Unpacking...", deixando um fundo escuro limpo enquanto desempacota.
+  try {
+    var _ls = document.createElement("style");
+    _ls.textContent =
+      "#__bundler_thumbnail{background:#0E0E10!important}" +
+      "#__bundler_thumbnail svg,#__bundler_placeholder{display:none!important}" +
+      "#__bundler_loading{display:none!important}";
+    (document.head || document.documentElement).appendChild(_ls);
+  } catch (e) {}
+
   var GTM_ID = "GTM-NMC7PDM9";
 
   window.dataLayer = window.dataLayer || [];

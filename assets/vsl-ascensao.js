@@ -5,7 +5,7 @@
 (function () {
   "use strict";
 
-  var GATE_SECONDS = 480;                              // 8 minutos
+  var GATE_SECONDS = 15;                               // >>> TESTE (voltar p/ 480 = 8 min)
   var PLAYER_ID    = "vid-6a7e764df58befd718ababd5";   // player converteai/vturb
   var SS_KEY       = "vsl_ascensao_unlocked";          // lembra na aba (refresh não re-tranca)
   var HARD_CAP_MS  = 20 * 60 * 1000;                   // trava de segurança: libera após 20 min de qualquer forma
@@ -54,7 +54,7 @@
   function reveal() {
     if (unlocked) return;
     unlocked = true;
-    try { sessionStorage.setItem(SS_KEY, "1"); } catch (e) {}
+    /* TESTE: memória desligada — try { sessionStorage.setItem(SS_KEY, "1"); } catch (e) {} */
     for (var i = 0; i < hidden.length; i++) {
       hidden[i].classList.remove("vsl-hidden");
       hidden[i].classList.add("vsl-reveal");

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Esteira — Ednaldo Henper</title>
+  <style>
+    :root {
+      --grafite:#161A20; --grafite-2:#3A4350; --dourado:#C9A24A; --dourado-esc:#B98F33;
+      --creme:#F5F1E8; --fundo:#faf9f5; --cinza:#5B6675;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--fundo); color:var(--grafite); min-height:100vh; padding:26px 20px; }
+    .wrap { max-width:1040px; margin:0 auto; }
+    header { margin-bottom:14px; }
+    .head-row{display:flex;align-items:center;justify-content:space-between;gap:6px 16px;flex-wrap:wrap;}
+    .head-id{display:flex;flex-direction:column;gap:2px;}
+    .tag { display:inline-block; font-size:11.5px; letter-spacing:2px; text-transform:uppercase; color:var(--dourado-esc); font-weight:700; margin-bottom:6px; }
+    h1 { font-size:25px; margin-bottom:4px; }
+    .sub { color:var(--cinza); font-size:15px; margin-bottom:18px; text-align:center; }
+    .rule { margin:12px 0 0; text-align:left; font-size:13px; color:var(--grafite-2); line-height:1.5; background:var(--creme); border:1px solid rgba(201,162,74,.3); border-left:3px solid var(--dourado); border-radius:8px; padding:10px 14px; }
+    .rule strong { color:var(--grafite); }
+    .legend { display:flex; justify-content:center; gap:18px; flex-wrap:wrap; margin-bottom:34px; font-size:12.5px; color:var(--cinza); }
+    .legend span { display:inline-flex; align-items:center; gap:6px; }
+    .dot { width:11px; height:11px; border-radius:3px; display:inline-block; }
+    .dot.on { background:var(--dourado); } .dot.off { background:#D9D6CF; }
+
+    .vis { margin:8px 0 20px; }
+    .vis-label { display:inline-block; font-size:11px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; color:#fff; background:var(--grafite); padding:5px 12px; border-radius:999px; margin-bottom:10px; }
+    .vis-label small { font-weight:600; opacity:.75; letter-spacing:.02em; text-transform:none; }
+    .vis-head{display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap;margin-bottom:12px;}
+    .vis-head .vis-label{margin-bottom:0;}
+    .vis-port{font-size:12.5px;font-weight:700;color:var(--dourado-esc);text-decoration:none;white-space:nowrap;}
+    .vis-port:hover{text-decoration:underline;}
+
+    /* ---- Visão A: escada em degraus ---- */
+    .stairs{display:flex;align-items:flex-end;gap:8px;min-height:240px;position:relative;padding-bottom:42px;}
+    .fcap{position:absolute;left:0;bottom:6px;width:calc((100% - 32px)/5*2 + 8px);border-top:2px solid #A65A38;padding-top:9px;display:flex;align-items:center;justify-content:center;}
+    .fcap .lbl{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#A65A38;text-align:center;line-height:1.3;}
+    .fcap::before,.fcap::after{content:'';position:absolute;top:-2px;width:2px;height:10px;background:#A65A38;}
+    .fcap::before{left:0;} .fcap::after{right:0;}
+    .mcap{position:absolute;bottom:6px;left:calc((100% - 32px)/5*3 + 24px);width:calc((100% - 32px)/5*2 + 8px);border-top:2px solid #1E40AF;padding-top:9px;display:flex;align-items:center;justify-content:center;}
+    .mcap .lbl{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#1E40AF;text-align:center;line-height:1.3;}
+    .mcap::before,.mcap::after{content:'';position:absolute;top:-2px;width:2px;height:10px;background:#1E40AF;}
+    .mcap::before{left:0;} .mcap::after{right:0;}
+    .block{position:relative;}
+    .block.hero{box-shadow:0 0 0 2px #1E40AF, 0 12px 34px rgba(30,64,175,.28);}
+    .block.hero .star{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:#1E40AF;color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.07em;padding:3px 10px;border-radius:999px;white-space:nowrap;box-shadow:0 3px 10px rgba(30,64,175,.45);z-index:2;}
+    .block.mut{opacity:.9;background:repeating-linear-gradient(135deg,#fff,#fff 8px,#FAF7F1 8px,#FAF7F1 16px);}
+    .block.mut .tagm{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#7C6BFF;color:#fff;font-size:8.5px;font-weight:800;letter-spacing:.05em;padding:2px 8px;border-radius:999px;white-space:nowrap;z-index:2;}
+    /* mini-pilar do Protocolo (downsell) dentro do degrau da Mentoria */
+    .subpillar{align-self:flex-start;width:62%;margin:auto 0 -14px 0;padding:8px 10px 10px;background:#F4F2FC;border:1px solid rgba(124,107,255,.4);border-top:3px solid #7C6BFF;border-radius:9px 9px 0 0;position:relative;box-shadow:0 -2px 8px rgba(124,107,255,.10);}
+    .subpillar .stag{display:inline-block;font-size:8px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#fff;background:#7C6BFF;padding:1px 7px;border-radius:999px;margin-bottom:4px;}
+    .subpillar .pt{display:block;font-size:11.5px;font-weight:800;color:#5B4CC0;line-height:1.15;}
+    .subpillar .ps{display:block;font-size:9.5px;color:#7A72A8;margin-top:2px;}
+    @media(max-width:760px){ .subpillar{width:100%;align-self:stretch;margin:8px 0 0;border-radius:8px;} }
+    .stair{flex:1;display:flex;flex-direction:column;justify-content:flex-end;}
+    .stair .block{background:#fff;border:1px solid rgba(22,26,32,.10);border-top:4px solid var(--ac,#C9A24A);border-radius:12px 12px 0 0;padding:12px 11px 14px;display:flex;flex-direction:column;justify-content:flex-start;min-height:var(--h,120px);box-shadow:0 6px 18px rgba(22,26,32,.06);}
+    .stair .sn{font-size:10px;font-weight:700;letter-spacing:.03em;color:var(--ac,#C9A24A);text-transform:uppercase;}
+    .stair .pn{color:var(--grafite);font-size:13px;font-weight:700;line-height:1.2;margin:5px 0 6px;}
+    .stair .pr{color:var(--dourado-esc);font-size:12.5px;font-weight:700;}
+    .stair .fm{color:var(--cinza);font-size:10px;margin-top:3px;}
+    @media(max-width:760px){
+      .stairs{flex-direction:column;align-items:stretch;min-height:0;gap:10px;padding-bottom:0;}
+      .fcap,.mcap{position:static;width:auto;left:auto;border-top:0;border-left:3px solid #A65A38;border-radius:8px;background:rgba(166,90,56,.07);padding:9px 12px;margin:2px 0;}
+      .mcap{border-left-color:#1E40AF;background:rgba(30,64,175,.07);}
+      .fcap::before,.fcap::after,.mcap::before,.mcap::after{display:none;}
+      .fcap .lbl,.mcap .lbl{text-align:left;}
+      .stair .block{min-height:0!important;border-top:0;border-left:4px solid var(--ac,#C9A24A);border-radius:10px;flex-direction:row;align-items:center;flex-wrap:wrap;gap:4px 10px;}
+      .stair .pn{margin:0;flex:1;}
+    }
+
+    .faixa{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px;padding:6px 0;border-bottom:1px dashed rgba(22,26,32,.14);}
+    .faixa:last-of-type{border-bottom:0;}
+    .faixa .fk{color:var(--grafite-2);} .faixa .fk b{color:var(--grafite);}
+    .faixa .fp{font-weight:800;color:#3E6B8C;white-space:nowrap;}
+
+    /* ---- cards ---- */
+    .group-h{font-size:12px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--grafite);margin:34px 0 4px;display:flex;align-items:center;gap:10px;}
+    .group-h::after{content:'';flex:1;height:1px;background:rgba(22,26,32,.12);}
+    .group-h .gc{width:11px;height:11px;border-radius:3px;display:inline-block;}
+    .group-s{font-size:12.5px;color:var(--cinza);margin:0 0 14px;line-height:1.5;}
+    .pillar-h{display:flex;align-items:center;gap:10px;margin:40px 0 4px;font-size:15px;font-weight:800;color:var(--grafite);}
+    .pillar-h .pdot{width:13px;height:13px;border-radius:4px;flex:none;}
+    .pillar-h .stage{font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--cinza);background:var(--creme);border:1px solid rgba(201,162,74,.3);padding:2px 9px;border-radius:999px;}
+    .pillar-h::after{content:'';flex:1;height:1px;background:rgba(22,26,32,.12);}
+    /* laminas por etapa: escurecem descendo ate a mentoria individual */
+    .slab{border-radius:16px;padding:10px 20px 20px;margin:0 0 16px;box-shadow:0 6px 20px rgba(22,26,32,.05);position:relative;}
+    .slab::before{content:'';position:absolute;left:24px;right:24px;top:0;height:3px;border-radius:0 0 4px 4px;background:rgba(0,0,0,.10);}
+    .slab .pillar-h{margin:10px 0 4px;}
+    .slab.dark .pillar-h{color:#F5F1E8;}
+    .slab.dark .pillar-h::after{background:rgba(245,241,232,.20);}
+    .slab.dark .pillar-h .stage{color:#F0EADD;background:rgba(255,255,255,.10);border-color:rgba(245,241,232,.25);}
+    .slab.dark .group-s{color:rgba(245,241,232,.78);}
+    .slab.dark .group-s strong{color:#fff;}
+    .slab.off{border:1px dashed rgba(123,94,168,.55);box-shadow:none;}
+    .slab.off::before{background:rgba(123,94,168,.35);}
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(460px,1fr)); gap:16px; }
+    .card { background:#fff; border:1px solid rgba(22,26,32,0.10); border-radius:14px; padding:20px 22px; transition:box-shadow .15s, transform .15s; display:flex; flex-direction:column; }
+    .card:hover { box-shadow:0 8px 24px rgba(22,26,32,0.08); transform:translateY(-1px); }
+    .card .top { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+    .num { flex-shrink:0; width:28px; height:28px; border-radius:50%; background:var(--grafite); color:var(--dourado); font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+    .card h2 { font-size:18px; }
+    .meta { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+    .chip { font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; background:var(--creme); color:var(--grafite-2); border:1px solid rgba(201,162,74,.35); }
+    .chip.price { background:#161A20; color:var(--dourado); border-color:#161A20; }
+    .chip.warn { background:#FBEFD9; color:#B5642E; border-color:rgba(181,100,46,.4); }
+    .chip.star { background:#1E40AF; color:#fff; border-color:#1E40AF; }
+    .persona { background:var(--creme); border-radius:10px; padding:12px 14px; margin-bottom:14px; }
+    .persona .qc { display:block; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--dourado-esc); font-weight:700; margin-bottom:5px; }
+    .persona p { font-size:13.5px; color:var(--grafite-2); line-height:1.55; }
+    .faixas { display:flex; flex-direction:column; gap:0; margin-bottom:14px; }
+    .kit-link { display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; color:var(--grafite-2); text-decoration:none; background:var(--creme); border:1px solid rgba(201,162,74,.3); padding:7px 12px; border-radius:8px; margin-bottom:14px; align-self:flex-start; }
+    .kit-link:hover { background:#EFE7D4; }
+    .kit-link.off { color:#9A9486; background:#ECEAE5; border-color:transparent; cursor:not-allowed; }
+    .actions { display:flex; gap:10px; margin-top:auto; flex-wrap:wrap; }
+    .btn { flex:1; min-width:120px; text-align:center; text-decoration:none; font-weight:700; font-size:14px; padding:11px 14px; border-radius:9px; transition:background .15s; }
+    .btn-lp { background:var(--grafite); color:#fff; }
+    .btn-lp:hover { background:var(--grafite-2); }
+    .btn-pdf { background:var(--dourado); color:var(--grafite); }
+    .btn-slides { background:var(--grafite); color:var(--dourado); border:1px solid rgba(201,162,74,.45); }
+    .btn-pdf:hover { background:var(--dourado-esc); }
+    .btn-off { background:#ECEAE5; color:#9A9486; cursor:not-allowed; }
+    .card.foco { border-top:3px solid #7B5EA8; }
+    .card.chave { border-top:3px solid #22A8F0; }
+    .card.gnc { border-top:3px solid #4A7FA5; }
+    .card.mentoria { border-top:3px solid #1E40AF; }
+    .card.conselho { border-top:3px solid #C9A24A; }
+    .card.livros { border-top:3px solid #8A6D3B; }
+    .card.diag { border-top:3px solid #6B7280; }
+    .pal-list{display:flex;flex-direction:column;margin-top:2px;}
+    .pal-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;padding:11px 0;border-top:1px solid rgba(22,26,32,.10);}
+    .pal-info{display:flex;flex-direction:column;gap:2px;min-width:0;}
+    .pal-title{font-weight:700;color:var(--grafite);font-size:14px;line-height:1.2;}
+    .pal-sub{font-size:11.5px;color:var(--cinza);}
+    .pal-desc{font-size:12px;color:#6B7280;line-height:1.45;margin-top:5px;max-width:60ch;}
+    .pal-acts{display:flex;gap:6px;flex-wrap:wrap;}
+    .bs{font-size:11px;font-weight:700;letter-spacing:.02em;padding:6px 12px;border-radius:6px;text-decoration:none;white-space:nowrap;}
+    .bs-lp{background:var(--grafite);color:#fff;}
+    .bs-pdf{background:#fff;border:1px solid var(--dourado);color:var(--dourado-esc);}
+    .bs-slides{background:#20262E;color:var(--dourado);border:1px solid rgba(201,162,74,.45);}
+    .bs-off{background:#ECEAE5;color:#B4AE9F;cursor:not-allowed;}
+    .pal-empty{justify-content:flex-start;}
+    .pal-empty .pal-sub{font-style:italic;opacity:.85;}
+    /* livros: capa + amazon */
+    .books{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px;}
+    .book{display:flex;flex-direction:column;align-items:center;text-align:center;gap:9px;}
+    .bcover{width:100%;max-width:150px;aspect-ratio:3/4.4;border-radius:8px;background:var(--bg,#2A2A2A);color:#fff;display:flex;align-items:center;justify-content:center;padding:12px;font-size:13.5px;font-weight:800;line-height:1.3;letter-spacing:.01em;box-shadow:0 8px 20px rgba(0,0,0,.20);overflow:hidden;}
+    .bcover img{width:100%;height:100%;object-fit:cover;border-radius:8px;display:block;}
+    .btitle{font-size:13.5px;font-weight:700;color:var(--grafite);line-height:1.2;}
+    .bsub{font-size:11.5px;color:var(--cinza);margin-top:-4px;}
+    .bamazon{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;text-decoration:none;background:#FF9900;color:#161A20;padding:8px 14px;border-radius:8px;}
+    .bamazon:hover{background:#E88B00;}
+    .bamazon-off{display:inline-block;font-size:12px;font-weight:700;background:#ECEAE5;color:#9A9486;padding:8px 14px;border-radius:8px;}
+    @media(max-width:520px){.books{grid-template-columns:1fr 1fr;}}
+    .card.ascensao { border-top:3px solid #E2742E; }
+    .card.maestria { border-top:3px solid #7C6BFF; }
+    .card.palestras { border-top:3px solid #2E9E8F; }
+    .section-title { font-size:18px; margin:22px 0 12px; padding-top:16px; border-top:1px solid rgba(22,26,32,.10); }
+    .materials { display:grid; grid-template-columns:repeat(auto-fill,minmax(460px,1fr)); gap:16px; }
+    .mat-card { background:#fff; border:1px solid rgba(22,26,32,0.10); border-radius:14px; padding:18px 22px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+    .mat-card:hover { box-shadow:0 8px 24px rgba(22,26,32,0.08); }
+    .mat-info h3 { font-size:16px; margin-bottom:3px; }
+    .mat-info p { font-size:13px; color:var(--cinza); }
+    .mat-card .btn { flex:none; }
+    footer { text-align:center; margin-top:40px; color:var(--cinza); font-size:12px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="head-row">
+        <div class="head-id">
+          <span class="tag">Uso interno · Esteira</span>
+          <h1>Esteira de Produtos</h1>
+        </div>
+        <a class="vis-port" href="portfolio/" target="_blank" rel="noopener">📊 Portfólio completo (interativo) ↗</a>
+      </div>
+      <p class="rule"><strong>A regra em uma frase:</strong> existe <strong>um produto</strong> — a mentoria. Todo o resto existe para levar alguém até o primeiro movimento dela. A venda acontece <strong>no palco do evento</strong>.</p>
+    </header>
+
+    <!-- ===================== ESCADA ===================== -->
+    <section class="vis">
+      <span class="vis-label">A esteira <small>— captação → evento → mentoria</small></span>
+      <div class="stairs">
+        <div class="stair"><div class="block" style="--ac:#2E9E8F;--h:90px"><span class="sn">◆ Captação</span><span class="pn">Low-tickets &amp; iscas</span><span class="pr">Grátis / baixo</span><span class="fm">Palestras · workshops · livros · diagnóstico</span></div></div>
+        <div class="stair"><div class="block" style="--ac:#E2742E;--h:125px"><span class="sn">Captação</span><span class="pn">Ascensão Empresarial</span><span class="pr">R$ 67</span><span class="fm">Online recorrente</span></div></div>
+        <div class="fcap"><span class="lbl">Funil de captura · capta, aquece e leva ao evento &rarr;</span></div>
+        <div class="stair"><div class="block" style="--ac:#4A7FA5;--h:148px"><span class="sn">1º movimento · a venda acontece aqui</span><span class="pn">Imersão Método GNC</span><span class="pr">R$3.997 · 4.997 · 9.997</span><span class="fm">Presencial · 2 dias</span></div></div>
+        <div class="stair"><div class="block hero" style="--ac:#1E40AF;--h:222px"><span class="star">★ O produto</span><span class="sn">Destino</span><span class="pn">Mentoria · Ciclo da Inovação</span><span class="pr">R$50k/ano</span><span class="fm">Trimestral · contínuo</span><div class="subpillar"><span class="stag">Downsell</span><span class="pt">Protocolo Maestria</span><span class="ps">1º trecho da mentoria · R$18k/ano</span></div></div></div>
+        <div class="stair"><div class="block" style="--ac:#C9A24A;--h:340px"><span class="sn">Destino · individual</span><span class="pn">O Conselho</span><span class="pr">R$120k/ano</span><span class="fm">O Ednaldo sozinho</span></div></div>
+        <div class="mcap"><span class="lbl">O destino · a mentoria</span></div>
+      </div>
+    </section>
+
+    <!-- ===================== CARDS ===================== -->
+    <h2 class="section-title" style="margin-top:8px">Materiais por produto</h2>
+    <p class="sub" style="text-align:left;margin-bottom:14px;">Para cada produto: quem compra, o papel na esteira, a LP, o PDF e o guia de estilo. Apoio ao time — não divulgar.</p>
+    <div class="legend" style="justify-content:flex-start;margin-bottom:8px;">
+      <span><i class="dot on"></i> Ativo (online)</span>
+      <span><i class="dot off"></i> Pendente (falta colocar online)</span>
+    </div>
+
+    <!-- ===== blocos por pilar (ordem/cor da escada) ===== -->
+    <div class="slab" style="background:#F4F1E9">
+    <div class="pillar-h"><span class="pdot" style="background:#2E9E8F"></span>Low-tickets &amp; iscas<span class="stage">Captação</span></div>
+    <p class="group-s">Entradas de baixo (ou zero) ticket. O trabalho é o mesmo: encher o evento. <strong>Não devem reaparecer de graça dentro dele.</strong></p>
+    <div class="grid">
+
+      <div class="card palestras">
+        <div class="top"><span class="num">1</span><h2>Palestras</h2></div>
+        <div class="meta"><span class="chip">Captação · palestra-isca</span><span class="chip price">Grátis</span></div>
+        <div class="persona"><span class="qc">Papel na esteira</span><p>Palestras de alto valor percebido que captam público novo e geram autoridade. <strong>Levam ao Ascensão ou direto para a Imersão.</strong> Cada linha com LP, PDF e Slides conforme disponível (🔒 = protegido por senha).</p></div>
+        <div class="pal-list">
+          <div class="pal-row">
+            <div class="pal-info"><span class="pal-title">Liderança Situacional</span><span class="pal-sub">Palestra · gestão de pessoas</span><span class="pal-desc">O erro de liderar todo mundo igual — e como adaptar seu estilo à maturidade de cada pessoa para reter e desenvolver talentos (liderança situacional).</span></div>
+            <div class="pal-acts">
+              <a class="bs bs-lp" href="/lideranca-situacional/" target="_blank" rel="noopener">LP</a>
+              <span class="bs bs-off" title="Sem PDF ainda">PDF</span>
+              <a class="bs bs-slides" href="slides/?f=lideranca-situacional&amp;t=html" target="_blank" rel="noopener">🔒 Slides</a>
+            </div>
+          </div>
+          <div class="pal-row pal-empty"><span class="pal-sub">+ novas palestras entram aqui</span></div>
+        </div>
+      </div>
+
+      <div class="card palestras">
+        <div class="top"><span class="num">2</span><h2>Workshops</h2></div>
+        <div class="meta"><span class="chip">Captação · workshop-isca</span><span class="chip price">Grátis</span></div>
+        <div class="persona"><span class="qc">Papel na esteira</span><p>Workshops e encontros de imersão curta que aproximam o público e geram relação. Cada linha com LP, PDF e Slides conforme disponível (🔒 = protegido por senha).</p></div>
+        <div class="pal-list">
+          <div class="pal-row">
+            <div class="pal-info"><span class="pal-title">O Alicerce</span><span class="pal-sub">Workshop · encontro de casais</span><span class="pal-desc">As 4 lições de Jesus para casais: se ouvir, se valorizar, crescer juntos e amar sem cobrança. Fé + ciência, numa tarde a dois.</span></div>
+            <div class="pal-acts">
+              <a class="bs bs-lp" href="/alicerce/" target="_blank" rel="noopener">LP</a>
+              <a class="bs bs-pdf" href="pdfs/alicerce.pdf" download>PDF</a>
+              <span class="bs bs-off" title="Sem slides ainda">Slides</span>
+            </div>
+          </div>
+          <div class="pal-row pal-empty"><span class="pal-sub">+ novos workshops entram aqui</span></div>
+        </div>
+      </div>
+
+      <div class="card livros">
+        <div class="top"><span class="num">3</span><h2>Livros</h2></div>
+        <div class="meta"><span class="chip">Captação · topo de funil</span><span class="chip price">Ticket baixo</span></div>
+        <div class="persona"><span class="qc">Papel na esteira</span><p>Autoridade e topo de funil: entram cedo, geram confiança e alimentam a captação para o evento.</p></div>
+        <div class="books">
+          <div class="book">
+            <div class="bcover"><img src="/assets/livros/divisor-de-aguas.png" alt="Capa do livro O Divisor de Águas" loading="lazy"></div>
+            <span class="btitle">O Divisor de Águas</span>
+            <a class="bamazon" href="https://www.amazon.com.br/divisor-%C3%A1guas-sobreviver-prosperar-empreendedorismo/dp/6584283097" target="_blank" rel="noopener">Amazon →</a>
+          </div>
+          <div class="book">
+            <div class="bcover"><img src="/assets/livros/mate-suas-ideias.png" alt="Capa do livro Mate Suas Ideias" loading="lazy"></div>
+            <span class="btitle">Mate Suas Ideias</span>
+            <a class="bamazon" href="https://www.amazon.com.br/Mate-suas-Ideias-sementes-frutos-ebook/dp/B0F1L81LWC" target="_blank" rel="noopener">Amazon →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="card diag">
+        <div class="top"><span class="num">4</span><h2>Diagnóstico</h2></div>
+        <div class="meta"><span class="chip">Captação · captura</span><span class="chip price">Grátis</span></div>
+        <div class="persona"><span class="qc">Papel na esteira</span><p>Ferramentas gratuitas de diagnóstico. Capturam o lead, geram consciência do problema e abrem caminho para o evento.</p></div>
+        <div class="pal-list">
+          <div class="pal-row">
+            <div class="pal-info"><span class="pal-title">Análise Maestria</span><span class="pal-sub">As 9 Janelas · o negócio</span><span class="pal-desc">Diagnóstico das 9 janelas do negócio — mostra onde o crescimento emperra.</span></div>
+            <div class="pal-acts">
+              <a class="bs bs-lp" href="/imersaofoco2026/diagnostico/" target="_blank" rel="noopener">Abrir</a>
+            </div>
+          </div>
+          <div class="pal-row">
+            <div class="pal-info"><span class="pal-title">Perfil do Líder</span><span class="pal-sub">Liderança · o dono</span><span class="pal-desc">Diagnóstico do perfil de liderança — identifica o estilo do líder e os pontos a desenvolver.</span></div>
+            <div class="pal-acts">
+              <a class="bs bs-lp" href="https://perfildolider.ednaldohenper.com.br/" target="_blank" rel="noopener">Abrir</a>
+            </div>
+          </div>
+          <div class="pal-row pal-empty"><span class="pal-sub">+ novos diagnósticos entram aqui</span></div>
+        </div>
+      </div>
+
+    </div>
+    </div>
+
+
+    <div class="slab" style="background:#ECE6D9">
+    <div class="pillar-h"><span class="pdot" style="background:#E2742E"></span>Ascensão Empresarial<span class="stage">Captação</span></div>
+    <p class="group-s">Evento online recorrente. O palco vende a Imersão.</p>
+    <div class="grid">
+
+      <div class="card ascensao">
+        <div class="top"><span class="num">5</span><h2>Ascensão Empresarial</h2></div>
+        <div class="meta"><span class="chip">Captação · online recorrente</span><span class="chip price">R$ 67</span></div>
+        <div class="persona"><span class="qc">Papel na esteira</span><p>Dono de PME curioso, que quer “ver o Ednaldo ao vivo” antes de se comprometer. Ticket baixo derruba a objeção. <strong>O palco vende o evento (a Imersão)</strong>, não entrega o método completo de graça.</p></div>
+        <a class="kit-link" href="kits/ascensao-empresarial.html" target="_blank" rel="noopener">🎨 Guia de estilo ↗</a>
+        <div class="actions">
+          <a class="btn btn-lp" href="/ascensaoempresarial/" target="_blank" rel="noopener">Ver LP</a>
+          <span class="btn btn-off" title="PDF ainda não enviado">PDF pendente</span>
+          <a class="btn btn-slides" href="slides/?f=ascensao&amp;t=html" target="_blank" rel="noopener">🔒 Slides</a>
+        </div>
+      </div>
+
+    </div>
+    </div>
+
+
+    <div class="slab" style="background:#E3DAC8">
+    <div class="pillar-h"><span class="pdot" style="background:#4A7FA5"></span>Imersão Método GNC<span class="stage">Primeiro movimento</span></div>
+    <p class="group-s">Um produto só: o ingresso da Imersão. É onde a mentoria é vendida, no palco.</p>
+    <div class="grid">
+
+      <div class="card gnc">
+        <div class="top"><span class="num">6</span><h2>Imersão Método GNC</h2></div>
+        <div class="meta"><span class="chip">Primeiro movimento</span><span class="chip">Presencial · 2 dias · Monte Sião</span><span class="chip warn">nome do evento a definir</span></div>
+        <div class="persona"><span class="qc">Papel na esteira</span><p>O <strong>primeiro movimento</strong> da mentoria. Dois dias trabalhando três áreas (o dono, o relacionamento e o negócio). <strong>É aqui que a mentoria é vendida, no palco.</strong> A Jornada Negócio nos Trilhos (4 meses, gravada) vem dentro das faixas 2 e 3 — não é vendida à parte.</p></div>
+        <div class="faixas">
+          <div class="faixa"><span class="fk"><b>Faixa 1</b> · só o evento (isca)</span><span class="fp">R$ 3.997</span></div>
+          <div class="faixa"><span class="fk"><b>Faixa 2</b> · evento + Jornada NT + plataforma + ao vivo mensal</span><span class="fp">R$ 4.997</span></div>
+          <div class="faixa"><span class="fk"><b>Faixa 3</b> · tudo da 2 + 30 Dias de Implementação (1º mês da mentoria já pago)</span><span class="fp">R$ 9.997</span></div>
+        </div>
+        <div class="actions">
+          <a class="btn btn-lp" href="/imersaometodognc/" target="_blank" rel="noopener">Ver LP</a>
+          <span class="btn btn-off" title="PDF ainda não enviado">PDF pendente</span>
+        </div>
+      </div>
+
+    </div>
+    </div>
+
+
+    <div class="slab dark" style="background:#2E3542">
+    <div class="pillar-h"><span class="pdot" style="background:#1E40AF"></span>A Mentoria · Ciclo da Inovação<span class="stage">Destino · o produto</span></div>
+    <p class="group-s">É o produto. Acompanhamento contínuo em ciclos trimestrais. O Protocolo é peça dela (downsell).</p>
+    <div class="grid">
+
+      <div class="card mentoria">
+        <div class="top"><span class="num">7</span><h2>Mentoria · Ciclo da Inovação</h2></div>
+        <div class="meta"><span class="chip star">★ O produto</span><span class="chip">Continuidade · trimestral</span><span class="chip price">R$50k/ano</span><span class="chip">fundador R$24k/ano</span></div>
+        <div class="persona"><span class="qc">Papel na esteira</span><p><strong>É o produto.</strong> Acompanhamento contínuo, em ciclos trimestrais — o calendário segura, não o contrato. A venda acontece no palco do evento. Quem comprou a faixa 3 já entra com o 1º mês pago.</p></div>
+        <a class="kit-link" href="kits/ciclo-da-inovacao.html" target="_blank" rel="noopener">🎨 Guia de estilo ↗</a>
+        <div class="actions">
+          <a class="btn btn-lp" href="/ciclodainovacao/" target="_blank" rel="noopener">Ver LP</a>
+          <a class="btn btn-pdf" href="pdfs/ciclodainovacao.pdf" download="Ciclo-da-Inovacao.pdf">Baixar PDF</a>
+          <a class="btn btn-pdf" href="pdfs/ciclo-fundadores.pdf" download="Ciclo-da-Inovacao-Fundadores.pdf">PDF Fundadores</a>
+        </div>
+      </div>
+
+      <div class="card maestria">
+        <div class="top"><span class="num">8</span><h2>Protocolo Maestria</h2></div>
+        <div class="meta"><span class="chip">Peça da mentoria</span><span class="chip">1º trecho · ou downsell</span><span class="chip price">R$18k/ano</span></div>
+        <div class="persona"><span class="qc">Papel na esteira</span><p>Deixou de ser produto de receita vendido solto. Agora é <strong>o primeiro trecho da mentoria</strong> — ou o <strong>downsell</strong> para quem não fecha o ano. Como parte de algo que continua, o mesmo conteúdo respira e não empurra a pessoa para “terminar e voltar depois”. LP e PDF seguem disponíveis pro time como referência.</p></div>
+        <a class="kit-link" href="kits/protocolo-maestria.html" target="_blank" rel="noopener">🎨 Guia de estilo ↗</a>
+        <div class="actions">
+          <a class="btn btn-lp" href="/protocolomaestria/" target="_blank" rel="noopener">Ver LP</a>
+          <a class="btn btn-pdf" href="pdfs/protocolomaestria.pdf" download>Baixar PDF</a>
+        </div>
+      </div>
+
+    </div>
+    </div>
+
+
+    <div class="slab dark" style="background:#15181E">
+    <div class="pillar-h"><span class="pdot" style="background:#C9A24A"></span>O Conselho<span class="stage">Destino · individual</span></div>
+    <p class="group-s">A versão individual da mentoria — o Ednaldo sozinho.</p>
+    <div class="grid">
+
+      <div class="card conselho">
+        <div class="top"><span class="num">9</span><h2>O Conselho</h2></div>
+        <div class="meta"><span class="chip">Destino · individual</span><span class="chip price">R$120k/ano</span></div>
+        <div class="persona"><span class="qc">Papel na esteira</span><p>A <strong>versão individual da mentoria</strong>, para quem quer o Ednaldo sozinho como conselheiro do negócio. Proximidade máxima e exclusividade — uma sala de um. Poucas cadeiras, por curadoria.</p></div>
+        <a class="kit-link" href="kits/o-conselho.html" target="_blank" rel="noopener">🎨 Guia de estilo ↗</a>
+        <div class="actions">
+          <a class="btn btn-lp" href="/oconselho/" target="_blank" rel="noopener">Ver LP</a>
+          <span class="btn btn-off" title="PDF ainda não enviado">PDF pendente</span>
+        </div>
+      </div>
+
+    </div>
+    </div>
+
+
+    <div class="slab off" style="background:#EFEDE7">
+    <div class="pillar-h"><span class="pdot" style="background:#7B5EA8"></span>Fora da esteira<span class="stage">Não faz parte do funil</span></div>
+    <p class="group-s">Produtos próprios, com público e promessa distintos — não fazem parte do funil da mentoria.</p>
+    <div class="grid">
+
+      <div class="card chave">
+        <div class="top"><span class="num">◆</span><h2>A Chave do Tempo</h2></div>
+        <div class="meta"><span class="chip">Fora da esteira · desafio 7 dias</span><span class="chip price">R$ 67–97</span><span class="chip warn">checkout + vídeo pendentes</span></div>
+        <div class="persona"><span class="qc">Papel</span><p>Dono sufocado pela falta de tempo, que quer uma <strong>vitória rápida</strong>: recuperar horas e sentir que “funciona” em 7 dias. Impulso de baixo risco e <strong>pico de venda periódico</strong>. Produto próprio, <strong>fora do funil da mentoria</strong>.</p></div>
+        <a class="kit-link" href="kits/chave-do-tempo.html" target="_blank" rel="noopener">🎨 Guia de estilo ↗</a>
+        <div class="actions">
+          <a class="btn btn-lp" href="/achavedotempo/" target="_blank" rel="noopener">Ver LP</a>
+          <a class="btn btn-pdf" href="pdfs/achavedotempo.pdf" download>Baixar PDF</a>
+        </div>
+      </div>
+
+      <div class="card foco">
+        <div class="top"><span class="num">◆</span><h2>Imersão Foco no Essencial</h2></div>
+        <div class="meta"><span class="chip">Fora da esteira · evento anual</span><span class="chip">Inteligência emocional do dono</span><span class="chip price">Pré-venda 2027</span></div>
+        <div class="persona"><span class="qc">A fronteira</span><p>Vira <strong>evento anual de inteligência emocional do dono</strong>. Foco no Essencial é o dono como pessoa; a Imersão Método GNC é o dono <strong>e</strong> o negócio. As duas são presenciais de 2 dias — a linha precisa estar dita em toda peça pra elas não competirem pelo mesmo fim de semana.</p></div>
+        <a class="kit-link" href="kits/foco-no-essencial.html" target="_blank" rel="noopener">🎨 Guia de estilo ↗</a>
+        <div class="actions">
+          <a class="btn btn-lp" href="/imersaofoco2027/" target="_blank" rel="noopener">Ver LP (pré-venda 2027)</a>
+          <span class="btn btn-off" title="PDF ainda não enviado">PDF pendente</span>
+        </div>
+      </div>
+
+    </div>
+    </div>
+
+
+    <h2 class="section-title">Materiais de apoio</h2>
+    <div class="materials">
+      <div class="mat-card">
+        <div class="mat-info">
+          <h3>Blackbook</h3>
+          <p>Material base do projeto · referência interna</p>
+        </div>
+        <a class="btn btn-pdf" href="pdfs/blackbook.pdf" download>Baixar PDF</a>
+      </div>
+      <div class="mat-card">
+        <div class="mat-info">
+          <h3>Portfólio · Escada de Vendas</h3>
+          <p>Visão geral da esteira · versão interativa e documento</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0;">
+          <a class="btn btn-lp" href="portfolio/standalone.html" target="_blank" rel="noopener">Abrir ↗</a>
+          <a class="btn btn-pdf" href="portfolio/standalone.html" download>Baixar ↓</a>
+        </div>
+      </div>
+    </div>
+
+    <footer>Área interna · não divulgar · Ednaldo Henper</footer>
+  </div>
+</body>
+</html>

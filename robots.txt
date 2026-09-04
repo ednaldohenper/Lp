@@ -1,0 +1,42 @@
+# ednaldohenper.com.br
+
+# Área interna (esteira/propostas): fora de buscadores e crawlers de IA.
+User-agent: *
+Disallow: /propostas/
+
+# Reforço explícito para crawlers de IA (só a área interna; o resto do site fica livre)
+User-agent: GPTBot
+Disallow: /propostas/
+
+User-agent: OAI-SearchBot
+Disallow: /propostas/
+
+User-agent: ChatGPT-User
+Disallow: /propostas/
+
+User-agent: ClaudeBot
+Disallow: /propostas/
+
+User-agent: Claude-Web
+Disallow: /propostas/
+
+User-agent: anthropic-ai
+Disallow: /propostas/
+
+User-agent: Google-Extended
+Disallow: /propostas/
+
+User-agent: CCBot
+Disallow: /propostas/
+
+User-agent: PerplexityBot
+Disallow: /propostas/
+
+User-agent: Bytespider
+Disallow: /propostas/
+
+User-agent: Amazonbot
+Disallow: /propostas/
+
+User-agent: meta-externalagent
+Disallow: /propostas/

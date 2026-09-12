@@ -9,8 +9,12 @@
   var PLAYER_ID    = "vid-6a7e764df58befd718ababd5";   // player converteai/vturb
   var SS_KEY       = "vsl_ascensao_unlocked";          // lembra no navegador entre visitas (não re-tranca ao voltar)
   var HARD_CAP_MS  = 20 * 60 * 1000;                   // trava de segurança: libera após 20 min de qualquer forma
+  var WATCH_KEY    = "vsl_ascensao_watched_ms";        // tempo assistido acumulado (soma entre visitas)
 
   var hidden = [], unlocked = false, bootAt = Date.now();
+
+  function getWatched() { try { return parseInt(localStorage.getItem(WATCH_KEY) || "0", 10) || 0; } catch (e) { return 0; } }
+  function addWatched(ms) { try { localStorage.setItem(WATCH_KEY, String(getWatched() + ms)); } catch (e) {} }
 
   function injectCSS() {
     if (document.getElementById("vsl-css")) return;
@@ -63,17 +67,20 @@
     buildGate(hero, player);
     var iv = setInterval(function () {
       try {
-        var v = getVideo(), t = null;
-        if (v && !isNaN(v.currentTime)) t = v.currentTime;
+        // 1) acumula tempo na página (soma entre visitas). Só conta com a aba
+        //    visível — e nesta fase só o vídeo aparece, então ~= tempo assistido.
+        if (document.visibilityState !== "hidden") addWatched(1000);
 
-        // fallback: sem <video> acessível após 30s → usa tempo decorrido
-        if (t === null && (Date.now() - bootAt) > 30000) t = (Date.now() - bootAt - 30000) / 1000;
+        // 2) tempo real do player, quando dá pra ler (vídeo em light DOM)
+        var v = getVideo();
+        var ct = (v && !isNaN(v.currentTime)) ? v.currentTime : null;
+        var ended = v && !isNaN(v.duration) && v.duration > 30 && ct !== null && ct >= v.duration - 2;
 
-        // vídeo com menos de 8 min: libera quando ele chega perto do fim
-        var nearEnd = v && !isNaN(v.duration) && v.duration > 30 && t !== null && t >= v.duration - 2;
-
-        // libera: 8 min de vídeo  OU  fim do vídeo  OU  trava de segurança (20 min)
-        if ((t !== null && t >= GATE_SECONDS) || nearEnd || (Date.now() - bootAt) > HARD_CAP_MS) {
+        // 3) libera: 8 min acumulados  OU  8 min de vídeo  OU  fim do vídeo  OU  trava 20 min
+        if (getWatched() >= GATE_SECONDS * 1000 ||
+            (ct !== null && ct >= GATE_SECONDS) ||
+            ended ||
+            (Date.now() - bootAt) > HARD_CAP_MS) {
           reveal(); clearInterval(iv);
         }
       } catch (e) { reveal(); clearInterval(iv); }
@@ -81,8 +88,9 @@
   }
 
   function boot() {
-    // já assistiu nesta aba? não tranca.
+    // já liberou antes, ou já acumulou os 8 min entre visitas? não tranca.
     try { if (localStorage.getItem(SS_KEY) === "1") return; } catch (e) {}
+    if (getWatched() >= GATE_SECONDS * 1000) return;
 
     var tries = 0;
     var wait = setInterval(function () {

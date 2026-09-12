@@ -69,8 +69,11 @@
         // fallback: sem <video> acessível após 30s → usa tempo decorrido
         if (t === null && (Date.now() - bootAt) > 30000) t = (Date.now() - bootAt - 30000) / 1000;
 
-        // libera: chegou aos 8 min de vídeo  OU  trava de segurança de 20 min
-        if ((t !== null && t >= GATE_SECONDS) || (Date.now() - bootAt) > HARD_CAP_MS) {
+        // vídeo com menos de 8 min: libera quando ele chega perto do fim
+        var nearEnd = v && !isNaN(v.duration) && v.duration > 30 && t !== null && t >= v.duration - 2;
+
+        // libera: 8 min de vídeo  OU  fim do vídeo  OU  trava de segurança (20 min)
+        if ((t !== null && t >= GATE_SECONDS) || nearEnd || (Date.now() - bootAt) > HARD_CAP_MS) {
           reveal(); clearInterval(iv);
         }
       } catch (e) { reveal(); clearInterval(iv); }

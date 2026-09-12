@@ -183,6 +183,8 @@
     .cover::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,15,20,.02) 0%,rgba(12,15,20,.14) 44%,rgba(12,15,20,.80) 100%);}
     .cover.typo{background-position:center;}
     .cover.typo::after{background:linear-gradient(180deg,rgba(0,0,0,.02),rgba(0,0,0,.30));}
+    .cover.art{background-position:center;}
+    .cover.art::after{display:none;}
     .cover .ck{position:absolute;left:14px;top:12px;z-index:2;font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#0E1216;background:rgba(255,255,255,.92);padding:3px 9px;border-radius:999px;}
     .cover .cn{position:absolute;right:12px;top:11px;z-index:2;min-width:26px;height:26px;padding:0 6px;border-radius:999px;background:rgba(14,18,22,.60);color:var(--dourado);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;}
     .cover .ct{position:absolute;left:16px;right:16px;bottom:12px;z-index:2;color:#fff;font-size:clamp(17px,2vw,20px);font-weight:800;line-height:1.12;text-shadow:0 2px 12px rgba(0,0,0,.55);}
@@ -242,7 +244,7 @@
     <div class="grid">
 
       <div class="card palestras">
-        <div class="cover" style="background-image:url('/assets/covers/lideranca.jpg')"><span class="ck">Captação</span><span class="cn">1</span><span class="ct">Palestras</span></div>
+        <div class="cover art" style="background-image:url('/assets/covers/lideranca.jpg')"></div>
         <div class="meta"><span class="chip">Captação · palestra-isca</span><span class="chip price">Grátis</span></div>
         <details class="acc"><summary>Papel na esteira</summary><p>Palestras de alto valor percebido que captam público novo e geram autoridade. <strong>Levam ao Ascensão ou direto para a Imersão.</strong> Cada linha com LP, PDF e Slides conforme disponível (🔒 = protegido por senha).</p></details>
         <div class="pal-list">
@@ -259,7 +261,7 @@
       </div>
 
       <div class="card palestras">
-        <div class="cover" style="background-image:url('/assets/covers/alicerce.jpg')"><span class="ck">Captação</span><span class="cn">2</span><span class="ct">Workshops</span></div>
+        <div class="cover art" style="background-image:url('/assets/covers/alicerce.jpg')"></div>
         <div class="meta"><span class="chip">Captação · workshop-isca</span><span class="chip price">Grátis</span></div>
         <details class="acc"><summary>Papel na esteira</summary><p>Workshops e encontros de imersão curta que aproximam o público e geram relação. Cada linha com LP, PDF e Slides conforme disponível (🔒 = protegido por senha).</p></details>
         <div class="pal-list">

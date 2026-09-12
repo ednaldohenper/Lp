@@ -167,18 +167,19 @@
     footer { text-align:center; margin-top:40px; color:var(--cinza); font-size:12px; }
 
     /* ---- banner + capas (novo) ---- */
-    .banner{position:relative;display:grid;grid-template-columns:1.5fr 1fr;background:linear-gradient(120deg,#12161C 0%,#1E2530 55%,#2A3340 100%);border-radius:20px;overflow:hidden;margin-bottom:16px;box-shadow:0 18px 50px rgba(22,26,32,.28);}
+    .banner{position:relative;display:grid;grid-template-columns:1.5fr auto;background:linear-gradient(105deg,#141A21 0%,#12161C 46%,#0D0E10 72%);border-radius:20px;overflow:hidden;margin-bottom:16px;box-shadow:0 18px 50px rgba(22,26,32,.28);min-height:clamp(300px,32vw,360px);}
     .banner .b-text{padding:clamp(24px,3.4vw,42px);display:flex;flex-direction:column;justify-content:center;}
     .banner .b-badge{align-self:flex-start;font-size:11px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#0E1216;background:var(--dourado);padding:5px 12px;border-radius:999px;margin-bottom:14px;}
     .banner h1{font-size:clamp(26px,3.6vw,42px);line-height:1.06;margin:0 0 12px;color:#fff;letter-spacing:-.01em;}
     .banner .b-sub{font-size:14.5px;color:rgba(245,241,232,.80);max-width:44ch;line-height:1.6;margin:0 0 16px;}
     .banner .b-port{align-self:flex-start;font-size:12.5px;font-weight:700;color:var(--dourado);text-decoration:none;}
     .banner .b-port:hover{text-decoration:underline;}
-    .banner .b-photo{position:relative;min-height:252px;background-position:center 16%;background-size:cover;background-repeat:no-repeat;}
-    .banner .b-photo::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#1E2530 0%,rgba(30,37,48,.35) 26%,rgba(30,37,48,0) 55%);}
-    @media(max-width:720px){.banner{grid-template-columns:1fr;}.banner .b-photo{order:-1;min-height:200px;background-position:center 14%;}.banner .b-photo::before{background:linear-gradient(0deg,#1E2530 0%,rgba(30,37,48,0) 46%);}}
+    .banner .b-photo{position:relative;display:flex;align-items:flex-end;justify-content:flex-end;}
+    .banner .b-photo img{display:block;height:clamp(300px,32vw,360px);width:auto;}
+    .banner .b-photo::before{content:'';position:absolute;top:0;bottom:0;left:0;width:34%;background:linear-gradient(90deg,#0D0E10 0%,rgba(13,14,16,0) 100%);z-index:1;pointer-events:none;}
+    @media(max-width:720px){.banner{grid-template-columns:1fr;min-height:0;}.banner .b-photo{order:-1;justify-content:center;}.banner .b-photo img{height:auto;width:auto;max-height:280px;max-width:82%;}.banner .b-photo::before{display:none;}}
 
-    .cover{position:relative;margin:-20px -22px 14px;aspect-ratio:3/4;border-radius:14px 14px 0 0;overflow:hidden;background-size:cover;background-position:center 16%;background-repeat:no-repeat;}
+    .cover{position:relative;margin:-20px -22px 14px;aspect-ratio:4/5;border-radius:14px 14px 0 0;overflow:hidden;background-size:cover;background-position:center 16%;background-repeat:no-repeat;}
     .cover::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,15,20,.02) 0%,rgba(12,15,20,.14) 44%,rgba(12,15,20,.80) 100%);}
     .cover.typo{background-position:center;}
     .cover.typo::after{background:linear-gradient(180deg,rgba(0,0,0,.02),rgba(0,0,0,.30));}
@@ -208,7 +209,7 @@
         <p class="b-sub">A esteira completa do Ednaldo Henper — da captação ao destino. Para cada produto: quem compra, o papel no funil, a LP e os materiais.</p>
         <a class="b-port" href="portfolio/" target="_blank" rel="noopener">📊 Portfólio completo (interativo) ↗</a>
       </div>
-      <div class="b-photo" style="background-image:url('/assets/covers/banner.jpg')"></div>
+      <div class="b-photo"><img src="/assets/covers/banner.jpg" alt="Ednaldo Henper"></div>
     </section>
     <p class="rule"><strong>A regra em uma frase:</strong> existe <strong>um produto</strong> — a mentoria. Todo o resto existe para levar alguém até o primeiro movimento dela. A venda acontece <strong>no palco do evento</strong>.</p>
 
@@ -216,10 +217,10 @@
     <section class="vis">
       <span class="vis-label">A esteira <small>— captação → evento → mentoria</small></span>
       <div class="stairs">
-        <div class="stair"><div class="block" style="--ac:#2E9E8F;--h:90px"><span class="sn">◆ Captação</span><span class="pn">Low-tickets &amp; iscas</span><span class="pr">Grátis / baixo</span><span class="fm">Palestras · workshops · livros · diagnóstico</span></div></div>
-        <div class="stair"><div class="block" style="--ac:#E2742E;--h:125px"><span class="sn">Captação</span><span class="pn">Ascensão Empresarial</span><span class="pr">R$ 67</span><span class="fm">Online recorrente</span></div></div>
+        <div class="stair"><div class="block" style="--ac:#2E9E8F;--h:90px"><span class="sn">◆ Captação</span><span class="pn">Low-tickets &amp; iscas</span><span class="pr">Grátis / baixo</span><span class="fm">Palestras · workshops · livros · diagnóstico · Ascensão</span></div></div>
+        <div class="stair"><div class="block" style="--ac:#1E6FB0;--h:125px"><span class="sn">Captação · evento de entrada</span><span class="pn">Negócio nos Trilhos</span><span class="pr">R$ 67</span><span class="fm">Aquece e leva à Imersão</span></div></div>
         <div class="fcap"><span class="lbl">Funil de captura · capta, aquece e leva ao evento &rarr;</span></div>
-        <div class="stair"><div class="block" style="--ac:#4A7FA5;--h:148px"><span class="sn">1º movimento · a venda acontece aqui</span><span class="pn">Imersão Método GNC</span><span class="pr">R$3.997 · 4.997 · 9.997</span><span class="fm">Presencial · 2 dias</span></div></div>
+        <div class="stair"><div class="block" style="--ac:#4A7FA5;--h:196px"><span class="sn">1º movimento · a venda acontece aqui</span><span class="pn">Imersão Método GNC</span><span class="pr">R$3.997 · 4.997 · 9.997</span><span class="fm">Presencial · 2 dias</span><div class="subpillar" style="border-top-color:#4A7FA5;background:#EDF3F8;box-shadow:0 -2px 8px rgba(74,127,165,.12)"><span class="stag" style="background:#4A7FA5">Aquecimento</span><span class="pt" style="color:#3A6B8E">Força Motriz</span><span class="ps" style="color:#5E7E96">programa gravado · 4 meses</span></div></div></div>
         <div class="stair"><div class="block hero" style="--ac:#1E40AF;--h:222px"><span class="star">★ O produto</span><span class="sn">Destino</span><span class="pn">Mentoria · Ciclo da Inovação</span><span class="pr">R$50k/ano</span><span class="fm">Trimestral · contínuo</span><div class="subpillar"><span class="stag">Downsell</span><span class="pt">Protocolo Maestria</span><span class="ps">1º trecho da mentoria · R$18k/ano</span></div></div></div>
         <div class="stair"><div class="block" style="--ac:#C9A24A;--h:340px"><span class="sn">Destino · individual</span><span class="pn">O Conselho</span><span class="pr">R$120k/ano</span><span class="fm">O Ednaldo sozinho</span></div></div>
         <div class="mcap"><span class="lbl">O destino · a mentoria</span></div>

@@ -165,20 +165,41 @@
     .mat-info p { font-size:13px; color:var(--cinza); }
     .mat-card .btn { flex:none; }
     footer { text-align:center; margin-top:40px; color:var(--cinza); font-size:12px; }
+
+    /* ---- banner + capas (novo) ---- */
+    .banner{position:relative;display:grid;grid-template-columns:1.5fr 1fr;background:linear-gradient(120deg,#12161C 0%,#1E2530 55%,#2A3340 100%);border-radius:20px;overflow:hidden;margin-bottom:16px;box-shadow:0 18px 50px rgba(22,26,32,.28);}
+    .banner .b-text{padding:clamp(24px,3.4vw,42px);display:flex;flex-direction:column;justify-content:center;}
+    .banner .b-badge{align-self:flex-start;font-size:11px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#0E1216;background:var(--dourado);padding:5px 12px;border-radius:999px;margin-bottom:14px;}
+    .banner h1{font-size:clamp(26px,3.6vw,42px);line-height:1.06;margin:0 0 12px;color:#fff;letter-spacing:-.01em;}
+    .banner .b-sub{font-size:14.5px;color:rgba(245,241,232,.80);max-width:44ch;line-height:1.6;margin:0 0 16px;}
+    .banner .b-port{align-self:flex-start;font-size:12.5px;font-weight:700;color:var(--dourado);text-decoration:none;}
+    .banner .b-port:hover{text-decoration:underline;}
+    .banner .b-photo{position:relative;min-height:252px;background-position:center 16%;background-size:cover;background-repeat:no-repeat;}
+    .banner .b-photo::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#1E2530 0%,rgba(30,37,48,.35) 26%,rgba(30,37,48,0) 55%);}
+    @media(max-width:720px){.banner{grid-template-columns:1fr;}.banner .b-photo{order:-1;min-height:200px;background-position:center 14%;}.banner .b-photo::before{background:linear-gradient(0deg,#1E2530 0%,rgba(30,37,48,0) 46%);}}
+
+    .cover{position:relative;margin:-20px -22px 14px;height:clamp(140px,20vw,178px);border-radius:14px 14px 0 0;overflow:hidden;background-size:cover;background-position:center 22%;background-repeat:no-repeat;}
+    .cover::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,15,20,.02) 0%,rgba(12,15,20,.14) 44%,rgba(12,15,20,.80) 100%);}
+    .cover.typo{background-position:center;}
+    .cover.typo::after{background:linear-gradient(180deg,rgba(0,0,0,.02),rgba(0,0,0,.30));}
+    .cover .ck{position:absolute;left:14px;top:12px;z-index:2;font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#0E1216;background:rgba(255,255,255,.92);padding:3px 9px;border-radius:999px;}
+    .cover .cn{position:absolute;right:12px;top:11px;z-index:2;min-width:26px;height:26px;padding:0 6px;border-radius:999px;background:rgba(14,18,22,.60);color:var(--dourado);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+    .cover .ct{position:absolute;left:16px;right:16px;bottom:12px;z-index:2;color:#fff;font-size:clamp(17px,2vw,20px);font-weight:800;line-height:1.12;text-shadow:0 2px 12px rgba(0,0,0,.55);}
+    @media(max-width:760px){.cover{margin:-20px -22px 12px;height:150px;}}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <header>
-      <div class="head-row">
-        <div class="head-id">
-          <span class="tag">Uso interno · Esteira</span>
-          <h1>Esteira de Produtos</h1>
-        </div>
-        <a class="vis-port" href="portfolio/" target="_blank" rel="noopener">📊 Portfólio completo (interativo) ↗</a>
+    <section class="banner">
+      <div class="b-text">
+        <span class="b-badge">Uso interno · Esteira</span>
+        <h1>O próximo passo começa aqui.</h1>
+        <p class="b-sub">A esteira completa do Ednaldo Henper — da captação ao destino. Para cada produto: quem compra, o papel no funil, a LP e os materiais.</p>
+        <a class="b-port" href="portfolio/" target="_blank" rel="noopener">📊 Portfólio completo (interativo) ↗</a>
       </div>
-      <p class="rule"><strong>A regra em uma frase:</strong> existe <strong>um produto</strong> — a mentoria. Todo o resto existe para levar alguém até o primeiro movimento dela. A venda acontece <strong>no palco do evento</strong>.</p>
-    </header>
+      <div class="b-photo" style="background-image:url('/assets/covers/banner.jpg')"></div>
+    </section>
+    <p class="rule"><strong>A regra em uma frase:</strong> existe <strong>um produto</strong> — a mentoria. Todo o resto existe para levar alguém até o primeiro movimento dela. A venda acontece <strong>no palco do evento</strong>.</p>
 
     <!-- ===================== ESCADA ===================== -->
     <section class="vis">
@@ -209,7 +230,7 @@
     <div class="grid">
 
       <div class="card palestras">
-        <div class="top"><span class="num">1</span><h2>Palestras</h2></div>
+        <div class="cover" style="background-image:url('/assets/covers/lideranca.jpg')"><span class="ck">Captação</span><span class="cn">1</span><span class="ct">Palestras</span></div>
         <div class="meta"><span class="chip">Captação · palestra-isca</span><span class="chip price">Grátis</span></div>
         <div class="persona"><span class="qc">Papel na esteira</span><p>Palestras de alto valor percebido que captam público novo e geram autoridade. <strong>Levam ao Ascensão ou direto para a Imersão.</strong> Cada linha com LP, PDF e Slides conforme disponível (🔒 = protegido por senha).</p></div>
         <div class="pal-list">
@@ -226,7 +247,7 @@
       </div>
 
       <div class="card palestras">
-        <div class="top"><span class="num">2</span><h2>Workshops</h2></div>
+        <div class="cover" style="background-image:url('/assets/covers/alicerce.jpg')"><span class="ck">Captação</span><span class="cn">2</span><span class="ct">Workshops</span></div>
         <div class="meta"><span class="chip">Captação · workshop-isca</span><span class="chip price">Grátis</span></div>
         <div class="persona"><span class="qc">Papel na esteira</span><p>Workshops e encontros de imersão curta que aproximam o público e geram relação. Cada linha com LP, PDF e Slides conforme disponível (🔒 = protegido por senha).</p></div>
         <div class="pal-list">
@@ -243,7 +264,7 @@
       </div>
 
       <div class="card livros">
-        <div class="top"><span class="num">3</span><h2>Livros</h2></div>
+        <div class="cover typo" style="background:linear-gradient(135deg,#8A6D3B,#5A4325)"><span class="ck">Captação</span><span class="cn">3</span><span class="ct">Livros</span></div>
         <div class="meta"><span class="chip">Captação · topo de funil</span><span class="chip price">Ticket baixo</span></div>
         <div class="persona"><span class="qc">Papel na esteira</span><p>Autoridade e topo de funil: entram cedo, geram confiança e alimentam a captação para o evento.</p></div>
         <div class="books">
@@ -261,7 +282,7 @@
       </div>
 
       <div class="card diag">
-        <div class="top"><span class="num">4</span><h2>Diagnóstico</h2></div>
+        <div class="cover typo" style="background:linear-gradient(135deg,#6B7280,#3F454E)"><span class="ck">Captação</span><span class="cn">4</span><span class="ct">Diagnóstico</span></div>
         <div class="meta"><span class="chip">Captação · captura</span><span class="chip price">Grátis</span></div>
         <div class="persona"><span class="qc">Papel na esteira</span><p>Ferramentas gratuitas de diagnóstico. Capturam o lead, geram consciência do problema e abrem caminho para o evento.</p></div>
         <div class="pal-list">
@@ -291,7 +312,7 @@
     <div class="grid">
 
       <div class="card ascensao">
-        <div class="top"><span class="num">5</span><h2>Ascensão Empresarial</h2></div>
+        <div class="cover" style="background-image:url('/assets/covers/ascensao.jpg')"><span class="ck">Captação</span><span class="cn">5</span><span class="ct">Ascensão Empresarial</span></div>
         <div class="meta"><span class="chip">Captação · online recorrente</span><span class="chip price">R$ 67</span></div>
         <div class="persona"><span class="qc">Papel na esteira</span><p>Dono de PME curioso, que quer “ver o Ednaldo ao vivo” antes de se comprometer. Ticket baixo derruba a objeção. <strong>O palco vende o evento (a Imersão)</strong>, não entrega o método completo de graça.</p></div>
         <a class="kit-link" href="kits/ascensao-empresarial.html" target="_blank" rel="noopener">🎨 Guia de estilo ↗</a>
@@ -312,7 +333,7 @@
     <div class="grid">
 
       <div class="card gnc">
-        <div class="top"><span class="num">6</span><h2>Imersão Método GNC</h2></div>
+        <div class="cover" style="background-image:url('/assets/covers/metodognc.jpg')"><span class="ck">1º movimento</span><span class="cn">6</span><span class="ct">Imersão Método GNC</span></div>
         <div class="meta"><span class="chip">Primeiro movimento</span><span class="chip">Presencial · 2 dias · Monte Sião</span><span class="chip warn">nome do evento a definir</span></div>
         <div class="persona"><span class="qc">Papel na esteira</span><p>O <strong>primeiro movimento</strong> da mentoria. Dois dias trabalhando três áreas (o dono, o relacionamento e o negócio). <strong>É aqui que a mentoria é vendida, no palco.</strong> A Jornada Força Motriz (4 meses, gravada) vem dentro das faixas 2 e 3 — não é vendida à parte.</p></div>
         <div class="faixas">
@@ -336,7 +357,7 @@
     <div class="grid">
 
       <div class="card mentoria">
-        <div class="top"><span class="num">7</span><h2>Mentoria · Ciclo da Inovação</h2></div>
+        <div class="cover" style="background-image:url('/assets/covers/ciclo.jpg')"><span class="ck">O produto</span><span class="cn">7</span><span class="ct">Mentoria · Ciclo da Inovação</span></div>
         <div class="meta"><span class="chip star">★ O produto</span><span class="chip">Continuidade · trimestral</span><span class="chip price">R$50k/ano</span><span class="chip">fundador R$24k/ano</span></div>
         <div class="persona"><span class="qc">Papel na esteira</span><p><strong>É o produto.</strong> Acompanhamento contínuo, em ciclos trimestrais — o calendário segura, não o contrato. A venda acontece no palco do evento. Quem comprou a faixa 3 já entra com o 1º mês pago.</p></div>
         <a class="kit-link" href="kits/ciclo-da-inovacao.html" target="_blank" rel="noopener">🎨 Guia de estilo ↗</a>
@@ -348,7 +369,7 @@
       </div>
 
       <div class="card maestria">
-        <div class="top"><span class="num">8</span><h2>Protocolo Maestria</h2></div>
+        <div class="cover" style="background-image:url('/assets/covers/protocolo.jpg')"><span class="ck">Downsell</span><span class="cn">8</span><span class="ct">Protocolo Maestria</span></div>
         <div class="meta"><span class="chip">Peça da mentoria</span><span class="chip">1º trecho · ou downsell</span><span class="chip price">R$18k/ano</span></div>
         <div class="persona"><span class="qc">Papel na esteira</span><p>Deixou de ser produto de receita vendido solto. Agora é <strong>o primeiro trecho da mentoria</strong> — ou o <strong>downsell</strong> para quem não fecha o ano. Como parte de algo que continua, o mesmo conteúdo respira e não empurra a pessoa para “terminar e voltar depois”. LP e PDF seguem disponíveis pro time como referência.</p></div>
         <a class="kit-link" href="kits/protocolo-maestria.html" target="_blank" rel="noopener">🎨 Guia de estilo ↗</a>
@@ -368,7 +389,7 @@
     <div class="grid">
 
       <div class="card conselho">
-        <div class="top"><span class="num">9</span><h2>O Conselho</h2></div>
+        <div class="cover" style="background-image:url('/assets/covers/conselho.jpg')"><span class="ck">Individual</span><span class="cn">9</span><span class="ct">O Conselho</span></div>
         <div class="meta"><span class="chip">Destino · individual</span><span class="chip price">R$120k/ano</span></div>
         <div class="persona"><span class="qc">Papel na esteira</span><p>A <strong>versão individual da mentoria</strong>, para quem quer o Ednaldo sozinho como conselheiro do negócio. Proximidade máxima e exclusividade — uma sala de um. Poucas cadeiras, por curadoria.</p></div>
         <a class="kit-link" href="kits/o-conselho.html" target="_blank" rel="noopener">🎨 Guia de estilo ↗</a>
@@ -388,7 +409,7 @@
     <div class="grid">
 
       <div class="card chave">
-        <div class="top"><span class="num">◆</span><h2>A Chave do Tempo</h2></div>
+        <div class="cover typo" style="background:linear-gradient(135deg,#22A8F0,#0E5C8A)"><span class="ck">Fora da esteira</span><span class="cn">◆</span><span class="ct">A Chave do Tempo</span></div>
         <div class="meta"><span class="chip">Fora da esteira · desafio 7 dias</span><span class="chip price">R$ 67–97</span><span class="chip warn">checkout + vídeo pendentes</span></div>
         <div class="persona"><span class="qc">Papel</span><p>Dono sufocado pela falta de tempo, que quer uma <strong>vitória rápida</strong>: recuperar horas e sentir que “funciona” em 7 dias. Impulso de baixo risco e <strong>pico de venda periódico</strong>. Produto próprio, <strong>fora do funil da mentoria</strong>.</p></div>
         <a class="kit-link" href="kits/chave-do-tempo.html" target="_blank" rel="noopener">🎨 Guia de estilo ↗</a>
@@ -399,7 +420,7 @@
       </div>
 
       <div class="card foco">
-        <div class="top"><span class="num">◆</span><h2>Imersão Foco no Essencial</h2></div>
+        <div class="cover typo" style="background:linear-gradient(135deg,#7B5EA8,#4A3866)"><span class="ck">Fora da esteira</span><span class="cn">◆</span><span class="ct">Imersão Foco no Essencial</span></div>
         <div class="meta"><span class="chip">Fora da esteira · evento anual</span><span class="chip">Inteligência emocional do dono</span><span class="chip price">Pré-venda 2027</span></div>
         <div class="persona"><span class="qc">A fronteira</span><p>Vira <strong>evento anual de inteligência emocional do dono</strong>. Foco no Essencial é o dono como pessoa; a Imersão Método GNC é o dono <strong>e</strong> o negócio. As duas são presenciais de 2 dias — a linha precisa estar dita em toda peça pra elas não competirem pelo mesmo fim de semana.</p></div>
         <a class="kit-link" href="kits/foco-no-essencial.html" target="_blank" rel="noopener">🎨 Guia de estilo ↗</a>

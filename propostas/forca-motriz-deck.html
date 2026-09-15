@@ -123,12 +123,15 @@ body{font-family:'Barlow',system-ui,sans-serif;color:var(--ink);-webkit-font-smo
 .rc-l{display:block;font-size:15px;color:#EAE3D5;margin:8px 0 12px;font-weight:600}
 .rc-w{display:block;font-size:13px;color:#A9B3C1;line-height:1.4}
 .depgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:26px}
-.dc{display:flex;flex-direction:column;gap:8px;background:linear-gradient(160deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border:1px solid rgba(196,146,59,.3);border-radius:16px;padding:22px 26px;text-decoration:none}
+.dc{display:flex;gap:18px;align-items:center;background:linear-gradient(160deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border:1px solid rgba(196,146,59,.3);border-radius:16px;padding:18px 22px;text-decoration:none}
 .dc:hover{border-color:var(--gold)}
-.dc-play{width:42px;height:42px;border-radius:50%;background:var(--gold);color:#20160a;font-size:15px;display:flex;align-items:center;justify-content:center}
-.dc-n{font-family:'Fraunces',serif;font-size:25px;color:#FBF8F1;margin-top:2px}
-.dc-l{font-size:12px;color:#A9B3C1;letter-spacing:.06em;text-transform:uppercase}
-.dc-cta{font-size:14px;font-weight:700;color:var(--gold);margin-top:2px}
+.dc-thumb{position:relative;flex:none;width:162px;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#0d1b2b}
+.dc-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.dc-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:40px;height:40px;border-radius:50%;background:var(--gold);color:#20160a;font-size:14px;display:flex;align-items:center;justify-content:center}
+.dc-body{display:flex;flex-direction:column;gap:4px;min-width:0}
+.dc-n{font-family:'Fraunces',serif;font-size:23px;color:#FBF8F1;line-height:1.1}
+.dc-l{font-size:11px;color:#A9B3C1;letter-spacing:.06em;text-transform:uppercase}
+.dc-cta{font-size:13.5px;font-weight:700;color:var(--gold);margin-top:2px}
 /* conta */
 .conta{display:grid;grid-template-columns:.9fr 1.1fr;gap:70px;align-items:center;height:100%}
 .ctable{background:rgba(255,255,255,.05);border:1px solid rgba(196,146,59,.28);border-radius:18px;padding:14px 30px}
@@ -282,7 +285,7 @@ body{font-family:'Barlow',system-ui,sans-serif;color:var(--ink);-webkit-font-smo
   <div class="eyebrow gold">Depoimentos</div>
   <h2 class="display lg light-h">Quem fez, conta o que mudou</h2>
   <p class="lead" style="margin-top:12px;font-size:18px">Clientes da <b>Turma 4</b> — o Força Motriz já vai na sua <b>19ª turma</b>.</p>
-  <div class="depgrid"><a class="dc" href="https://www.youtube.com/watch?v=S0uN0CvWP8Y" target="_blank" rel="noopener"><span class="dc-play">▶</span><span class="dc-n">Informma Modeladores</span><span class="dc-l">Depoimento · Turma 4</span><span class="dc-cta">Ver no YouTube ↗</span></a><a class="dc" href="https://www.youtube.com/watch?v=cOXmKCfUPwo" target="_blank" rel="noopener"><span class="dc-play">▶</span><span class="dc-n">Lucas Toledo</span><span class="dc-l">Depoimento · Turma 4</span><span class="dc-cta">Ver no YouTube ↗</span></a><a class="dc" href="https://www.youtube.com/watch?v=kRubLSvHpiU" target="_blank" rel="noopener"><span class="dc-play">▶</span><span class="dc-n">Murilo Zucato</span><span class="dc-l">Depoimento · Turma 4</span><span class="dc-cta">Ver no YouTube ↗</span></a><a class="dc" href="https://www.youtube.com/watch?v=dl1yW6P0q3I" target="_blank" rel="noopener"><span class="dc-play">▶</span><span class="dc-n">Saulo</span><span class="dc-l">Depoimento · Turma 4</span><span class="dc-cta">Ver no YouTube ↗</span></a></div>
+  <div class="depgrid"><a class="dc" href="https://www.youtube.com/watch?v=cOXmKCfUPwo" target="_blank" rel="noopener"><span class="dc-thumb"><img src="https://img.youtube.com/vi/cOXmKCfUPwo/hqdefault.jpg" alt="" loading="lazy"><span class="dc-play">▶</span></span><span class="dc-body"><span class="dc-n">Informma Modeladores</span><span class="dc-l">Depoimento · Turma 4</span><span class="dc-cta">Ver no YouTube ↗</span></span></a><a class="dc" href="https://www.youtube.com/watch?v=kRubLSvHpiU" target="_blank" rel="noopener"><span class="dc-thumb"><img src="https://img.youtube.com/vi/kRubLSvHpiU/hqdefault.jpg" alt="" loading="lazy"><span class="dc-play">▶</span></span><span class="dc-body"><span class="dc-n">Lucas Toledo</span><span class="dc-l">Depoimento · Turma 4</span><span class="dc-cta">Ver no YouTube ↗</span></span></a><a class="dc" href="https://www.youtube.com/watch?v=dl1yW6P0q3I" target="_blank" rel="noopener"><span class="dc-thumb"><img src="https://img.youtube.com/vi/dl1yW6P0q3I/hqdefault.jpg" alt="" loading="lazy"><span class="dc-play">▶</span></span><span class="dc-body"><span class="dc-n">Murilo Zucato</span><span class="dc-l">Depoimento · Turma 4</span><span class="dc-cta">Ver no YouTube ↗</span></span></a><a class="dc" href="https://www.youtube.com/watch?v=S0uN0CvWP8Y" target="_blank" rel="noopener"><span class="dc-thumb"><img src="https://img.youtube.com/vi/S0uN0CvWP8Y/hqdefault.jpg" alt="" loading="lazy"><span class="dc-play">▶</span></span><span class="dc-body"><span class="dc-n">Saulo</span><span class="dc-l">Depoimento · Turma 4</span><span class="dc-cta">Ver no YouTube ↗</span></span></a></div>
 </section></div>
 <div class="stage"><section class="s dark pad" data-n="13" data-label="A conta">
   <div class="conta">

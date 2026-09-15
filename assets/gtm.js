@@ -51,6 +51,13 @@
     });
   };
 
+  // Revoga cookies de anúncio/remarketing (para banners em modo opt-out — "Recusar").
+  window.ehConsentRevoke = function () {
+    gtag("consent", "update", {
+      ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied"
+    });
+  };
+
   // GA4 é configurado DENTRO do container GTM (Tag do Google · G-F5ZKX2H0ZM,
   // acionamento "Inicialização - Todas as páginas"). Não duplicar aqui.
 

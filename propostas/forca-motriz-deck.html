@@ -7,11 +7,18 @@
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--cream:#FAF9F5;--panel:#F1ECE0;--card:#FFF;--ink:#1B1D22;--ink2:#3A4350;--gray:#6A7280;
 --gold:#C4923B;--goldd:#A9853A;--navy:#14273D;--orange:#BE6B36;--line:rgba(27,29,34,.12)}
-html,body{background:#e9e6df}
-body{font-family:'Barlow',system-ui,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
-.deck{display:flex;flex-direction:column;align-items:center;gap:26px;padding:28px 0 60px}
-.stage{width:1280px;height:720px;position:relative;transform-origin:top center}
-.s{width:1280px;height:720px;position:relative;overflow:hidden;border-radius:14px;box-shadow:0 18px 60px rgba(20,25,35,.22)}
+html,body{height:100%}
+body{font-family:'Barlow',system-ui,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;background:#0a0f16;overflow:hidden}
+.deck{position:fixed;inset:0}
+.stage{position:absolute;left:50%;top:50%;width:1280px;height:720px;margin:-360px 0 0 -640px;transform:scale(var(--sc,1));transform-origin:center center;opacity:0;visibility:hidden;transition:opacity .3s ease;z-index:1}
+.stage.active{opacity:1;visibility:visible;z-index:2}
+.s{width:1280px;height:720px;position:relative;overflow:hidden;border-radius:12px;box-shadow:0 30px 90px rgba(0,0,0,.55)}
+.hud{position:fixed;z-index:50;bottom:18px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;color:#cfd6df;font:600 13px/1 'Barlow',sans-serif;background:rgba(10,15,22,.55);backdrop-filter:blur(6px);padding:8px 14px;border-radius:999px;user-select:none}
+.hud button{background:none;border:0;color:#cfd6df;font-size:20px;cursor:pointer;padding:0 6px;line-height:1}
+.hud button:hover{color:#fff}
+.hud #cnt{min-width:54px;text-align:center;letter-spacing:.04em}
+.fsbtn{position:fixed;z-index:50;top:16px;right:18px;background:rgba(10,15,22,.55);backdrop-filter:blur(6px);border:0;color:#cfd6df;font:600 13px/1 'Barlow',sans-serif;cursor:pointer;padding:9px 13px;border-radius:10px}
+.fsbtn:hover{color:#fff}
 .s::after{content:attr(data-n);position:absolute;right:26px;bottom:20px;font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--gray);opacity:.7}
 .s.dark::after{color:#B9C2CF;opacity:.55}
 .light{background:var(--cream);color:var(--ink)}
@@ -142,7 +149,7 @@ body{font-family:'Barlow',system-ui,sans-serif;color:var(--ink);-webkit-font-smo
 .cta-logo{width:110px;margin-bottom:24px}
 .cta-btn{margin-top:36px;background:var(--gold);color:#20160a;font-weight:800;font-size:19px;letter-spacing:.02em;padding:20px 44px;border-radius:999px;box-shadow:0 14px 34px rgba(196,146,59,.4)}
 .cta .sig span{color:#AEB7C4}
-@media print{body{background:#fff}.deck{gap:0;padding:0}.s{border-radius:0;box-shadow:none;page-break-after:always}}
+@media print{body{background:#fff;overflow:visible}.deck{position:static}.stage{position:relative;left:auto;top:auto;margin:0 auto;transform:none;opacity:1;visibility:visible;page-break-after:always}.s{border-radius:0;box-shadow:none}.hud,.fsbtn{display:none}}
 </style></head>
 <body><div class="deck"><div class="stage"><section class="s dark cap" data-n="01" data-label="Capa">
   <div class="cap-l">
@@ -301,8 +308,20 @@ body{font-family:'Barlow',system-ui,sans-serif;color:var(--ink);-webkit-font-smo
   <h2 class="display xl2 center">Vamos colocar o<br>seu negócio em movimento</h2>
   <div class="cta-btn">Quero entrar na próxima turma</div>
   <div class="sig center mt2"><b>Ednaldo Henper</b><span>Cientista do comportamento e estrategista de negócios</span></div>
-</section></div></div><script>
-function fit(){var vw=Math.min(window.innerWidth-24,1320);var sc=Math.min(1,vw/1280);
-document.querySelectorAll('.stage').forEach(function(st){st.style.transform='scale('+sc+')';st.style.height=(720*sc)+'px';});}
-window.addEventListener('resize',fit);fit();
+</section></div></div>
+<button class="fsbtn" onclick="toggleFS()">⛶ Tela cheia</button>
+<div class="hud"><button onclick="prev()" aria-label="Anterior">‹</button><span id="cnt">1 / 16</span><button onclick="next()" aria-label="Próximo">›</button></div>
+<script>
+var stages=[].slice.call(document.querySelectorAll('.stage'));
+var cur=0, cnt=document.getElementById('cnt');
+function fit(){var sc=Math.min(window.innerWidth/1280, window.innerHeight/720);document.documentElement.style.setProperty('--sc',sc);}
+function show(i){cur=Math.max(0,Math.min(stages.length-1,i));for(var j=0;j<stages.length;j++){stages[j].classList.toggle('active',j===cur);}if(cnt)cnt.textContent=(cur+1)+' / '+stages.length;}
+function next(){show(cur+1);}function prev(){show(cur-1);}
+function toggleFS(){var d=document;if(!d.fullscreenElement){var el=d.documentElement;(el.requestFullscreen||el.webkitRequestFullscreen||function(){}).call(el);}else{(d.exitFullscreen||d.webkitExitFullscreen||function(){}).call(d);}}
+window.addEventListener('resize',fit);
+document.addEventListener('keydown',function(e){var k=e.key;if(k==='ArrowRight'||k==='PageDown'||k===' '){next();e.preventDefault();}else if(k==='ArrowLeft'||k==='PageUp'){prev();e.preventDefault();}else if(k==='Home'){show(0);}else if(k==='End'){show(stages.length-1);}else if(k==='f'||k==='F'){toggleFS();}});
+document.querySelector('.deck').addEventListener('click',function(e){if(e.target.closest('a'))return;var x=e.clientX/window.innerWidth;if(x>0.35){next();}else{prev();}});
+var tx=null;document.addEventListener('touchstart',function(e){tx=e.touches[0].clientX;},{passive:true});
+document.addEventListener('touchend',function(e){if(tx===null)return;var dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>40){if(dx<0){next();}else{prev();}}tx=null;});
+fit();show(0);
 </script></body></html>

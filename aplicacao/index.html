@@ -134,16 +134,15 @@
 
     <!-- 4 · pergunta 3 -->
     <div class="step" data-step="3">
-      <div class="invest">O investimento para participar é de <b id="valor">R$ ___</b>.</div>
-      <div class="qtitle"><span class="n">3</span>Você tem a capacidade de investir esse valor agora, em você e na sua empresa? <span class="req">*</span></div>
+      <div class="qtitle"><span class="n">3</span>Você teria interesse em ser mentorado por mim? <span class="req">*</span></div>
       <select id="q3cap">
         <option value="">Selecione</option>
-        <option value="Sim, tenho a capacidade agora">Sim, tenho a capacidade agora</option>
-        <option value="Sim, com organização eu consigo">Sim, com alguma organização eu consigo</option>
-        <option value="Ainda não tenho">Ainda não tenho</option>
+        <option value="Sim, tenho muito interesse">Sim, tenho muito interesse</option>
+        <option value="Sim, quero entender como funciona">Sim, quero entender como funciona</option>
+        <option value="Ainda estou avaliando">Ainda estou avaliando</option>
       </select>
       <div style="height:10px"></div>
-      <textarea id="q3" placeholder="Conte o que te faz responder assim."></textarea>
+      <textarea id="q3" placeholder="Conte o porquê da sua resposta."></textarea>
     </div>
 
     <!-- 5 · pergunta 4 + consentimento -->
@@ -206,7 +205,6 @@
 
   try {
     document.getElementById('prog1').textContent = CFG.programa;
-    document.getElementById('valor').textContent = CFG.investimento;
   } catch (e) {}
 
   /* ---- atribuição (primeiro toque, sem vazios) — mesmo padrão da LP ---- */
@@ -323,7 +321,6 @@
       app_id: appId,
       evento_id: CFG.evento_id,
       produto_interesse: CFG.programa,
-      investimento: CFG.investimento,
       nome: nome,
       whatsapp: digits,
       email: email,

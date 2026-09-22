@@ -189,15 +189,19 @@
   // A pagina posta no relay da propria KingHost (mesma origem, sem segredo).
   // O relay encaminha pro Control server-to-server, com a chave no header.
   var ENDPOINT = '/aplicacao/enviar.php';
+  // Planilha do Google (Apps Script /exec). Coleta garantida enquanto o Control
+  // nao esta ligado. Cole a URL aqui, ou passe ?sheet=... na URL.
+  var SHEET_URL = '';
   /* ====================================================== */
 
   // permite trocar no dia pela URL, sem republicar:
-  //   /aplicacao/?programa=O%20Conselho&valor=R$%2015.000&evento=mentoria-2026-09-22
+  //   /aplicacao/?programa=O%20Conselho&valor=R$%2015.000&evento=mentoria-2026-09-22&sheet=https://script.google.com/.../exec
   try {
     var _q = new URLSearchParams(location.search);
     if (_q.get('programa')) CFG.programa = _q.get('programa');
     if (_q.get('valor'))    CFG.investimento = _q.get('valor');
     if (_q.get('evento'))   CFG.evento_id = _q.get('evento');
+    if (_q.get('sheet'))    SHEET_URL = _q.get('sheet');
   } catch (e) {}
 
   try {
@@ -348,6 +352,15 @@
     try { window.fbq && window.fbq('trackCustom', 'Aplicacao', { content_name: CFG.programa }); } catch(e){}
     try { window.dataLayer && window.dataLayer.push({ event: 'aplicacao_enviada', produto: CFG.programa }); } catch(e){}
     console.info('[APP] aplicação enviada', payload);
+
+    // planilha do Google (garantia de coleta): fire-and-forget, sem CORS
+    if (SHEET_URL) {
+      try {
+        fetch(SHEET_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload), keepalive: true })
+          .then(function(){ console.info('[APP] planilha ok'); })
+          .catch(function(err){ console.error('[APP] planilha falhou:', err && err.message); });
+      } catch(e){}
+    }
 
     // grava via relay (mesma origem): best-effort, keepalive garante a entrega
     fetch(ENDPOINT, {

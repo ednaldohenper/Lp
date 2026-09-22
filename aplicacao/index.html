@@ -184,7 +184,7 @@
     programa:     'este programa',   // nome do produto/serviço (aparece nas perguntas)
     investimento: 'R$ ___',          // o valor X (aparece na pergunta 3)
     evento_id:    'evento',          // id do evento que vai pro CRM
-    origem:       'evento'           // rótulo de origem
+    origem:       'aplicacao-site'   // rótulo de origem (string, contrato do Control)
   };
   // A pagina posta no relay da propria KingHost (mesma origem, sem segredo).
   // O relay encaminha pro Control server-to-server, com a chave no header.
@@ -333,7 +333,8 @@
         q3_detalhe: q3,
         q4_valeu_a_pena: q4
       },
-      origem: Object.assign({ origin: CFG.origem }, attrib)
+      origem: CFG.origem,
+      atribuicao: attrib
     };
 
     // rede de segurança local (recuperável pelo console caso o CRM não esteja no ar)

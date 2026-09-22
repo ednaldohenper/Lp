@@ -58,7 +58,7 @@ $ch = curl_init(CONTROL_URL);
 curl_setopt_array($ch, array(
   CURLOPT_POST           => true,
   CURLOPT_POSTFIELDS     => json_encode($data, JSON_UNESCAPED_UNICODE),
-  CURLOPT_HTTPHEADER     => array('Content-Type: application/json', 'X-API-Key: ' . CONTROL_API_KEY),
+  CURLOPT_HTTPHEADER     => array('Content-Type: application/json', 'X-Api-Key: ' . CONTROL_API_KEY),
   CURLOPT_RETURNTRANSFER => true,
   CURLOPT_TIMEOUT        => 8,
   CURLOPT_CONNECTTIMEOUT => 4,

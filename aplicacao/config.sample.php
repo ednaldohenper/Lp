@@ -7,5 +7,5 @@
  * A MESMA chave precisa ser validada no Control, no header X-API-Key.
  */
 
-define('CONTROL_URL', 'https://control.aptec.com.br/api/leads/aplicacao');
+define('CONTROL_URL', 'https://aptec-control.replit.app/api/webhooks/leads');
 define('CONTROL_API_KEY', 'COLE_AQUI_A_CHAVE');

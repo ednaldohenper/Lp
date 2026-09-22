@@ -7,11 +7,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>Aplicação · Ednaldo Henper</title>
-<meta name="description" content="Candidatura para trabalhar com Ednaldo Henper. Poucas vagas, seleção por aplicação.">
+<meta name="description" content="Aplicação para a mentoria com Ednaldo Henper. Poucas vagas, seleção por aplicação.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://control.aptec.com.br">
-<link rel="dns-prefetch" href="https://control.aptec.com.br">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
@@ -23,58 +21,61 @@
   *{margin:0;padding:0;box-sizing:border-box}
   html{-webkit-text-size-adjust:100%}
   body{font-family:'Montserrat',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--cream);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:660px;margin:0 auto;padding:0 20px}
+  .wrap{max-width:600px;margin:0 auto;padding:0 20px}
 
-  /* topo */
   header.top{padding:22px 0 6px;text-align:center}
   .brand{font-weight:800;letter-spacing:.16em;font-size:13px;color:var(--navy)}
 
-  /* hero */
-  .hero{padding:26px 0 8px;text-align:center}
+  .hero{padding:22px 0 4px;text-align:center}
   .eyebrow{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.18em;color:var(--orange-d);background:var(--cream2);border:1px solid var(--line);padding:6px 14px;border-radius:999px}
-  h1{font-size:clamp(26px,6.4vw,38px);line-height:1.12;font-weight:800;color:var(--navy);margin:16px 0 12px;letter-spacing:-.01em}
-  .lead{font-size:clamp(15px,3.6vw,17px);color:var(--gray);max-width:520px;margin:0 auto}
+  h1{font-size:clamp(24px,6vw,34px);line-height:1.12;font-weight:800;color:var(--navy);margin:14px 0 10px;letter-spacing:-.01em}
+  .lead{font-size:clamp(14px,3.4vw,16px);color:var(--gray);max-width:460px;margin:0 auto}
   .lead strong{color:var(--ink);font-weight:600}
 
-  /* selo seleção */
-  .selecao{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:22px 0 6px}
-  .selecao span{font-size:12px;font-weight:600;color:var(--navy);background:var(--white);border:1px solid var(--line);border-radius:999px;padding:8px 13px}
+  form{background:var(--white);border:1px solid var(--line);border-radius:18px;padding:22px 20px 24px;margin:22px 0 40px;box-shadow:0 10px 40px rgba(22,39,61,.06)}
 
-  /* card do form */
-  form{background:var(--white);border:1px solid var(--line);border-radius:18px;padding:26px 20px;margin:26px 0 40px;box-shadow:0 10px 40px rgba(22,39,61,.06)}
-  .sec{font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--orange-d);text-transform:uppercase;margin:6px 0 16px}
-  .sec.mt{margin-top:30px;padding-top:26px;border-top:1px solid var(--line)}
+  /* progresso */
+  .progress{height:6px;border-radius:999px;background:var(--cream2);overflow:hidden}
+  .progress .bar{height:100%;width:20%;background:var(--orange);border-radius:999px;transition:width .3s ease}
+  .stepcount{font-size:11.5px;font-weight:700;letter-spacing:.1em;color:var(--gray);text-transform:uppercase;margin:10px 0 20px}
 
-  .field{margin-bottom:18px}
-  label{display:block;font-size:14.5px;font-weight:600;color:var(--ink);margin-bottom:8px}
-  label .n{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;font-size:12px;font-weight:700;margin-right:9px;vertical-align:middle}
-  label small{display:block;font-weight:500;color:var(--gray);font-size:12.5px;margin-top:4px;margin-left:31px}
+  /* etapas */
+  .step{display:none;animation:fade .25s ease}
+  .step.on{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .qtitle{font-size:clamp(17px,4.4vw,21px);font-weight:700;color:var(--navy);line-height:1.28;margin-bottom:16px}
+  .qtitle .n{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--navy);color:#fff;font-size:13px;font-weight:700;margin-right:10px;vertical-align:middle}
   .req{color:var(--orange)}
 
+  .field{margin-bottom:16px}
+  label.lbl{display:block;font-size:14.5px;font-weight:600;color:var(--ink);margin-bottom:8px}
   input,textarea,select{width:100%;font-family:inherit;font-size:16px;color:var(--ink);background:var(--cream);border:1.5px solid var(--line);border-radius:11px;padding:13px 14px;transition:border-color .15s,background .15s}
-  textarea{min-height:92px;resize:vertical;line-height:1.5}
+  textarea{min-height:120px;resize:vertical;line-height:1.5}
   input:focus,textarea:focus,select:focus{outline:none;border-color:var(--orange);background:#fff}
   input::placeholder,textarea::placeholder{color:#9aa4b0}
   select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2355606e' d='M6 8 0 0h12z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 15px center;padding-right:38px}
 
-  .invest{background:var(--cream2);border:1px solid var(--line);border-radius:12px;padding:14px 15px;margin-bottom:14px;font-size:14.5px;color:var(--ink)}
+  .invest{background:var(--cream2);border:1px solid var(--line);border-radius:12px;padding:14px 15px;margin-bottom:16px;font-size:14.5px;color:var(--ink)}
   .invest b{color:var(--orange-d)}
 
-  .consent{display:flex;gap:11px;align-items:flex-start;margin:22px 0 4px}
+  .consent{display:flex;gap:11px;align-items:flex-start;margin:18px 0 2px}
   .consent input{width:20px;height:20px;flex:0 0 auto;margin-top:2px;accent-color:var(--orange);cursor:pointer}
-  .consent label{font-weight:500;font-size:12.5px;color:var(--gray);margin:0;cursor:pointer}
+  .consent label{font-weight:500;font-size:12.5px;color:var(--gray);cursor:pointer}
 
-  .erro{display:none;background:#fdeceb;border:1px solid #f3c0bb;color:#a3271c;font-size:13.5px;font-weight:600;border-radius:10px;padding:11px 13px;margin:6px 0 14px}
+  .erro{display:none;background:#fdeceb;border:1px solid #f3c0bb;color:#a3271c;font-size:13.5px;font-weight:600;border-radius:10px;padding:11px 13px;margin:18px 0 0}
   .erro.show{display:block}
 
-  button.cta{width:100%;font-family:inherit;font-size:16px;font-weight:800;letter-spacing:.04em;color:#fff;background:var(--orange);border:none;border-radius:12px;padding:17px;margin-top:20px;cursor:pointer;transition:transform .08s,filter .15s;box-shadow:0 8px 22px rgba(232,121,31,.28)}
-  button.cta:hover{filter:brightness(1.04)}
-  button.cta:active{transform:translateY(1px)}
-  button.cta[disabled]{opacity:.6;cursor:default;box-shadow:none}
-  .under{text-align:center;font-size:12px;color:var(--gray);margin-top:12px}
+  .nav{display:flex;gap:10px;margin-top:22px}
+  .nav .back{flex:0 0 auto;background:#fff;border:1.5px solid var(--line);color:var(--gray);border-radius:12px;padding:15px 20px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer}
+  .nav .back:active{transform:translateY(1px)}
+  .nav .next{flex:1;font-family:inherit;font-size:16px;font-weight:800;letter-spacing:.03em;color:#fff;background:var(--orange);border:none;border-radius:12px;padding:16px;cursor:pointer;transition:transform .08s,filter .15s;box-shadow:0 8px 22px rgba(232,121,31,.28)}
+  .nav .next:hover{filter:brightness(1.04)}
+  .nav .next:active{transform:translateY(1px)}
+  .nav .next[disabled]{opacity:.6;cursor:default;box-shadow:none}
+  .under{text-align:center;font-size:12px;color:var(--gray);margin-top:13px}
 
-  /* sucesso */
-  .ok{display:none;background:var(--white);border:1px solid var(--line);border-radius:18px;padding:44px 24px;text-align:center;margin:30px 0 50px;box-shadow:0 10px 40px rgba(22,39,61,.06)}
+  .ok{display:none;background:var(--white);border:1px solid var(--line);border-radius:18px;padding:44px 24px;text-align:center;margin:26px 0 50px;box-shadow:0 10px 40px rgba(22,39,61,.06)}
   .ok.show{display:block}
   .ok .badge{width:64px;height:64px;border-radius:50%;background:rgba(24,194,74,.12);display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
   .ok .badge svg{width:32px;height:32px}
@@ -94,50 +95,51 @@
 
   <section class="hero" id="hero">
     <span class="eyebrow">APLICAÇÃO</span>
-    <h1>Sua candidatura para trabalhar comigo</h1>
-    <p class="lead">As vagas são poucas e a escolha é minha. Responda com verdade: <strong>é pelas suas respostas que eu decido com quem vou trabalhar de perto.</strong></p>
-    <div class="selecao">
-      <span>Vagas limitadas</span>
-      <span>Seleção por aplicação</span>
-      <span>Leva 3 minutos</span>
-    </div>
+    <h1>Aplicação para a mentoria</h1>
+    <p class="lead">As vagas são poucas e a escolha é minha. Responda com verdade: <strong>é pelas suas respostas que eu decido quem entra.</strong></p>
   </section>
 
   <form id="app" novalidate>
-    <div class="sec">Seus dados</div>
+    <div class="progress"><div class="bar" id="bar"></div></div>
+    <div class="stepcount" id="stepcount">Etapa 1 de 5</div>
 
-    <div class="field">
-      <label for="nome">Nome completo <span class="req">*</span></label>
-      <input id="nome" type="text" autocomplete="name" placeholder="Como você se chama">
-    </div>
-    <div class="field">
-      <label for="zap">WhatsApp com DDD <span class="req">*</span></label>
-      <input id="zap" type="tel" inputmode="numeric" autocomplete="tel" placeholder="(11) 99999-9999">
-    </div>
-    <div class="field">
-      <label for="email">E-mail</label>
-      <input id="email" type="email" autocomplete="email" placeholder="seu@email.com">
-    </div>
-    <div class="field">
-      <label for="empresa">Sua empresa / o que você faz</label>
-      <input id="empresa" type="text" placeholder="Nome da empresa e segmento">
+    <!-- 1 · dados -->
+    <div class="step on" data-step="0">
+      <div class="qtitle">Vamos começar por você</div>
+      <div class="field">
+        <label class="lbl" for="nome">Nome completo <span class="req">*</span></label>
+        <input id="nome" type="text" autocomplete="name" placeholder="Como você se chama">
+      </div>
+      <div class="field">
+        <label class="lbl" for="zap">WhatsApp com DDD <span class="req">*</span></label>
+        <input id="zap" type="tel" inputmode="numeric" autocomplete="tel" placeholder="(11) 99999-9999">
+      </div>
+      <div class="field">
+        <label class="lbl" for="email">E-mail</label>
+        <input id="email" type="email" autocomplete="email" placeholder="seu@email.com">
+      </div>
+      <div class="field">
+        <label class="lbl" for="empresa">Sua empresa / o que você faz</label>
+        <input id="empresa" type="text" placeholder="Nome da empresa e segmento">
+      </div>
     </div>
 
-    <div class="sec mt">As perguntas</div>
-
-    <div class="field">
-      <label for="q1"><span class="n">1</span>Por que você acredita que <span id="prog1">este programa</span> é a oportunidade ideal para você e para o seu negócio agora? <span class="req">*</span></label>
+    <!-- 2 · pergunta 1 -->
+    <div class="step" data-step="1">
+      <div class="qtitle"><span class="n">1</span>Por que você acredita que <span id="prog1">este programa</span> é a oportunidade ideal para você e para o seu negócio agora? <span class="req">*</span></div>
       <textarea id="q1" placeholder="Escreva com suas palavras."></textarea>
     </div>
 
-    <div class="field">
-      <label for="q2"><span class="n">2</span>Entre todas as pessoas, por que eu deveria escolher você? <span class="req">*</span></label>
+    <!-- 3 · pergunta 2 -->
+    <div class="step" data-step="2">
+      <div class="qtitle"><span class="n">2</span>Entre todas as pessoas, por que eu deveria escolher você? <span class="req">*</span></div>
       <textarea id="q2" placeholder="Me convença. O que te torna a escolha certa?"></textarea>
     </div>
 
-    <div class="field">
+    <!-- 4 · pergunta 3 -->
+    <div class="step" data-step="3">
       <div class="invest">O investimento para participar de <b id="prog2">este programa</b> é de <b id="valor">R$ ___</b>.</div>
-      <label for="q3cap"><span class="n">3</span>Você tem a capacidade de investir esse valor agora, em você e na sua empresa? <span class="req">*</span></label>
+      <div class="qtitle"><span class="n">3</span>Você tem a capacidade de investir esse valor agora, em você e na sua empresa? <span class="req">*</span></div>
       <select id="q3cap">
         <option value="">Selecione</option>
         <option value="Sim, tenho a capacidade agora">Sim, tenho a capacidade agora</option>
@@ -148,26 +150,30 @@
       <textarea id="q3" placeholder="Conte o que te faz responder assim."></textarea>
     </div>
 
-    <div class="field">
-      <label for="q4"><span class="n">4</span>O que precisa acontecer até o fim para você acreditar que valeu a pena? <span class="req">*</span></label>
+    <!-- 5 · pergunta 4 + consentimento -->
+    <div class="step" data-step="4">
+      <div class="qtitle"><span class="n">4</span>O que precisa acontecer até o fim para você acreditar que valeu a pena? <span class="req">*</span></div>
       <textarea id="q4" placeholder="O resultado concreto que faria isso valer a pena pra você."></textarea>
-    </div>
-
-    <div class="consent">
-      <input id="optin" type="checkbox">
-      <label for="optin">Autorizo o contato da equipe do Ednaldo Henper pelo WhatsApp e e-mail informados, de acordo com a política de privacidade.</label>
+      <div class="consent">
+        <input id="optin" type="checkbox">
+        <label for="optin">Autorizo o contato da equipe do Ednaldo Henper pelo WhatsApp e e-mail informados, de acordo com a política de privacidade.</label>
+      </div>
     </div>
 
     <div class="erro" id="erro"></div>
-    <button class="cta" id="btn" type="submit">ENVIAR MINHA APLICAÇÃO</button>
-    <div class="under">Suas respostas vão direto para mim. Sem compromisso de compra.</div>
+
+    <div class="nav">
+      <button type="button" class="back" id="back" style="display:none">Voltar</button>
+      <button type="submit" class="next" id="next">Continuar</button>
+    </div>
+    <div class="under">Leva uns 3 minutos. Suas respostas vão direto para mim.</div>
   </form>
 
   <section class="ok" id="ok">
     <div class="badge"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#18c24a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
     <h2>Aplicação recebida</h2>
     <p><strong>Obrigado por responder com verdade.</strong></p>
-    <p>Minha equipe vai analisar a sua candidatura e falar com você pelo WhatsApp. Fique de olho nas mensagens.</p>
+    <p>Minha equipe vai analisar a sua aplicação e falar com você pelo WhatsApp. Fique de olho nas mensagens.</p>
   </section>
 
   <footer>© Ednaldo Henper</footer>
@@ -198,7 +204,6 @@
     if (_q.get('evento'))   CFG.evento_id = _q.get('evento');
   } catch (e) {}
 
-  // injeta os valores de config no texto das perguntas
   try {
     document.getElementById('prog1').textContent = CFG.programa;
     document.getElementById('prog2').textContent = CFG.programa;
@@ -233,40 +238,82 @@
     return v;
   }
   var zap = document.getElementById('zap');
-  zap.addEventListener('input', function(){ var p = this.selectionStart === this.value.length; this.value = mascara(this.value); });
+  zap.addEventListener('input', function(){ this.value = mascara(this.value); });
 
   /* ---- helpers ---- */
   function val(id){ return (document.getElementById(id).value || '').trim(); }
   var erroBox = document.getElementById('erro');
-  function erro(msg){ erroBox.textContent = msg; erroBox.classList.add('show'); erroBox.scrollIntoView({behavior:'smooth',block:'center'}); }
+  function erro(msg){ erroBox.textContent = msg; erroBox.classList.add('show'); }
   function limpaErro(){ erroBox.classList.remove('show'); }
 
-  /* ---- submit ---- */
+  /* ---- navegação por etapas ---- */
   var form = document.getElementById('app');
-  var btn = document.getElementById('btn');
-  var enviado = false;
+  var steps = [].slice.call(document.querySelectorAll('.step'));
+  var N = steps.length;
+  var cur = 0;
+  var bar = document.getElementById('bar');
+  var stepcount = document.getElementById('stepcount');
+  var backBtn = document.getElementById('back');
+  var nextBtn = document.getElementById('next');
 
-  form.addEventListener('submit', function(ev){
-    ev.preventDefault();
-    if (enviado) return;
+  function render(){
+    steps.forEach(function(s, i){ s.classList.toggle('on', i === cur); });
+    bar.style.width = Math.round(((cur + 1) / N) * 100) + '%';
+    stepcount.textContent = 'Etapa ' + (cur + 1) + ' de ' + N;
+    backBtn.style.display = cur === 0 ? 'none' : '';
+    nextBtn.textContent = cur === N - 1 ? 'ENVIAR MINHA APLICAÇÃO' : 'Continuar';
+  }
+  function irPara(i){
+    cur = Math.max(0, Math.min(N - 1, i));
     limpaErro();
+    render();
+    try { form.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(e){}
+    // foco no primeiro campo/área da etapa
+    try { var f = steps[cur].querySelector('input,textarea,select'); if (f) f.focus({ preventScroll: true }); } catch(e){}
+  }
+
+  function validaEtapa(i){
+    limpaErro();
+    if (i === 0) {
+      if (!val('nome')) { erro('Escreva o seu nome completo.'); return false; }
+      if (val('zap').replace(/\D/g,'').length < 10) { erro('Confira o número de WhatsApp com DDD.'); return false; }
+    } else if (i === 1) {
+      if (!val('q1')) { erro('Responda a pergunta para continuar.'); return false; }
+    } else if (i === 2) {
+      if (!val('q2')) { erro('Responda a pergunta para continuar.'); return false; }
+    } else if (i === 3) {
+      if (!val('q3cap')) { erro('Selecione uma das opções.'); return false; }
+    } else if (i === 4) {
+      if (!val('q4')) { erro('Responda a pergunta para enviar.'); return false; }
+      if (!document.getElementById('optin').checked) { erro('Marque a autorização de contato para enviar.'); return false; }
+    }
+    return true;
+  }
+
+  function avancar(){
+    if (!validaEtapa(cur)) return;
+    if (cur < N - 1) irPara(cur + 1);
+    else enviar();
+  }
+  nextBtn.addEventListener('click', avancar);
+  backBtn.addEventListener('click', function(){ irPara(cur - 1); });
+  form.addEventListener('submit', function(ev){ ev.preventDefault(); avancar(); });
+  render();
+
+  /* ---- envio ---- */
+  var enviado = false;
+  function enviar(){
+    if (enviado) return;
 
     var nome   = val('nome');
     var digits = val('zap').replace(/\D/g,'');
     var email  = val('email');
     var empresa= val('empresa');
     var q1 = val('q1'), q2 = val('q2'), q3cap = val('q3cap'), q3 = val('q3'), q4 = val('q4');
-    var optin = document.getElementById('optin').checked;
-
-    if (!nome)                 return erro('Escreva o seu nome completo.');
-    if (digits.length < 10)    return erro('Confira o número de WhatsApp com DDD.');
-    if (!q1 || !q2 || !q4)     return erro('Responda as perguntas 1, 2 e 4.');
-    if (!q3cap)                return erro('Na pergunta 3, selecione uma opção.');
-    if (!optin)                return erro('Marque a autorização de contato para enviar.');
 
     enviado = true;
-    btn.disabled = true;
-    btn.textContent = 'ENVIANDO...';
+    nextBtn.disabled = true;
+    nextBtn.textContent = 'ENVIANDO...';
 
     var attrib = lerAtrib();
     var appId;
@@ -324,10 +371,9 @@
     // mostra o sucesso na hora — a experiência do participante não espera o backend
     form.style.display = 'none';
     document.getElementById('hero').style.display = 'none';
-    var ok = document.getElementById('ok');
-    ok.classList.add('show');
+    document.getElementById('ok').classList.add('show');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
+  }
 })();
 </script>
 </body>

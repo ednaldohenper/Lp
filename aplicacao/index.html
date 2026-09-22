@@ -177,23 +177,25 @@
 (function(){
   "use strict";
 
-  /* ============ CONFIG — troque estes 2 valores ============ */
+  /* ============ CONFIG — troque estes valores ============ */
   var CFG = {
     programa:     'este programa',   // nome do produto/serviço (aparece nas perguntas)
     investimento: 'R$ ___',          // o valor X (aparece na pergunta 3)
-    produtoCRM:   'Aplicação',       // grafia canônica que vai pro CRM
-    origem:       'evento',          // rótulo de origem no CRM
-    endpoint:     '/api/leads/aplicacao'
+    evento_id:    'evento',          // id do evento que vai pro CRM
+    origem:       'evento'           // rótulo de origem
   };
-  var CONTROL_URL = 'https://control.aptec.com.br';
-  /* ========================================================= */
+  // A pagina posta no relay da propria KingHost (mesma origem, sem segredo).
+  // O relay encaminha pro Control server-to-server, com a chave no header.
+  var ENDPOINT = '/aplicacao/enviar.php';
+  /* ====================================================== */
 
   // permite trocar no dia pela URL, sem republicar:
-  //   /aplicacao/?programa=O%20Conselho&valor=R$%2015.000
+  //   /aplicacao/?programa=O%20Conselho&valor=R$%2015.000&evento=mentoria-2026-09-22
   try {
     var _q = new URLSearchParams(location.search);
     if (_q.get('programa')) CFG.programa = _q.get('programa');
     if (_q.get('valor'))    CFG.investimento = _q.get('valor');
+    if (_q.get('evento'))   CFG.evento_id = _q.get('evento');
   } catch (e) {}
 
   // injeta os valores de config no texto das perguntas
@@ -267,22 +269,29 @@
     btn.textContent = 'ENVIANDO...';
 
     var attrib = lerAtrib();
-    var payload = Object.assign({
-      pagina: 'aplicacao',
-      produto: CFG.produtoCRM,
-      origin: CFG.origem,
-      programa: CFG.programa,
+    var appId;
+    try { appId = (crypto && crypto.randomUUID) ? crypto.randomUUID() : ('app-' + Date.now() + '-' + Math.random().toString(16).slice(2)); }
+    catch (e) { appId = 'app-' + Date.now() + '-' + Math.random().toString(16).slice(2); }
+
+    var payload = {
+      app_id: appId,
+      evento_id: CFG.evento_id,
+      produto_interesse: CFG.programa,
       investimento: CFG.investimento,
       nome: nome,
       whatsapp: digits,
       email: email,
       empresa: empresa,
-      q1_oportunidade: q1,
-      q2_porque_voce: q2,
-      q3_capacidade: q3cap,
-      q3_detalhe: q3,
-      q4_valeu_a_pena: q4
-    }, attrib);
+      data_envio: new Date().toISOString(),
+      respostas: {
+        q1_oportunidade: q1,
+        q2_porque_voce: q2,
+        q3_capacidade: q3cap,
+        q3_detalhe: q3,
+        q4_valeu_a_pena: q4
+      },
+      origem: Object.assign({ origin: CFG.origem }, attrib)
+    };
 
     // rede de segurança local (recuperável pelo console caso o CRM não esteja no ar)
     try {
@@ -292,12 +301,12 @@
     } catch(e){}
 
     // pixel/GTM: dispara ANTES de qualquer espera de rede
-    try { window.fbq && window.fbq('trackCustom', 'Aplicacao', { content_name: CFG.produtoCRM }); } catch(e){}
-    try { window.dataLayer && window.dataLayer.push({ event: 'aplicacao_enviada', produto: CFG.produtoCRM }); } catch(e){}
+    try { window.fbq && window.fbq('trackCustom', 'Aplicacao', { content_name: CFG.programa }); } catch(e){}
+    try { window.dataLayer && window.dataLayer.push({ event: 'aplicacao_enviada', produto: CFG.programa }); } catch(e){}
     console.info('[APP] aplicação enviada', payload);
 
-    // grava no CRM: best-effort, keepalive garante a entrega mesmo se a página fechar
-    fetch(CONTROL_URL + CFG.endpoint, {
+    // grava via relay (mesma origem): best-effort, keepalive garante a entrega
+    fetch(ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

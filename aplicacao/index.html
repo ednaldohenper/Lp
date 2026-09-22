@@ -134,7 +134,7 @@
 
     <!-- 4 · pergunta 3 -->
     <div class="step" data-step="3">
-      <div class="invest">O investimento para participar de <b id="prog2">este programa</b> é de <b id="valor">R$ ___</b>.</div>
+      <div class="invest">O investimento para participar é de <b id="valor">R$ ___</b>.</div>
       <div class="qtitle"><span class="n">3</span>Você tem a capacidade de investir esse valor agora, em você e na sua empresa? <span class="req">*</span></div>
       <select id="q3cap">
         <option value="">Selecione</option>
@@ -181,7 +181,7 @@
 
   /* ============ CONFIG — troque estes valores ============ */
   var CFG = {
-    programa:     'este programa',   // nome do produto/serviço (aparece nas perguntas)
+    programa:     'a mentoria',      // como o programa aparece na pergunta 1
     investimento: 'R$ ___',          // o valor X (aparece na pergunta 3)
     evento_id:    'evento',          // id do evento que vai pro CRM
     origem:       'aplicacao-site'   // rótulo de origem (string, contrato do Control)
@@ -206,7 +206,6 @@
 
   try {
     document.getElementById('prog1').textContent = CFG.programa;
-    document.getElementById('prog2').textContent = CFG.programa;
     document.getElementById('valor').textContent = CFG.investimento;
   } catch (e) {}
 

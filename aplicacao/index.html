@@ -193,14 +193,11 @@
   var SHEET_URL = 'https://script.google.com/macros/s/AKfycbz672zq0ro4QjH7c3eGtkWL571WkhkkuRDdw-K8kTUKfA7mOtlGydVDD3AYZMDfnaawNQ/exec';
   /* ====================================================== */
 
-  // permite trocar no dia pela URL, sem republicar:
-  //   /aplicacao/?programa=O%20Conselho&valor=R$%2015.000&evento=mentoria-2026-09-22&sheet=https://script.google.com/.../exec
+  // So o id do evento pode vir pela URL (?evento=...). Nome do programa e
+  // valor NAO sao mais sobrescritos pela URL, pra nenhum link antigo mudar a copy.
   try {
     var _q = new URLSearchParams(location.search);
-    if (_q.get('programa')) CFG.programa = _q.get('programa');
-    if (_q.get('valor'))    CFG.investimento = _q.get('valor');
-    if (_q.get('evento'))   CFG.evento_id = _q.get('evento');
-    if (_q.get('sheet'))    SHEET_URL = _q.get('sheet');
+    if (_q.get('evento')) CFG.evento_id = _q.get('evento');
   } catch (e) {}
 
   try {

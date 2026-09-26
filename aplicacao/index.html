@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script src="/assets/gtm.js"></script>
+<script>try{if(localStorage.getItem("eh_cookie_consent")!=="rejected"){window.ehConsentGranted&&window.ehConsentGranted();localStorage.setItem("eh_cookie_consent","accepted");}else{window.ehConsentRevoke&&window.ehConsentRevoke();}}catch(e){}</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Aplicação · Ednaldo Henper</title>
+<meta name="description" content="Aplicação para a sessão estratégica com Ednaldo Henper. Poucas vagas, seleção por aplicação.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#16273d; --navy2:#0e1d2e; --ink:#12263a;
+    --orange:#e8791f; --orange-d:#9a4a08;
+    --gray:#55606e; --line:#e8dece; --cream:#faf9f5; --cream2:#f9efe0;
+    --green:#18c24a; --white:#ffffff;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{font-family:'Montserrat',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--cream);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:600px;margin:0 auto;padding:0 20px}
+
+  header.top{padding:22px 0 6px;text-align:center}
+  .brand{font-weight:800;letter-spacing:.16em;font-size:13px;color:var(--navy)}
+
+  .hero{padding:34px 0 4px;text-align:center}
+  .eyebrow{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.18em;color:var(--orange-d);background:var(--cream2);border:1px solid var(--line);padding:6px 14px;border-radius:999px}
+  h1{font-size:clamp(24px,6vw,34px);line-height:1.12;font-weight:800;color:var(--navy);margin:14px 0 10px;letter-spacing:-.01em}
+  .lead{font-size:clamp(14px,3.4vw,16px);color:var(--gray);max-width:460px;margin:0 auto}
+  .lead strong{color:var(--ink);font-weight:600}
+
+  form{background:var(--white);border:1px solid var(--line);border-radius:18px;padding:22px 20px 24px;margin:22px 0 40px;box-shadow:0 10px 40px rgba(22,39,61,.06)}
+
+  /* progresso */
+  .progress{height:6px;border-radius:999px;background:var(--cream2);overflow:hidden}
+  .progress .bar{height:100%;width:20%;background:var(--orange);border-radius:999px;transition:width .3s ease}
+  .stepcount{font-size:11.5px;font-weight:700;letter-spacing:.1em;color:var(--gray);text-transform:uppercase;margin:10px 0 20px}
+
+  /* etapas */
+  .step{display:none;animation:fade .25s ease}
+  .step.on{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .qtitle{font-size:clamp(17px,4.4vw,21px);font-weight:700;color:var(--navy);line-height:1.28;margin-bottom:16px}
+  .qtitle .n{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--navy);color:#fff;font-size:13px;font-weight:700;margin-right:10px;vertical-align:middle}
+  .req{color:var(--orange)}
+
+  .field{margin-bottom:16px}
+  label.lbl{display:block;font-size:14.5px;font-weight:600;color:var(--ink);margin-bottom:8px}
+  input,textarea,select{width:100%;font-family:inherit;font-size:16px;color:var(--ink);background:var(--cream);border:1.5px solid var(--line);border-radius:11px;padding:13px 14px;transition:border-color .15s,background .15s}
+  textarea{min-height:120px;resize:vertical;line-height:1.5}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--orange);background:#fff}
+  input::placeholder,textarea::placeholder{color:#9aa4b0}
+  select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2355606e' d='M6 8 0 0h12z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 15px center;padding-right:38px}
+
+  .invest{background:var(--cream2);border:1px solid var(--line);border-radius:12px;padding:14px 15px;margin-bottom:16px;font-size:14.5px;color:var(--ink)}
+  .invest b{color:var(--orange-d)}
+
+  .consent{display:flex;gap:11px;align-items:flex-start;margin:18px 0 2px}
+  .consent input{width:20px;height:20px;flex:0 0 auto;margin-top:2px;accent-color:var(--orange);cursor:pointer}
+  .consent label{font-weight:500;font-size:12.5px;color:var(--gray);cursor:pointer}
+
+  .erro{display:none;background:#fdeceb;border:1px solid #f3c0bb;color:#a3271c;font-size:13.5px;font-weight:600;border-radius:10px;padding:11px 13px;margin:18px 0 0}
+  .erro.show{display:block}
+
+  .nav{display:flex;gap:10px;margin-top:22px}
+  .nav .back{flex:0 0 auto;background:#fff;border:1.5px solid var(--line);color:var(--gray);border-radius:12px;padding:15px 20px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer}
+  .nav .back:active{transform:translateY(1px)}
+  .nav .next{flex:1;font-family:inherit;font-size:16px;font-weight:800;letter-spacing:.03em;color:#fff;background:var(--orange);border:none;border-radius:12px;padding:16px;cursor:pointer;transition:transform .08s,filter .15s;box-shadow:0 8px 22px rgba(232,121,31,.28)}
+  .nav .next:hover{filter:brightness(1.04)}
+  .nav .next:active{transform:translateY(1px)}
+  .nav .next[disabled]{opacity:.6;cursor:default;box-shadow:none}
+  .under{text-align:center;font-size:12px;color:var(--gray);margin-top:13px}
+
+  .ok{display:none;background:var(--white);border:1px solid var(--line);border-radius:18px;padding:44px 24px;text-align:center;margin:26px 0 50px;box-shadow:0 10px 40px rgba(22,39,61,.06)}
+  .ok.show{display:block}
+  .ok .badge{width:64px;height:64px;border-radius:50%;background:rgba(24,194,74,.12);display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+  .ok .badge svg{width:32px;height:32px}
+  .ok h2{font-size:24px;font-weight:800;color:var(--navy);margin-bottom:12px}
+  .ok p{font-size:15px;color:var(--gray);max-width:420px;margin:0 auto 8px}
+  .ok p strong{color:var(--ink);font-weight:600}
+
+  footer{text-align:center;padding:0 0 34px;font-size:11.5px;color:#9aa4b0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <section class="hero" id="hero">
+    <span class="eyebrow">VAGAS LIMITADAS</span>
+    <h1>Aplicação para a sessão estratégica</h1>
+    <p class="lead">Uma sessão estratégica de 1 hora, comigo. São poucas vagas: <strong>é pelas suas respostas que eu escolho quem mais precisa desse passo agora.</strong></p>
+  </section>
+
+  <form id="app" novalidate>
+    <div class="progress"><div class="bar" id="bar"></div></div>
+    <div class="stepcount" id="stepcount">Etapa 1 de 5</div>
+
+    <!-- 1 · dados -->
+    <div class="step on" data-step="0">
+      <div class="qtitle">Vamos começar por você</div>
+      <div class="field">
+        <label class="lbl" for="nome">Nome completo <span class="req">*</span></label>
+        <input id="nome" type="text" autocomplete="name" placeholder="Como você se chama">
+      </div>
+      <div class="field">
+        <label class="lbl" for="zap">WhatsApp com DDD <span class="req">*</span></label>
+        <input id="zap" type="tel" inputmode="numeric" autocomplete="tel" placeholder="(11) 99999-9999">
+      </div>
+      <div class="field">
+        <label class="lbl" for="email">E-mail</label>
+        <input id="email" type="email" autocomplete="email" placeholder="seu@email.com">
+      </div>
+      <div class="field">
+        <label class="lbl" for="empresa">Sua empresa / o que você faz</label>
+        <input id="empresa" type="text" placeholder="Nome da empresa e segmento">
+      </div>
+    </div>
+
+    <!-- 2 · pergunta 1 -->
+    <div class="step" data-step="1">
+      <div class="qtitle"><span class="n">1</span>Por que você acredita que <span id="prog1">este programa</span> é a oportunidade ideal para você e para o seu negócio agora? <span class="req">*</span></div>
+      <textarea id="q1" placeholder="Escreva com suas palavras."></textarea>
+    </div>
+
+    <!-- 3 · pergunta 2 -->
+    <div class="step" data-step="2">
+      <div class="qtitle"><span class="n">2</span>Entre todas as pessoas, por que eu deveria escolher você? <span class="req">*</span></div>
+      <textarea id="q2" placeholder="Me convença. O que te torna a escolha certa?"></textarea>
+    </div>
+
+    <!-- 4 · pergunta 3 -->
+    <div class="step" data-step="3">
+      <div class="qtitle"><span class="n">3</span>Você teria interesse em ser mentorado por mim? <span class="req">*</span></div>
+      <select id="q3cap">
+        <option value="">Selecione</option>
+        <option value="Sim, tenho muito interesse">Sim, tenho muito interesse</option>
+        <option value="Sim, quero entender como funciona">Sim, quero entender como funciona</option>
+        <option value="Ainda estou avaliando">Ainda estou avaliando</option>
+      </select>
+      <div style="height:10px"></div>
+      <textarea id="q3" placeholder="Conte o porquê da sua resposta."></textarea>
+    </div>
+
+    <!-- 5 · pergunta 4 + consentimento -->
+    <div class="step" data-step="4">
+      <div class="qtitle"><span class="n">4</span>O que precisa acontecer até o fim para você acreditar que valeu a pena? <span class="req">*</span></div>
+      <textarea id="q4" placeholder="O resultado concreto que faria isso valer a pena pra você."></textarea>
+      <div class="consent">
+        <input id="optin" type="checkbox">
+        <label for="optin">Autorizo o contato da equipe do Ednaldo Henper pelo WhatsApp e e-mail informados, de acordo com a política de privacidade.</label>
+      </div>
+    </div>
+
+    <div class="erro" id="erro"></div>
+
+    <div class="nav">
+      <button type="button" class="back" id="back" style="display:none">Voltar</button>
+      <button type="submit" class="next" id="next">Continuar</button>
+    </div>
+    <div class="under">Leva uns 3 minutos. Suas respostas vão direto para mim.</div>
+  </form>
+
+  <section class="ok" id="ok">
+    <div class="badge"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#18c24a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <h2>Aplicação recebida</h2>
+    <p><strong>Obrigado por responder com verdade.</strong></p>
+    <p>Minha equipe vai analisar a sua aplicação e falar com você pelo WhatsApp para marcar a sua sessão estratégica. Fique de olho nas mensagens.</p>
+  </section>
+
+  <footer>© Ednaldo Henper</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============ CONFIG — troque estes valores ============ */
+  var CFG = {
+    programa:     'a sessão estratégica de 1h',   // como aparece na pergunta 1
+    investimento: 'R$ ___',          // o valor X (aparece na pergunta 3)
+    evento_id:    'evento',          // id do evento que vai pro CRM
+    origem:       'aplicacao-site'   // rótulo de origem (string, contrato do Control)
+  };
+  // A pagina posta no relay da propria KingHost (mesma origem, sem segredo).
+  // O relay encaminha pro Control server-to-server, com a chave no header.
+  var ENDPOINT = '/aplicacao/enviar.php';
+  // Planilha do Google (Apps Script /exec). Coleta garantida enquanto o Control
+  // nao esta ligado. Cole a URL aqui, ou passe ?sheet=... na URL.
+  var SHEET_URL = 'https://script.google.com/macros/s/AKfycbz672zq0ro4QjH7c3eGtkWL571WkhkkuRDdw-K8kTUKfA7mOtlGydVDD3AYZMDfnaawNQ/exec';
+  /* ====================================================== */
+
+  // So o id do evento pode vir pela URL (?evento=...). Nome do programa e
+  // valor NAO sao mais sobrescritos pela URL, pra nenhum link antigo mudar a copy.
+  try {
+    var _q = new URLSearchParams(location.search);
+    if (_q.get('evento')) CFG.evento_id = _q.get('evento');
+  } catch (e) {}
+
+  try {
+    document.getElementById('prog1').textContent = CFG.programa;
+  } catch (e) {}
+
+  /* ---- atribuição (primeiro toque, sem vazios) — mesmo padrão da LP ---- */
+  var ATTR_KEYS = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','sck','campaign_id','adset_id','ad_id','fbclid','gclid'];
+  var ATTR_STORE = 'nt_attrib';
+  function capturarAtrib(){
+    try {
+      var q = new URLSearchParams(location.search), s = {};
+      try { s = JSON.parse(localStorage.getItem(ATTR_STORE) || '{}') || {}; } catch(e){ s = {}; }
+      var changed = false;
+      ATTR_KEYS.forEach(function(k){ var v = q.get(k); if (v && !s[k]) { s[k] = v; changed = true; } });
+      if (changed) { try { localStorage.setItem(ATTR_STORE, JSON.stringify(s)); } catch(e){} }
+    } catch(e){}
+  }
+  function lerAtrib(){
+    var s = {}; try { s = JSON.parse(localStorage.getItem(ATTR_STORE) || '{}') || {}; } catch(e){ s = {}; }
+    var out = {}; ATTR_KEYS.forEach(function(k){ if (s[k]) out[k] = s[k]; }); return out;
+  }
+  capturarAtrib();
+
+  /* ---- máscara de WhatsApp ---- */
+  function mascara(v){
+    v = (v||'').replace(/\D/g,'').slice(0,11);
+    if (v.length > 10) return v.replace(/(\d{2})(\d{5})(\d{4}).*/, '($1) $2-$3');
+    if (v.length > 6)  return v.replace(/(\d{2})(\d{4,5})(\d{0,4}).*/, '($1) $2-$3');
+    if (v.length > 2)  return v.replace(/(\d{2})(\d{0,5}).*/, '($1) $2');
+    if (v.length > 0)  return v.replace(/(\d{0,2}).*/, '($1');
+    return v;
+  }
+  var zap = document.getElementById('zap');
+  zap.addEventListener('input', function(){ this.value = mascara(this.value); });
+
+  /* ---- helpers ---- */
+  function val(id){ return (document.getElementById(id).value || '').trim(); }
+  var erroBox = document.getElementById('erro');
+  function erro(msg){ erroBox.textContent = msg; erroBox.classList.add('show'); }
+  function limpaErro(){ erroBox.classList.remove('show'); }
+
+  /* ---- navegação por etapas ---- */
+  var form = document.getElementById('app');
+  var steps = [].slice.call(document.querySelectorAll('.step'));
+  var N = steps.length;
+  var cur = 0;
+  var bar = document.getElementById('bar');
+  var stepcount = document.getElementById('stepcount');
+  var backBtn = document.getElementById('back');
+  var nextBtn = document.getElementById('next');
+
+  function render(){
+    steps.forEach(function(s, i){ s.classList.toggle('on', i === cur); });
+    bar.style.width = Math.round(((cur + 1) / N) * 100) + '%';
+    stepcount.textContent = 'Etapa ' + (cur + 1) + ' de ' + N;
+    backBtn.style.display = cur === 0 ? 'none' : '';
+    nextBtn.textContent = cur === N - 1 ? 'ENVIAR MINHA APLICAÇÃO' : 'Continuar';
+  }
+  function irPara(i){
+    cur = Math.max(0, Math.min(N - 1, i));
+    limpaErro();
+    render();
+    try { form.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(e){}
+    // foco no primeiro campo/área da etapa
+    try { var f = steps[cur].querySelector('input,textarea,select'); if (f) f.focus({ preventScroll: true }); } catch(e){}
+  }
+
+  function validaEtapa(i){
+    limpaErro();
+    if (i === 0) {
+      if (!val('nome')) { erro('Escreva o seu nome completo.'); return false; }
+      if (val('zap').replace(/\D/g,'').length < 10) { erro('Confira o número de WhatsApp com DDD.'); return false; }
+    } else if (i === 1) {
+      if (!val('q1')) { erro('Responda a pergunta para continuar.'); return false; }
+    } else if (i === 2) {
+      if (!val('q2')) { erro('Responda a pergunta para continuar.'); return false; }
+    } else if (i === 3) {
+      if (!val('q3cap')) { erro('Selecione uma das opções.'); return false; }
+    } else if (i === 4) {
+      if (!val('q4')) { erro('Responda a pergunta para enviar.'); return false; }
+      if (!document.getElementById('optin').checked) { erro('Marque a autorização de contato para enviar.'); return false; }
+    }
+    return true;
+  }
+
+  function avancar(){
+    if (!validaEtapa(cur)) return;
+    if (cur < N - 1) irPara(cur + 1);
+    else enviar();
+  }
+  nextBtn.addEventListener('click', avancar);
+  backBtn.addEventListener('click', function(){ irPara(cur - 1); });
+  form.addEventListener('submit', function(ev){ ev.preventDefault(); avancar(); });
+  render();
+
+  /* ---- envio ---- */
+  var enviado = false;
+  function enviar(){
+    if (enviado) return;
+
+    var nome   = val('nome');
+    var digits = val('zap').replace(/\D/g,'');
+    var email  = val('email');
+    var empresa= val('empresa');
+    var q1 = val('q1'), q2 = val('q2'), q3cap = val('q3cap'), q3 = val('q3'), q4 = val('q4');
+
+    enviado = true;
+    nextBtn.disabled = true;
+    nextBtn.textContent = 'ENVIANDO...';
+
+    var attrib = lerAtrib();
+    var appId;
+    try { appId = (crypto && crypto.randomUUID) ? crypto.randomUUID() : ('app-' + Date.now() + '-' + Math.random().toString(16).slice(2)); }
+    catch (e) { appId = 'app-' + Date.now() + '-' + Math.random().toString(16).slice(2); }
+
+    var payload = {
+      app_id: appId,
+      evento_id: CFG.evento_id,
+      produto_interesse: CFG.programa,
+      nome: nome,
+      whatsapp: digits,
+      email: email,
+      empresa: empresa,
+      data_envio: new Date().toISOString(),
+      respostas: {
+        q1_oportunidade: q1,
+        q2_porque_voce: q2,
+        q3_capacidade: q3cap,
+        q3_detalhe: q3,
+        q4_valeu_a_pena: q4
+      },
+      origem: CFG.origem,
+      atribuicao: attrib
+    };
+
+    // rede de segurança local (recuperável pelo console caso o CRM não esteja no ar)
+    try {
+      var box = JSON.parse(localStorage.getItem('eh_aplicacoes') || '[]');
+      box.push(Object.assign({ ts: new Date().toISOString() }, payload));
+      localStorage.setItem('eh_aplicacoes', JSON.stringify(box));
+    } catch(e){}
+
+    // pixel/GTM: dispara ANTES de qualquer espera de rede
+    try { window.fbq && window.fbq('trackCustom', 'Aplicacao', { content_name: CFG.programa }); } catch(e){}
+    try { window.dataLayer && window.dataLayer.push({ event: 'aplicacao_enviada', produto: CFG.programa }); } catch(e){}
+    console.info('[APP] aplicação enviada', payload);
+
+    // planilha do Google (garantia de coleta): fire-and-forget, sem CORS
+    if (SHEET_URL) {
+      try {
+        fetch(SHEET_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload), keepalive: true })
+          .then(function(){ console.info('[APP] planilha ok'); })
+          .catch(function(err){ console.error('[APP] planilha falhou:', err && err.message); });
+      } catch(e){}
+    }
+
+    // grava via relay (mesma origem): best-effort, keepalive garante a entrega
+    fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      keepalive: true
+    }).then(function(res){
+      return res.json().catch(function(){ return {}; }).then(function(r){
+        if (!res.ok || (r && r.success === false)) console.error('[APP] CRM respondeu', res.status, r);
+        else console.info('[APP] CRM ok', r);
+      });
+    }).catch(function(err){
+      console.error('[APP] CRM falhou:', err && err.message);
+      try { window.dataLayer && window.dataLayer.push({ event: 'aplicacao_falha' }); } catch(e){}
+    });
+
+    // mostra o sucesso na hora — a experiência do participante não espera o backend
+    form.style.display = 'none';
+    document.getElementById('hero').style.display = 'none';
+    document.getElementById('ok').classList.add('show');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+})();
+</script>
+</body>
+</html>

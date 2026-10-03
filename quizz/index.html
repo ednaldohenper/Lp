@@ -29,9 +29,24 @@
   html{-webkit-text-size-adjust:100%}
   body{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;min-height:100dvh}
   .wrap{max-width:600px;margin:0 auto;padding:0 22px;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
-  .stage{flex:1;display:flex;flex-direction:column;justify-content:center;padding:26px 0 40px;animation:fade .28s ease}
-  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-  @media (prefers-reduced-motion: reduce){ .stage{animation:none} }
+  .topbar{height:3px;background:var(--line);border-radius:3px;margin-top:14px;overflow:hidden;opacity:0;transition:opacity .25s}
+  .topbar.on{opacity:1}
+  .topbar i{display:block;height:100%;width:0;background:var(--accent);border-radius:3px;transition:width .45s cubic-bezier(.2,.7,.3,1)}
+  .stage{flex:1;display:flex;flex-direction:column;justify-content:center;padding:22px 0 40px}
+  .stage.fwd{animation:slideFwd .34s cubic-bezier(.2,.7,.3,1)}
+  .stage.back{animation:slideBack .34s cubic-bezier(.2,.7,.3,1)}
+  @keyframes slideFwd{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}}
+  @keyframes slideBack{from{opacity:0;transform:translateX(-26px)}to{opacity:1;transform:none}}
+  .opt.pick{animation:pick .3s ease}
+  @keyframes pick{0%{transform:scale(1)}45%{transform:scale(.955)}100%{transform:scale(1)}}
+  .analise{min-height:60vh;display:flex;align-items:center;justify-content:center;text-align:center}
+  .an-sp{width:42px;height:42px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);margin:0 auto 24px;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .analise p{font-family:var(--serif);font-weight:600;font-size:23px;color:var(--ink);margin-bottom:8px}
+  .analise span{font-size:13.5px;color:var(--ink-soft)}
+  .card.reveal{animation:reveal .55s cubic-bezier(.2,.7,.3,1)}
+  @keyframes reveal{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion: reduce){ .stage.fwd,.stage.back,.opt.pick,.an-sp,.card.reveal{animation:none} }
 
   .eyebrow{font-size:11.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
   h1{font-family:var(--serif);font-weight:600;font-size:clamp(30px,8vw,46px);line-height:1.05;letter-spacing:-.01em;margin:16px 0 14px}
@@ -112,6 +127,7 @@
 </head>
 <body>
 <div class="wrap">
+  <div class="topbar" id="topbar"><i></i></div>
   <div class="stage" id="stage"></div>
   <footer>© Ednaldo Henper</footer>
 </div>
@@ -268,7 +284,11 @@
   function el(h){ var d=document.createElement('div'); d.innerHTML=h.trim(); return d.firstChild; }
   function ansTxt(id){ var p=PERGUNTAS.filter(function(q){return q.id===id;})[0]; var i=answers[id]; return (p && typeof i==='number' && p.opcoes[i]) ? p.opcoes[i].txt : ''; }
   var reduce=false; try{ reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
-  function show(n){ stage.innerHTML=''; stage.appendChild(n); try{window.scrollTo(0,0);}catch(e){} }
+  var topbar=document.getElementById('topbar');
+  function setProg(pct,on){ try{ topbar.classList.toggle('on', on!==false && pct>0); topbar.querySelector('i').style.width=Math.max(0,Math.min(100,pct))+'%'; }catch(e){} }
+  function show(n,dir){ dir=dir||'fwd'; stage.innerHTML=''; stage.appendChild(n);
+    if(!reduce){ stage.classList.remove('fwd','back'); void stage.offsetWidth; stage.classList.add(dir); }
+    try{window.scrollTo(0,0);}catch(e){} }
 
   // ---------- estado ----------
   var answers={}, tentou='', qi=0, enviado=false;
@@ -281,21 +301,27 @@
       '<p class="lead">O nome do momento em que você está — e por que a decisão que te ocupa a cabeça não sai.</p>'+
       '<p class="promessa">6 perguntas, uns 2 minutos. O seu diagnóstico aparece na hora.</p>';
     var b=el('<div class="btnrow"></div>'); var btn=el('<button class="btn">Começar</button>');
-    btn.addEventListener('click',function(){ qi=0; renderStep(); }); b.appendChild(btn); n.appendChild(b); show(n);
+    btn.addEventListener('click',function(){ qi=0; renderStep('fwd'); }); b.appendChild(btn); n.appendChild(b); show(n); setProg(0,false);
   }
   function faltamTxt(){ var f=(PERGUNTAS.length-1)-qi; return f>0?('Faltam '+f):'Última'; }
 
-  function renderStep(){
-    var p=PERGUNTAS[qi]; var n=el('<div></div>');
+  function renderStep(dir){
+    var p=PERGUNTAS[qi]; var n=el('<div></div>'); var busy=false;
     n.innerHTML='<div class="qmeta">'+(qi>0?'<button class="back" type="button">&larr; Voltar</button>':'')+'<span>'+faltamTxt()+'</span></div>'+
       '<div class="qtxt">'+esc(p.txt)+'</div>'+(p.nota?'<div class="qnota">'+esc(p.nota)+'</div>':'')+'<div class="opts"></div>';
     var opts=n.querySelector('.opts');
     p.opcoes.forEach(function(o,idx){
       var btn=el('<button class="opt'+(answers[p.id]===idx?' sel':'')+'" type="button"><span class="ico">'+(ICONES[o.icone]||'')+'</span><span>'+esc(o.txt)+'</span></button>');
-      btn.addEventListener('click',function(){ escolher(idx,o); }); opts.appendChild(btn);
+      btn.addEventListener('click',function(){
+        if(busy) return; busy=true;
+        var sib=opts.querySelectorAll('.opt'); for(var k=0;k<sib.length;k++) sib[k].classList.remove('sel');
+        btn.classList.add('sel'); if(!reduce) btn.classList.add('pick');
+        setTimeout(function(){ escolher(idx,o); }, reduce?0:260);
+      });
+      opts.appendChild(btn);
     });
-    var back=n.querySelector('.back'); if(back) back.addEventListener('click',function(){ if(qi>0){qi--;renderStep();} });
-    show(n);
+    var back=n.querySelector('.back'); if(back) back.addEventListener('click',function(){ if(qi>0){qi--;renderStep('back');} });
+    show(n, dir||'fwd'); setProg((qi/PERGUNTAS.length)*100);
   }
   function escolher(idx,o){ answers[PERGUNTAS[qi].id]=idx; if(o.dev) renderDev(o.dev); else avancar(); }
   function renderDev(t){
@@ -309,7 +335,13 @@
     else { n.querySelector('.devbar').style.display='none'; }
     n.addEventListener('click', go);
   }
-  function avancar(){ if(qi<PERGUNTAS.length-1){ qi++; renderStep(); } else { renderAberto(); } }
+  function avancar(){ if(qi<PERGUNTAS.length-1){ qi++; renderStep('fwd'); } else { renderAnalise(); } }
+  function renderAnalise(){
+    setProg(100);
+    var n=el('<div class="analise"><div><div class="an-sp"></div><p>Montando o seu diagnóstico</p><span>lendo as suas respostas uma a uma</span></div></div>');
+    show(n,'fwd');
+    setTimeout(renderAberto, reduce?700:2200);
+  }
 
   // ---------- resultado aberto (antes do gate) ----------
   function travHTML(pos){
@@ -320,10 +352,11 @@
       '<div class="trav-marks"><span>a decisão nasceu</span><span>você está aqui</span><span>do outro lado</span></div></div>';
   }
   function renderAberto(){
+    setProg(0,false);
     var d=calcular(answers); var c=cartaoDados(d); window._d=d;
     var n=el('<div class="res"></div>');
     n.innerHTML='<span class="eyebrow">O seu momento</span>'+
-      '<div class="card"><div class="ce">A Alavanca</div><div class="cn">'+esc(d.nome)+'</div><div class="cs">'+esc(d.subtitulo)+'</div>'+
+      '<div class="card reveal"><div class="ce">A Alavanca</div><div class="cn">'+esc(d.nome)+'</div><div class="cs">'+esc(d.subtitulo)+'</div>'+
         travHTML(c.posicao)+'<div class="cf">'+esc(c.frase)+'</div></div>'+
       '<p class="recon">'+esc(RESULTADOS[d.movimento].reconhecimento)+'</p>'+
       '<p class="tema-l">O assunto da sua decisão: <b>'+esc(d.tema)+'</b></p>';

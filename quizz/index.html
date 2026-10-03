@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script src="/assets/gtm.js"></script>
+<script>try{if(localStorage.getItem("eh_cookie_consent")!=="rejected"){window.ehConsentGranted&&window.ehConsentGranted();localStorage.setItem("eh_cookie_consent","accepted");}else{window.ehConsentRevoke&&window.ehConsentRevoke();}}catch(e){}</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>A Alavanca · Ednaldo Henper</title>
+<meta name="description" content="Se a sua demanda dobrasse, o que quebraria primeiro? Um diagnóstico de 4 minutos para donos de empresa sobre a decisão que você está postergando.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="A Alavanca">
+<meta property="og:description" content="Se a sua demanda dobrasse, o que quebraria primeiro?">
+<meta property="og:url" content="https://ednaldohenper.com.br/quizz/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://aptec-control.replit.app">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f6f3ec; --surface:#ffffff; --ink:#17202b; --ink-soft:#5a6672; --line:#e4ddcf;
+    --accent:#c4531f; --accent-ink:#ffffff; --sel:#fbf0e6; --shadow:0 10px 40px rgba(23,32,43,.07);
+    --serif:'Fraunces',Georgia,serif; --sans:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#10151c; --surface:#161d27; --ink:#e9edf2; --ink-soft:#9aa6b3; --line:#283240;
+      --accent:#e8792f; --accent-ink:#161d27; --sel:#20262f; --shadow:0 10px 40px rgba(0,0,0,.3); }
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;min-height:100dvh}
+  .wrap{max-width:620px;margin:0 auto;padding:0 22px;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+  .stage{flex:1;display:flex;flex-direction:column;justify-content:center;padding:26px 0 40px;animation:fade .3s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion: reduce){ .stage{animation:none} }
+
+  .eyebrow{font-size:11.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(30px,8vw,46px);line-height:1.05;letter-spacing:-.01em;margin:16px 0 14px}
+  .lead{font-size:clamp(16px,4vw,18px);color:var(--ink-soft);max-width:30em}
+  .promessa{font-size:14px;color:var(--ink-soft);margin-top:22px}
+
+  .qmeta{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:14px;display:flex;align-items:center;gap:12px}
+  .qmeta .back{background:none;border:none;color:var(--ink-soft);font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:4px;opacity:.75}
+  .qmeta .back:hover{opacity:1;color:var(--ink)}
+  .qtxt{font-family:var(--serif);font-weight:600;font-size:clamp(22px,5.4vw,30px);line-height:1.2;letter-spacing:-.01em;margin-bottom:8px}
+  .qnota{font-size:14px;color:var(--ink-soft);margin-bottom:20px;font-style:italic}
+  .opts{display:flex;flex-direction:column;gap:11px;margin-top:18px}
+  .opt{width:100%;text-align:left;font-family:inherit;font-size:16.5px;font-weight:500;color:var(--ink);background:var(--surface);border:1.5px solid var(--line);border-radius:13px;padding:17px 18px;cursor:pointer;transition:border-color .15s,background .15s,transform .08s;line-height:1.35}
+  .opt:hover{border-color:var(--accent)}
+  .opt:active{transform:translateY(1px)}
+  .opt.sel{border-color:var(--accent);background:var(--sel)}
+
+  .dev{min-height:60vh;display:flex;align-items:center;justify-content:center;text-align:center}
+  .dev p{font-family:var(--serif);font-weight:500;font-size:clamp(21px,5.2vw,28px);line-height:1.3;max-width:20em;color:var(--ink)}
+
+  textarea{width:100%;font-family:inherit;font-size:16px;color:var(--ink);background:var(--surface);border:1.5px solid var(--line);border-radius:13px;padding:15px;min-height:120px;resize:vertical;line-height:1.5}
+  textarea:focus{outline:none;border-color:var(--accent)}
+  input{width:100%;font-family:inherit;font-size:16px;color:var(--ink);background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:14px 15px}
+  input:focus{outline:none;border-color:var(--accent)}
+  .field{margin-bottom:13px}
+  label.lbl{display:block;font-size:13.5px;font-weight:600;margin-bottom:7px}
+  .req{color:var(--accent)}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;font-size:16px;font-weight:700;letter-spacing:.02em;color:var(--accent-ink);background:var(--accent);border:none;border-radius:13px;padding:17px 26px;cursor:pointer;transition:filter .15s,transform .08s;width:100%}
+  .btn:hover{filter:brightness(1.05)}
+  .btn:active{transform:translateY(1px)}
+  .btn[disabled]{opacity:.6;cursor:default}
+  .btn.ghost{background:none;color:var(--ink-soft);border:1.5px solid var(--line);font-weight:600}
+  .btnrow{display:flex;gap:11px;margin-top:22px}
+
+  /* resultado */
+  .res-eyebrow{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+  .res h2{font-family:var(--serif);font-weight:600;font-size:clamp(26px,6.5vw,38px);line-height:1.08;letter-spacing:-.01em;margin-bottom:18px}
+  .res p{font-size:16.5px;color:var(--ink);margin:0 0 16px;line-height:1.6}
+  .res p strong{font-weight:700}
+  .res .block{margin-top:30px;padding-top:26px;border-top:1px solid var(--line)}
+  .res .block-h{font-family:var(--serif);font-weight:600;font-size:20px;margin-bottom:12px}
+  .res .pergs{list-style:none;counter-reset:p;display:flex;flex-direction:column;gap:14px;margin-top:4px}
+  .res .pergs li{position:relative;padding-left:40px;font-size:16px;line-height:1.55;color:var(--ink)}
+  .res .pergs li::before{counter-increment:p;content:counter(p);position:absolute;left:0;top:0;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-family:var(--sans);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .res .nota{font-size:14px;color:var(--ink-soft);font-style:italic;margin-top:16px;padding:12px 15px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+  .fecho{margin-top:34px;padding:24px 22px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+  .fecho h3{font-family:var(--serif);font-weight:600;font-size:21px;margin-bottom:14px}
+  .fecho p{font-size:15.5px;color:var(--ink-soft);line-height:1.6;margin-bottom:14px}
+  .fecho p strong{color:var(--ink);font-weight:700}
+  .fecho .tema{color:var(--ink);font-weight:600}
+
+  .capture{margin-top:14px}
+  .erro{display:none;background:#fdecea;border:1px solid #f0bdb6;color:#9a271c;font-size:13.5px;font-weight:600;border-radius:10px;padding:11px 13px;margin-bottom:12px}
+  .erro.show{display:block}
+  @media (prefers-color-scheme: dark){ .erro{background:#2a1714;border-color:#5a2a22;color:#f0a99f} }
+  .micro{font-size:12.5px;color:var(--ink-soft);text-align:center;margin-top:12px}
+
+  footer{text-align:center;padding:18px 0 28px;font-size:11.5px;color:var(--ink-soft);opacity:.7}
+  .ok-wrap{text-align:center;padding:40px 0}
+  .ok-wrap .badge{width:62px;height:62px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
+  .ok-wrap h2{font-family:var(--serif);font-weight:600;font-size:28px;margin-bottom:12px}
+  .ok-wrap p{font-size:16px;color:var(--ink-soft);max-width:26em;margin:0 auto 20px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="stage" id="stage"></div>
+  <footer>© Ednaldo Henper</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============ CONFIG ============ */
+  // Link do grupo de WhatsApp (botao do resultado). PREENCHER.
+  var GRUPO_URL = '';
+  var ENDPOINT = '/quizz/enviar.php';
+  /* ================================ */
+
+  /* ===== fonte: alavanca.ts (v2) portado pra JS — nao reescrever copy ===== */
+  var PERGUNTAS = [
+    { id:"time", txt:"Quantas pessoas trabalham com você hoje, você incluído?", opcoes:[
+      { txt:"Menos de 4", sinal:"foraDePerfil" },
+      { txt:"4 a 10" }, { txt:"11 a 30" }, { txt:"31 a 80" }, { txt:"Mais de 80" },
+    ]},
+    { id:"anos", txt:"Há quanto tempo a empresa existe?", opcoes:[
+      { txt:"Menos de 3 anos" }, { txt:"3 a 7 anos" }, { txt:"8 a 15 anos" }, { txt:"Mais de 15 anos" },
+    ]},
+    { id:"movimento", txt:"Qual movimento você está considerando para a empresa, e ainda não executou?", nota:"Se tem mais de um, escolha o que mais ocupa a sua cabeça.", opcoes:[
+      { txt:"Abrir uma unidade ou entrar em outra praça", movimento:"praca", dev:"Expansão geográfica. O movimento que mais parece pronto antes de estar." },
+      { txt:"Lançar um produto ou serviço novo", movimento:"produto", dev:"Produto novo. Guarda isso: quase sempre a pergunta não é qual lançar." },
+      { txt:"Contratar alguém para liderar o que hoje é meu", movimento:"lideranca", dev:"O movimento mais caro de errar e o mais caro de postergar ao mesmo tempo." },
+      { txt:"Subir preço ou reposicionar a oferta", movimento:"preco", dev:"Preço. É a decisão de maior retorno e a mais adiada que existe." },
+      { txt:"Mudar o modelo de negócio", movimento:"modelo", dev:"Mudar o modelo. Poucos donos chegam a formular isso em voz alta." },
+      { txt:"Trazer sócio, comprar ou ser comprado", movimento:"societario", dev:"Societário. Decisão de uma via só: não dá pra testar e voltar." },
+    ]},
+    { id:"tempo", txt:"Há quanto tempo esse movimento está na sua cabeça?", opcoes:[
+      { txt:"Alguns meses", dev:"Recente. Então ainda é decisão, não ainda é hábito." },
+      { txt:"Mais ou menos um ano", dev:"Um ano. Já deu pra dar a volta no assunto algumas vezes.", sinal:"postergaMuito" },
+      { txt:"Dois anos ou mais", dev:"Dois anos ou mais. Isso não é falta de informação.", sinal:"postergaMuito" },
+      { txt:"É uma conversa que volta sempre e nunca sai do lugar", dev:"Essa resposta é a mais honesta das quatro. Volto nela no final.", sinal:"postergaMuito" },
+    ]},
+    { id:"hesitacao", txt:"O que te faz segurar?", opcoes:[
+      { txt:"Não sei se o caixa aguenta", hesitacao:"caixa", dev:"Caixa. Dá pra calcular — e provavelmente você já calculou." },
+      { txt:"Não sei se o time aguenta", hesitacao:"time", dev:"Time. A pergunta de verdade aqui raramente é sobre o time." },
+      { txt:"Não sei se é o movimento certo", hesitacao:"certo", dev:"Então não falta coragem. Falta alguém discordando de você com competência." },
+      { txt:"Já tentei algo parecido e não deu", hesitacao:"tentei", dev:"Isso muda tudo. Tentativa frustrada não vira prudência sozinha, vira trava.", sinal:"jaTentou" },
+    ]},
+    { id:"conselho", txt:"Quem olha uma decisão desse tamanho com você hoje?", opcoes:[
+      { txt:"Ninguém. No fim é só eu", conselho:"ninguem", dev:"Guardei essa. É a resposta mais comum e a menos dita.", sinal:"ninguemOlha" },
+      { txt:"Meu sócio", conselho:"socio", dev:"Sócio é bom, e tem um limite: ele está dentro do mesmo barco e vê a mesma coisa." },
+      { txt:"Meu contador", conselho:"contador", dev:"Contador olha o que já aconteceu. Decisão é sobre o que ainda não." },
+      { txt:"Meu cônjuge", conselho:"conjuge", dev:"Apoio importa muito. E quem te ama tende a concordar com você." },
+      { txt:"Um amigo empresário", conselho:"amigo", dev:"O melhor dos cinco, e ainda assim informal: ele não tem obrigação com o seu resultado." },
+    ]},
+    { id:"custo", txt:"Se esse movimento der errado, o que acontece?", opcoes:[
+      { txt:"Dá pra desfazer, perco tempo e algum dinheiro", custo:"desfazer", dev:"Então o risco é de execução, não existencial. Isso libera velocidade." },
+      { txt:"Aperta o ano, mas a empresa segue", custo:"aperta", dev:"Aperta o ano. É a faixa em que a maioria das decisões grandes mora." },
+      { txt:"Compromete a empresa", custo:"compromete", dev:"Então não dá pra tomar essa sozinho. Vou ser direto no resultado.", sinal:"custoAlto" },
+    ]},
+    { id:"dobra", txt:"Se a sua demanda dobrasse no trimestre que vem, o que quebraria primeiro?", opcoes:[
+      { txt:"A entrega. Atrasaria e cairia a qualidade", dev:"Entrega. Então o movimento que você escolheu entra num sistema que já está no limite.", sinal:"tetoDeCapacidade" },
+      { txt:"O time. Não dá conta e não tem quem treinar", dev:"Time. Guarda isso junto com o movimento que você escolheu.", sinal:"tetoDeCapacidade" },
+      { txt:"O caixa. Crescer custa antes de pagar", dev:"Caixa. Crescimento consome dinheiro antes de devolver, e quase ninguém diz isso em voz alta.", sinal:"tetoDeCapacidade" },
+      { txt:"Eu. As decisões todas passam por mim", dev:"Você. Esse é o teto que nenhum investimento resolve.", sinal:"tetoDeCapacidade" },
+      { txt:"Nada quebraria. Temos folga", dev:"Folga de capacidade. Isso é raro e vale dinheiro." },
+    ]},
+    { id:"parar", txt:"Para esse movimento caber, o que você teria que parar de fazer?", nota:"Quase ninguém responde isso de primeira. É de propósito.", opcoes:[
+      { txt:"Já sei exatamente o que sai", dev:"Então a decisão está mais madura do que o tempo que ela levou sugere." },
+      { txt:"Tenho uma ideia, mas dói", dev:"Dói porque funciona hoje. É quase sempre por isso." },
+      { txt:"Não tinha pensado nisso", dev:"A maioria não. Movimento novo sem nada saindo é movimento empilhado." },
+      { txt:"Nada. Daria pra fazer junto com o que já existe", dev:"Anotado. Vale conferir isso com alguém de fora." },
+    ]},
+    { id:"tentou", txt:"O que você já tentou para destravar isso, e não funcionou?", nota:"Pode ser uma linha. Ou pode pular.", opcoes:[] },
+  ];
+
+  var TEMA = {
+    praca:"Expansão: quando abrir a segunda e quando a segunda mata a primeira",
+    produto:"Portfólio: o que lançar, o que matar e o produto de estimação",
+    lideranca:"O segundo no comando: contratar liderança sem terceirizar a decisão",
+    preco:"Preço: subir sem perder base e sem pedir desculpa",
+    modelo:"Mudar o modelo: o que fazer quando o que funciona parou de crescer",
+    societario:"Sociedade e aquisição: a decisão que não dá pra testar",
+  };
+  var MOV_LABEL = {
+    praca:"Abrir unidade ou praça", produto:"Lançar produto novo", lideranca:"Contratar liderança",
+    preco:"Subir preço", modelo:"Mudar o modelo", societario:"Sócio ou aquisição",
+  };
+
+  var OBRIGATORIAS = PERGUNTAS.filter(function(p){ return p.opcoes.length > 0; });
+
+  function calcular(r){
+    var movimento="produto", hesitacao="certo", conselho="ninguem", custo="aperta", sinais=[];
+    OBRIGATORIAS.forEach(function(p){
+      var o = p.opcoes[r[p.id]];
+      if(!o) return;
+      if(o.movimento) movimento=o.movimento;
+      if(o.hesitacao) hesitacao=o.hesitacao;
+      if(o.conselho) conselho=o.conselho;
+      if(o.custo) custo=o.custo;
+      if(o.sinal && sinais.indexOf(o.sinal)<0) sinais.push(o.sinal);
+    });
+    return { movimento:movimento, hesitacao:hesitacao, conselho:conselho, custo:custo, sinais:sinais, tema:TEMA[movimento] };
+  }
+
+  var RESULTADOS = {
+    praca:{ reconhecimento:"Você está considerando abrir outra unidade. E a conta que você já fez provavelmente fecha — é por isso que o movimento não sai: não é a conta que está te segurando.",
+      oQueTrava:"Abrir a segunda unidade não duplica o negócio, duplica a dependência de você. A primeira funciona porque você está perto dela. A segunda vai exigir que algo funcione sem você estar lá, e **esse algo ainda não existe** — não porque você é desorganizado, mas porque até hoje não foi necessário. É por isso que a segunda unidade quebra a primeira com tanta frequência: ela consome a atenção que sustentava a original.",
+      perguntas:[
+        "O que na primeira unidade só funciona porque você está presente? Essa lista é o custo real da segunda, e ele não aparece na planilha.",
+        "Se a segunda abrir e for pior que a primeira por doze meses, a primeira sobrevive a isso?",
+        "Existe alguém que já poderia estar rodando a primeira sem você? Se não existe, o movimento não é abrir — é formar essa pessoa.",
+      ]},
+    produto:{ reconhecimento:"Você está considerando lançar algo novo. E a pergunta que você está tentando responder — qual produto — provavelmente não é a pergunta que decide isso.",
+      oQueTrava:"Produto novo quase nunca é um problema de escolha, é um problema de espaço. O que você já vende ocupa a sua atenção, o seu time e a sua operação inteira. Produto novo não entra em espaço vazio porque não existe espaço vazio: ele entra **tirando** de algo. Enquanto a decisão for só sobre o que acrescentar, ela não sai — porque a parte difícil é o que sai, e essa parte ninguém formula sozinho com prazer.",
+      perguntas:[
+        "Dos seus produtos atuais, qual você manteria se tivesse que cortar metade? E por que o resto está lá?",
+        "O produto novo resolve uma dor que o seu cliente atual tem, ou ele vai buscar um cliente que você ainda não sabe atender?",
+        "Se o lançamento der certo, quem entrega? Se a resposta for você, o sucesso é o problema.",
+      ],
+      nota:"A Casa do Pão de Queijo está no Brasil e no mundo com 40 itens. Portfólio grande raramente é sinal de maturidade." },
+    lideranca:{ reconhecimento:"Você está considerando trazer alguém para liderar o que hoje é seu. É o movimento mais caro de errar — e, pelo tempo que ele está parado, você já pagou um pedaço do custo de não fazer.",
+      oQueTrava:"Não é achar a pessoa. O mercado é difícil, e ainda assim não é isso. É que **liderança não se delega por tarefa, se delega por decisão** — e ninguém escreve o que a outra pessoa pode decidir sozinha, porque isso obriga você a definir o limite da sua própria autoridade. Sem esse limite escrito, toda escolha volta pra você, fazer fica mais rápido que explicar, e a contratação vira um ajudante caro. Você provavelmente já viveu isso uma vez.",
+      perguntas:[
+        "Quais decisões essa pessoa vai tomar sem te consultar, e até que valor? Se você não consegue responder, ainda não é hora de contratar — é hora de decidir isso.",
+        "O que você vai parar de olhar no dia em que ela entrar? Se a resposta é nada, você está contratando uma segunda opinião, não um líder.",
+        "Qual erro dela você vai aceitar sem retomar o controle? Esse número é o que define se a contratação funciona.",
+      ]},
+    preco:{ reconhecimento:"Você está considerando subir preço. De todos os movimentos possíveis, é o que tem o maior retorno e o menor custo de execução — e é o mais adiado que existe. Isso não é coincidência.",
+      oQueTrava:"Não é medo de perder cliente. É que você não sabe **quais** cliente vai perder, e a imaginação preenche esse vazio com os melhores. Na prática, aumento de preço costuma expulsar primeiro quem já dava prejuízo e trabalho, e esse filtro é a parte boa. Mas isso não se descobre por coragem — se descobre separando a base e olhando número por número, e é um trabalho que quase ninguém faz sozinho porque ele confronta o que você sempre acreditou sobre o seu próprio valor.",
+      perguntas:[
+        "Dos seus clientes atuais, quais dão lucro e quais você mantém por história? O aumento é sobre os segundos.",
+        "Se você subisse 20% e perdesse 15% da base, você estaria melhor ou pior? Faça essa conta antes de qualquer outra.",
+        "O que o cliente precisaria perceber de diferente para pagar mais sem se sentir traído? Essa é a única parte que precisa ser construída.",
+      ]},
+    modelo:{ reconhecimento:"Você está considerando mudar o modelo. Poucos donos chegam a formular isso — a maioria aumenta o esforço dentro do modelo antigo até ele parar de responder.",
+      oQueTrava:"O modelo atual funciona. É isso que trava. Ele paga as contas hoje, e qualquer mudança significa operar dois modelos ao mesmo tempo por um período, com a atenção dividida e o resultado pior nos dois. Essa travessia é o custo real, e ela não aparece em nenhum plano — o plano mostra o depois. Decidir isso sozinho é quase impossível, porque quem está dentro do modelo antigo é também quem foi construído por ele.",
+      perguntas:[
+        "O modelo atual está desacelerando, ou está estável e você está entediado? As duas coisas pedem respostas opostas.",
+        "Quanto tempo você aguenta operando os dois ao mesmo tempo, com resultado pior nos dois? Esse número é o seu prazo real.",
+        "O que no modelo novo você já poderia testar pequeno, este mês, sem desmontar nada?",
+      ]},
+    societario:{ reconhecimento:"Você está considerando um movimento societário. É o único da lista que não dá pra testar pequeno e desfazer — e é o que mais se decide por cansaço.",
+      oQueTrava:"A pergunta que parece estar em jogo é valor. A que de fato decide é outra: **o que você quer da sua vida nos próximos cinco anos**, e se esse movimento serve a isso. Sócio entra para resolver falta de dinheiro, de braço ou de solidão, e cada uma dessas três pede um arranjo diferente. Venda resolve liquidez e cria um chefe. Nenhuma dessas respostas está na planilha, e nenhuma se formula bem sozinho — porque quando a gente está sozinho, a razão mais urgente parece ser a verdadeira.",
+      perguntas:[
+        "O que exatamente você quer que entre com o sócio: dinheiro, execução ou alguém para dividir o peso? São três decisões diferentes com o mesmo nome.",
+        "Se amanhã aparecesse o dinheiro de que você precisa, sem sócio, você ainda quereria o sócio?",
+        "Daqui a cinco anos, nesse arranjo, o que você está fazendo no dia a dia? Se a resposta não te agrada, o arranjo está errado mesmo que o número esteja certo.",
+      ]},
+  };
+
+  var PRED_ORDEM = ["postergaMuito","ninguemOlha","custoAlto","jaTentou","tetoDeCapacidade"];
+  var PREDICOES = {
+    postergaMuito:"Esse movimento está na sua cabeça há mais de um ano. Vale separar duas coisas que se confundem: prudência tem prazo e termina em decisão; **postergação não tem prazo e se alimenta de informação nova**. Se mais um dado resolvesse, você já teria resolvido — você não é de evitar trabalho. O que falta não é dado.",
+    ninguemOlha:"E você respondeu que, no fim, é só você. Isso não é falta de gente ao redor: é que **ninguém ao seu redor tem obrigação com o seu resultado e liberdade para discordar de você**. Sócio está no mesmo barco. Contador olha o passado. Quem te ama concorda. Amigo empresário não tem compromisso. Decisão desse tamanho não se toma sozinho por teimosia — se toma sozinho por falta de interlocutor, que é uma coisa diferente e tem solução.",
+    custoAlto:"Você marcou que errar compromete a empresa. Então eu vou ser direto: **essa não é uma decisão para tomar sozinho**, e nem para tomar com quem já concorda com você. Decisão dessa faixa precisa de alguém que tente derrubá-la antes de você executá-la.",
+    jaTentou:"Você já tentou algo parecido e não deu. Isso pesa mais do que parece, e de um jeito específico: a tentativa frustrada não vira aprendizado sozinha, vira **regra**. E a regra que se forma quase nunca é a certa — costuma ser “isso não funciona” quando o correto era “isso não funciona assim”. Até alguém de fora separar as duas, a tentativa antiga vai continuar decidindo por você.",
+    tetoDeCapacidade:"E se a demanda dobrasse, alguma coisa quebraria. Isso muda a ordem: o movimento que você está considerando vai entrar num sistema que já está no limite. Não é motivo para não fazer — é motivo para decidir **o que fortalecer primeiro**, e essa é exatamente a pergunta que não se responde de dentro.",
+    foraDePerfil:null,
+  };
+  /* ===== fim da fonte ===== */
+
+  // ---------- helpers ----------
+  var stage = document.getElementById('stage');
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function fmt(s){ return esc(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>'); }
+  function el(html){ var d=document.createElement('div'); d.innerHTML=html.trim(); return d.firstChild; }
+  function ansTxt(id){ var p=PERGUNTAS.filter(function(q){return q.id===id;})[0]; var i=answers[id]; return (p && typeof i==='number' && p.opcoes[i]) ? p.opcoes[i].txt : ''; }
+  var reduce = false; try{ reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+
+  // ---------- estado ----------
+  var answers = {};   // id -> indice
+  var tentou = '';
+  var qi = 0;
+  var enviado = false;
+
+  // ---------- telas ----------
+  function show(node){ stage.innerHTML=''; stage.appendChild(node); stage.scrollTop=0; try{window.scrollTo(0,0);}catch(e){} }
+
+  function renderIntro(){
+    var n = el('<div></div>');
+    n.innerHTML =
+      '<span class="eyebrow">Diagnóstico · donos de empresa</span>'+
+      '<h1>Se a sua demanda dobrasse, o que quebraria primeiro?</h1>'+
+      '<p class="lead">Não é sobre organizar o negócio. É sobre a decisão que você está postergando — e por que ela não sai.</p>'+
+      '<p class="promessa">São 10 perguntas, uma por tela. Leva uns 4 minutos. No fim, o diagnóstico aparece na hora, sem pedir nada antes.</p>';
+    var b = el('<div class="btnrow"></div>');
+    var btn = el('<button class="btn">Começar</button>');
+    btn.addEventListener('click', function(){ qi=0; renderStep(); });
+    b.appendChild(btn); n.appendChild(b);
+    show(n);
+  }
+
+  function faltamTxt(){
+    if(qi >= PERGUNTAS.length-1) return 'Última · opcional';
+    var faltam = (PERGUNTAS.length-1) - qi; // exclui a aberta
+    return 'Faltam ' + faltam;
+  }
+
+  function renderStep(){
+    var p = PERGUNTAS[qi];
+    if(p.id === 'tentou'){ return renderTentou(); }
+    var n = el('<div></div>');
+    var meta = '<div class="qmeta">'+(qi>0?'<button class="back" type="button">&larr; Voltar</button>':'')+'<span>'+faltamTxt()+'</span></div>';
+    var nota = p.nota ? '<div class="qnota">'+esc(p.nota)+'</div>' : '';
+    n.innerHTML = meta + '<div class="qtxt">'+esc(p.txt)+'</div>' + nota + '<div class="opts"></div>';
+    var opts = n.querySelector('.opts');
+    p.opcoes.forEach(function(o, idx){
+      var btn = el('<button class="opt" type="button"></button>');
+      btn.textContent = o.txt;
+      if(answers[p.id]===idx) btn.className='opt sel';
+      btn.addEventListener('click', function(){ escolher(idx, o); });
+      opts.appendChild(btn);
+    });
+    var back = n.querySelector('.back');
+    if(back) back.addEventListener('click', function(){ if(qi>0){ qi--; renderStep(); } });
+    show(n);
+  }
+
+  function escolher(idx, o){
+    answers[PERGUNTAS[qi].id] = idx;
+    if(o.dev){ renderDev(o.dev); }
+    else { avancar(); }
+  }
+
+  function renderDev(text){
+    var n = el('<div class="dev"><p></p></div>');
+    n.querySelector('p').innerHTML = esc(text);
+    show(n);
+    var t = reduce ? 900 : 1300;
+    setTimeout(function(){ avancar(); }, t);
+  }
+
+  function avancar(){
+    if(qi < PERGUNTAS.length-1){ qi++; renderStep(); }
+    else { renderResultado(); }
+  }
+
+  function renderTentou(){
+    var p = PERGUNTAS[qi];
+    var n = el('<div></div>');
+    n.innerHTML =
+      '<div class="qmeta"><button class="back" type="button">&larr; Voltar</button><span>'+faltamTxt()+'</span></div>'+
+      '<div class="qtxt">'+esc(p.txt)+'</div>'+
+      '<div class="qnota">'+esc(p.nota)+'</div>'+
+      '<textarea id="tentou" placeholder="Pode ser uma linha. Ou pode pular."></textarea>';
+    var row = el('<div class="btnrow"></div>');
+    var pular = el('<button class="btn ghost" type="button">Pular</button>');
+    var ver = el('<button class="btn" type="button">Ver meu diagnóstico</button>');
+    pular.addEventListener('click', function(){ tentou=''; renderResultado(); });
+    ver.addEventListener('click', function(){ tentou = (n.querySelector('#tentou').value||'').trim(); renderResultado(); });
+    row.appendChild(pular); row.appendChild(ver);
+    n.appendChild(row);
+    var back = n.querySelector('.back');
+    back.addEventListener('click', function(){ qi--; renderStep(); });
+    var ta = n.querySelector('#tentou'); if(ta) ta.value = tentou;
+    show(n);
+  }
+
+  // ---------- resultado ----------
+  function renderResultado(){
+    var d = calcular(answers);
+    var R = RESULTADOS[d.movimento];
+    var html = '';
+    html += '<div class="res">';
+    html += '<div class="res-eyebrow">A decisão que você está postergando</div>';
+    html += '<h2>'+esc(MOV_LABEL[d.movimento])+'</h2>';
+    html += '<p>'+fmt(R.reconhecimento)+'</p>';
+    html += '<div class="block"><div class="block-h">O que te trava não é o que você respondeu</div><p>'+fmt(R.oQueTrava)+'</p>';
+    PRED_ORDEM.forEach(function(s){ if(d.sinais.indexOf(s)>=0 && PREDICOES[s]){ html += '<p>'+fmt(PREDICOES[s])+'</p>'; } });
+    html += '</div>';
+    html += '<div class="block"><div class="block-h">Três perguntas que destravam isso</div><ul class="pergs">';
+    R.perguntas.forEach(function(q){ html += '<li>'+esc(q)+'</li>'; });
+    html += '</ul>';
+    if(R.nota){ html += '<div class="nota">'+esc(R.nota)+'</div>'; }
+    html += '</div>';
+
+    html += '<div class="fecho">'+
+      '<h3>O que este teste não te disse</h3>'+
+      '<p>Ele nomeou a decisão e te deu três perguntas. Essas perguntas são suas, e valem mais que qualquer plano: respondidas, elas decidem sozinhas.</p>'+
+      '<p>O que ele não tem como fazer é a parte que falta. Decisão desse tamanho não precisa de mais informação, precisa de <strong>alguém de fora que tente derrubá-la antes de você executar</strong> — e que tenha obrigação com o seu resultado, o que sócio, contador e amigo não têm.</p>'+
+      '<p>Eu mantenho um grupo de donos de empresa que estão exatamente nessa travessia. Não é lista de conteúdo: é onde eu chamo gente para conversas temáticas, por assunto, conforme o que cada um está decidindo. <span class="tema">O seu assunto é '+esc(d.tema)+'.</span></p>'+
+      '<div id="cta"></div>'+
+      '</div>';
+    html += '</div>';
+    var n = el('<div>'+html+'</div>');
+
+    var cta = n.querySelector('#cta');
+    var entrar = el('<button class="btn" type="button" style="margin-top:6px">Quero entrar no grupo &rarr;</button>');
+    entrar.addEventListener('click', function(){ renderForm(d); });
+    cta.appendChild(entrar);
+
+    // dispara evento de conclusao (Meta/GTM), sem bloquear
+    try { window.fbq && window.fbq('trackCustom','AlavancaConcluido',{ movimento:d.movimento }); } catch(e){}
+    try { window.dataLayer && window.dataLayer.push({ event:'alavanca_concluido', movimento:d.movimento, tema:d.tema }); } catch(e){}
+
+    show(n);
+  }
+
+  function mascara(v){
+    v=(v||'').replace(/\D/g,'').slice(0,11);
+    if(v.length>10) return v.replace(/(\d{2})(\d{5})(\d{4}).*/,'($1) $2-$3');
+    if(v.length>6)  return v.replace(/(\d{2})(\d{4,5})(\d{0,4}).*/,'($1) $2-$3');
+    if(v.length>2)  return v.replace(/(\d{2})(\d{0,5}).*/,'($1) $2');
+    if(v.length>0)  return v.replace(/(\d{0,2}).*/,'($1');
+    return v;
+  }
+
+  function renderForm(d){
+    var n = el('<div></div>');
+    n.innerHTML =
+      '<span class="eyebrow">Entrar no grupo</span>'+
+      '<h1 style="font-size:clamp(24px,6vw,34px)">Pra eu te chamar pro grupo certo</h1>'+
+      '<p class="lead">O do seu assunto: <strong style="color:var(--ink)">'+esc(d.tema)+'</strong>. É de onde eu convido pra conversa temática.</p>'+
+      '<div class="capture" style="margin-top:22px">'+
+        '<div class="erro" id="erro"></div>'+
+        '<div class="field"><label class="lbl" for="nome">Nome <span class="req">*</span></label><input id="nome" type="text" autocomplete="name" placeholder="Seu nome"></div>'+
+        '<div class="field"><label class="lbl" for="zap">WhatsApp com DDD <span class="req">*</span></label><input id="zap" type="tel" inputmode="numeric" autocomplete="tel" placeholder="(11) 99999-9999"></div>'+
+        '<div class="field"><label class="lbl" for="email">E-mail</label><input id="email" type="email" autocomplete="email" placeholder="seu@email.com"></div>'+
+        '<div class="field"><label class="lbl" for="empresa">Sua empresa</label><input id="empresa" type="text" placeholder="Nome e segmento"></div>'+
+      '</div>';
+    var row = el('<div class="btnrow"></div>');
+    var btn = el('<button class="btn" id="enviar" type="button">Quero entrar no grupo &rarr;</button>');
+    row.appendChild(btn); n.appendChild(row);
+    n.appendChild(el('<p class="micro">Sem spam. É só pra te chamar pro grupo e pra conversa do seu tema.</p>'));
+    show(n);
+
+    var zap = n.querySelector('#zap');
+    zap.addEventListener('input', function(){ this.value = mascara(this.value); });
+    var erroBox = n.querySelector('#erro');
+    function erro(m){ erroBox.textContent=m; erroBox.classList.add('show'); }
+    btn.addEventListener('click', function(){
+      erroBox.classList.remove('show');
+      var nome=(n.querySelector('#nome').value||'').trim();
+      var digits=(n.querySelector('#zap').value||'').replace(/\D/g,'');
+      var email=(n.querySelector('#email').value||'').trim();
+      var empresa=(n.querySelector('#empresa').value||'').trim();
+      if(!nome) return erro('Escreva o seu nome.');
+      if(digits.length<10) return erro('Confira o WhatsApp com DDD.');
+      if(enviado) return;
+      enviado=true; btn.disabled=true; btn.textContent='Enviando...';
+      enviar(d, nome, digits, email, empresa);
+    });
+  }
+
+  function montarDesafio(d){
+    var L=[];
+    L.push('Movimento: '+MOV_LABEL[d.movimento]+' — Tema: '+d.tema);
+    L.push('Postergação: '+ansTxt('tempo'));
+    L.push('Hesitação: '+ansTxt('hesitacao'));
+    L.push('Quem olha a decisão: '+ansTxt('conselho'));
+    L.push('Custo de errar: '+ansTxt('custo'));
+    L.push('Se a demanda dobrasse, quebraria: '+ansTxt('dobra'));
+    L.push('Teria que parar de: '+ansTxt('parar'));
+    L.push('Time: '+ansTxt('time')+' · Empresa: '+ansTxt('anos'));
+    L.push('Sinais: '+(d.sinais.length? d.sinais.join(', ') : 'nenhum'));
+    L.push('Já tentou: '+(tentou.trim() || '—'));
+    return L.join('\n');
+  }
+
+  function enviar(d, nome, digits, email, empresa){
+    var payload = {
+      nome:nome, whatsapp:digits, email:email, empresa:empresa,
+      origem:'quiz-alavanca',
+      desafio: montarDesafio(d),
+      tempo_empresa: ansTxt('anos'),
+      movimento:d.movimento, tema:d.tema, sinais:d.sinais,
+      hesitacao:d.hesitacao, conselho:d.conselho, custo:d.custo,
+      respostas:answers, tentou:tentou,
+      pagina:'quiz-alavanca'
+    };
+    try{ var box=JSON.parse(localStorage.getItem('eh_alavanca')||'[]'); box.push(Object.assign({ts:new Date().toISOString()},payload)); localStorage.setItem('eh_alavanca',JSON.stringify(box)); }catch(e){}
+    try{ window.fbq && window.fbq('track','Lead',{content_name:'A Alavanca'}); }catch(e){}
+    try{ window.dataLayer && window.dataLayer.push({event:'alavanca_lead', movimento:d.movimento}); }catch(e){}
+
+    fetch(ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload), keepalive:true })
+      .then(function(res){ return res.json().catch(function(){return {};}).then(function(r){ if(!res.ok || (r&&r.success===false)) console.error('[ALAVANCA] control', res.status, r); else console.info('[ALAVANCA] ok', r); }); })
+      .catch(function(err){ console.error('[ALAVANCA] falhou', err && err.message); });
+
+    renderObrigado();
+  }
+
+  function renderObrigado(){
+    var link = GRUPO_URL ? ('<a class="btn" href="'+GRUPO_URL+'" style="margin-top:6px;text-decoration:none" target="_blank" rel="noopener">Entrar no grupo agora &rarr;</a>') : '<p class="micro">Em instantes você recebe o convite do grupo no seu WhatsApp.</p>';
+    var n = el('<div class="ok-wrap">'+
+      '<div class="badge"><svg viewBox="0 0 24 24" width="30" height="30" fill="none"><path d="M5 13l4 4L19 7" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'+
+      '<h2>Pronto.</h2>'+
+      '<p>Guardei o seu diagnóstico. O convite do grupo do seu tema vem pelo WhatsApp.</p>'+
+      '<div style="max-width:360px;margin:0 auto">'+link+'</div>'+
+      '</div>');
+    show(n);
+  }
+
+  // start
+  renderIntro();
+})();
+</script>
+</body>
+</html>

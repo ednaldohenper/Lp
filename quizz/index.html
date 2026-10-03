@@ -51,10 +51,14 @@
   .opt .ico{flex:0 0 auto;width:48px;height:48px;color:var(--accent)}
   .opt .ico svg{width:48px;height:48px;display:block}
 
-  .dev{min-height:62vh;display:flex;align-items:center;justify-content:center;text-align:center}
-  .dev p{font-family:var(--serif);font-weight:500;font-size:clamp(21px,5.2vw,28px);line-height:1.3;max-width:20em;color:var(--ink);animation:devin .4s ease}
+  .dev{min-height:62vh;display:flex;align-items:center;justify-content:center;text-align:center;cursor:pointer}
+  .dev .devin{max-width:22em;margin:0 auto;animation:devin .4s ease}
+  .dev p{font-family:var(--serif);font-weight:500;font-size:clamp(21px,5.2vw,28px);line-height:1.3;color:var(--ink)}
+  .devbar{height:3px;background:var(--line);border-radius:3px;margin:32px auto 0;max-width:150px;overflow:hidden}
+  .devbar i{display:block;height:100%;width:0;background:var(--accent)}
+  .devhint{display:inline-block;margin-top:16px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);opacity:.55}
   @keyframes devin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-  @media (prefers-reduced-motion: reduce){ .dev p{animation:none} }
+  @media (prefers-reduced-motion: reduce){ .dev .devin{animation:none} }
 
   textarea,input{width:100%;font-family:inherit;font-size:16px;color:var(--ink);background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:14px 15px}
   textarea{min-height:92px;resize:vertical;line-height:1.5}
@@ -294,7 +298,17 @@
     show(n);
   }
   function escolher(idx,o){ answers[PERGUNTAS[qi].id]=idx; if(o.dev) renderDev(o.dev); else avancar(); }
-  function renderDev(t){ var n=el('<div class="dev"><p></p></div>'); n.querySelector('p').innerHTML=esc(t); show(n); setTimeout(avancar, reduce?900:1350); }
+  function renderDev(t){
+    var dur = Math.min(4800, Math.max(2200, 1400 + t.length*42)); // escala pelo tamanho da frase
+    var n=el('<div class="dev"><div class="devin"><p></p><div class="devbar"><i></i></div><span class="devhint">toque para seguir</span></div></div>');
+    n.querySelector('p').innerHTML=esc(t); show(n);
+    var done=false, to;
+    function go(){ if(done) return; done=true; if(to) clearTimeout(to); avancar(); }
+    to=setTimeout(go, reduce?Math.min(dur,1800):dur);
+    if(!reduce){ var bar=n.querySelector('.devbar i'); if(bar){ bar.style.transition='width '+dur+'ms linear'; requestAnimationFrame(function(){ bar.style.width='100%'; }); } else { n.querySelector('.devbar').style.display='none'; } }
+    else { n.querySelector('.devbar').style.display='none'; }
+    n.addEventListener('click', go);
+  }
   function avancar(){ if(qi<PERGUNTAS.length-1){ qi++; renderStep(); } else { renderAberto(); } }
 
   // ---------- resultado aberto (antes do gate) ----------

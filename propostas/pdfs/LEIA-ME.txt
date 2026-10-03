@@ -1,0 +1,6 @@
+PDFs leves (até ~25 MB) podem ficar aqui no Git — sobem automaticamente no deploy.
+PDF muito grande (>25 MB): suba direto na KingHost em /www/propostas/pdfs/.
+
+Nomes que os botões da página procuram:
+   imersaofoco2026.pdf · protocolomaestria.pdf · ascensaoempresarial.pdf
+   oconselho.pdf · achavedotempo.pdf · ciclodainovacao.pdf

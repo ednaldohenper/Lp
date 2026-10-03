@@ -43,13 +43,13 @@
   .qmeta .back:hover{opacity:1;color:var(--ink)}
   .qtxt{font-family:var(--serif);font-weight:600;font-size:clamp(23px,5.6vw,31px);line-height:1.18;letter-spacing:-.01em;margin-bottom:8px}
   .qnota{font-size:14px;color:var(--ink-soft);margin-bottom:18px;font-style:italic}
-  .opts{display:flex;flex-direction:column;gap:11px;margin-top:20px}
-  .opt{display:flex;align-items:center;gap:15px;width:100%;text-align:left;font-family:inherit;font-size:17px;font-weight:600;color:var(--ink);background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:16px 18px;cursor:pointer;transition:border-color .15s,background .15s,transform .08s}
+  .opts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px}
+  .opt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;width:100%;min-height:140px;font-family:inherit;font-size:15.5px;font-weight:600;line-height:1.25;color:var(--ink);background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:20px 14px;cursor:pointer;transition:border-color .15s,background .15s,transform .08s}
   .opt:hover{border-color:var(--accent)}
   .opt:active{transform:translateY(1px)}
   .opt.sel{border-color:var(--accent);background:var(--sel)}
-  .opt .ico{flex:0 0 auto;width:30px;height:30px;color:var(--accent)}
-  .opt .ico svg{width:30px;height:30px;display:block}
+  .opt .ico{flex:0 0 auto;width:48px;height:48px;color:var(--accent)}
+  .opt .ico svg{width:48px;height:48px;display:block}
 
   .dev{min-height:62vh;display:flex;align-items:center;justify-content:center;text-align:center}
   .dev p{font-family:var(--serif);font-weight:500;font-size:clamp(21px,5.2vw,28px);line-height:1.3;max-width:20em;color:var(--ink);animation:devin .4s ease}
@@ -233,7 +233,7 @@
     caixas: sv('<path d="M12 3l8 4-8 4-8-4 8-4z"/><path d="M4 7v8l8 4 8-4V7"/><path d="M12 11v8"/>'),
     cadeira: sv('<path d="M8 4v8M16 8v4M8 8h8M6 12h12M8 12l-1 7M16 12l1 7"/>'),
     etiqueta: sv('<path d="M4 4h7l9 9-7 7-9-9V4z"/><circle cx="8" cy="8" r="1.3"/>'),
-    engrenagem: sv('<circle cx="12" cy="12" r="3.3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/>'),
+    engrenagem: sv('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>'),
     mesa: sv('<path d="M3 9h18M5 9l1.5-3h11L19 9M6 9v5M18 9v5"/>'),
     relogio: sv('<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>'),
     calendario: sv('<rect x="4" y="5" width="16" height="15" rx="1.5"/><path d="M4 9h16M8 3v4M16 3v4"/>'),

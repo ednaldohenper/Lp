@@ -2,7 +2,18 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Bundled Page</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Programa para Indústria</title>
+  <script>
+  /* Apresentar só o slide: esconde a tira de miniaturas (rail) do deck-stage. */
+  (function(){
+    function fix(ds){ try{ if(ds.hasAttribute('norail')) ds.removeAttribute('norail'); if(!ds.hasAttribute('no-rail')) ds.setAttribute('no-rail',''); }catch(e){} }
+    function scan(){ var ds=document.querySelector('deck-stage'); if(ds) fix(ds); }
+    try{ new MutationObserver(scan).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['norail','no-rail']}); }catch(e){}
+    document.addEventListener('DOMContentLoaded',scan);
+    var t=setInterval(scan,150); setTimeout(function(){ clearInterval(t); },10000);
+  })();
+  </script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #faf9f5; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }

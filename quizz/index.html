@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script src="/assets/gtm.js"></script>
+<script>try{if(localStorage.getItem("eh_cookie_consent")!=="rejected"){window.ehConsentGranted&&window.ehConsentGranted();localStorage.setItem("eh_cookie_consent","accepted");}else{window.ehConsentRevoke&&window.ehConsentRevoke();}}catch(e){}</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>A Alavanca · Ednaldo Henper</title>
+<meta name="description" content="Se a sua demanda dobrasse, o que quebraria primeiro? 6 perguntas, 2 minutos: o nome do momento em que você está e por que a decisão não sai.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="A Alavanca">
+<meta property="og:description" content="Se a sua demanda dobrasse, o que quebraria primeiro?">
+<meta property="og:url" content="https://ednaldohenper.com.br/quizz/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://aptec-control.replit.app">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f6f3ec; --surface:#ffffff; --ink:#17202b; --ink-soft:#5a6672; --line:#e4ddcf;
+    --accent:#c4531f; --accent-ink:#ffffff; --sel:#fbf0e6; --shadow:0 10px 40px rgba(23,32,43,.07);
+    --serif:'Fraunces',Georgia,serif; --sans:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#10151c; --surface:#161d27; --ink:#e9edf2; --ink-soft:#9aa6b3; --line:#283240;
+      --accent:#e8792f; --accent-ink:#161d27; --sel:#20262f; --shadow:0 10px 40px rgba(0,0,0,.3); }
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;min-height:100dvh}
+  .wrap{max-width:600px;margin:0 auto;padding:0 22px;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+  .topbar{height:3px;background:var(--line);border-radius:3px;margin-top:14px;overflow:hidden;opacity:0;transition:opacity .25s}
+  .topbar.on{opacity:1}
+  .topbar i{display:block;height:100%;width:0;background:var(--accent);border-radius:3px;transition:width .45s cubic-bezier(.2,.7,.3,1)}
+  .stage{flex:1;display:flex;flex-direction:column;justify-content:center;padding:22px 0 40px}
+  .stage.fwd{animation:slideFwd .34s cubic-bezier(.2,.7,.3,1)}
+  .stage.back{animation:slideBack .34s cubic-bezier(.2,.7,.3,1)}
+  @keyframes slideFwd{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}}
+  @keyframes slideBack{from{opacity:0;transform:translateX(-26px)}to{opacity:1;transform:none}}
+  .opt.pick{animation:pick .3s ease}
+  @keyframes pick{0%{transform:scale(1)}45%{transform:scale(.955)}100%{transform:scale(1)}}
+  .analise{min-height:60vh;display:flex;align-items:center;justify-content:center;text-align:center}
+  .an-sp{width:42px;height:42px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);margin:0 auto 24px;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .analise p{font-family:var(--serif);font-weight:600;font-size:23px;color:var(--ink);margin-bottom:8px}
+  .analise span{font-size:13.5px;color:var(--ink-soft)}
+  .card.reveal{animation:reveal .55s cubic-bezier(.2,.7,.3,1)}
+  @keyframes reveal{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion: reduce){ .stage.fwd,.stage.back,.opt.pick,.an-sp,.card.reveal{animation:none} }
+
+  .eyebrow{font-size:11.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(30px,8vw,46px);line-height:1.05;letter-spacing:-.01em;margin:16px 0 14px}
+  .lead{font-size:clamp(16px,4vw,18px);color:var(--ink-soft);max-width:30em}
+  .promessa{font-size:14px;color:var(--ink-soft);margin-top:22px}
+
+  .qmeta{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:16px;display:flex;align-items:center;gap:12px}
+  .qmeta .back{background:none;border:none;color:var(--ink-soft);font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;padding:0;opacity:.75}
+  .qmeta .back:hover{opacity:1;color:var(--ink)}
+  .qtxt{font-family:var(--serif);font-weight:600;font-size:clamp(23px,5.6vw,31px);line-height:1.18;letter-spacing:-.01em;margin-bottom:8px}
+  .qnota{font-size:14px;color:var(--ink-soft);margin-bottom:18px;font-style:italic}
+  .opts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px}
+  .opt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;width:100%;min-height:140px;font-family:inherit;font-size:15.5px;font-weight:600;line-height:1.25;color:var(--ink);background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:20px 14px;cursor:pointer;transition:border-color .15s,background .15s,transform .08s}
+  .opt:hover{border-color:var(--accent)}
+  .opt:active{transform:translateY(1px)}
+  .opt.sel{border-color:var(--accent);background:var(--sel)}
+  .opt .ico{flex:0 0 auto;width:48px;height:48px;color:var(--accent)}
+  .opt .ico svg{width:48px;height:48px;display:block}
+
+  .dev{min-height:62vh;display:flex;align-items:center;justify-content:center;text-align:center;cursor:pointer}
+  .dev .devin{max-width:22em;margin:0 auto;animation:devin .4s ease}
+  .dev p{font-family:var(--serif);font-weight:500;font-size:clamp(21px,5.2vw,28px);line-height:1.3;color:var(--ink)}
+  .devbar{height:3px;background:var(--line);border-radius:3px;margin:32px auto 0;max-width:150px;overflow:hidden}
+  .devbar i{display:block;height:100%;width:0;background:var(--accent)}
+  .devhint{display:inline-block;margin-top:16px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);opacity:.55}
+  @keyframes devin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion: reduce){ .dev .devin{animation:none} }
+
+  textarea,input{width:100%;font-family:inherit;font-size:16px;color:var(--ink);background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:14px 15px}
+  textarea{min-height:92px;resize:vertical;line-height:1.5}
+  textarea:focus,input:focus{outline:none;border-color:var(--accent)}
+  .field{margin-bottom:13px}
+  label.lbl{display:block;font-size:13.5px;font-weight:600;margin-bottom:7px}
+  .req{color:var(--accent)}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;font-size:16px;font-weight:700;letter-spacing:.02em;color:var(--accent-ink);background:var(--accent);border:none;border-radius:13px;padding:17px 26px;cursor:pointer;transition:filter .15s,transform .08s;width:100%;text-decoration:none}
+  .btn:hover{filter:brightness(1.05)} .btn:active{transform:translateY(1px)} .btn[disabled]{opacity:.6;cursor:default}
+  .btn.ghost{background:none;color:var(--ink-soft);border:1.5px solid var(--line);font-weight:600}
+  .btnrow{display:flex;flex-direction:column;gap:11px;margin-top:22px}
+
+  /* cartao (resultado aberto) */
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:26px 24px;box-shadow:var(--shadow);margin-top:18px}
+  .card .ce{font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--accent)}
+  .card .cn{font-family:var(--serif);font-weight:700;font-size:clamp(30px,8vw,44px);line-height:1.02;letter-spacing:-.01em;margin:10px 0 6px}
+  .card .cs{font-size:14.5px;color:var(--ink-soft)}
+  .trav{margin:26px 0 20px}
+  .trav-line{position:relative;height:2px;background:var(--line);border-radius:2px}
+  .trav-dot{position:absolute;top:50%;width:14px;height:14px;border-radius:50%;background:var(--accent);transform:translate(-50%,-50%);box-shadow:0 0 0 4px var(--surface),0 0 0 5.5px var(--accent)}
+  .trav-tk{position:absolute;top:50%;width:6px;height:6px;border-radius:50%;background:var(--line);transform:translate(-50%,-50%)}
+  .trav-marks{display:flex;justify-content:space-between;margin-top:12px;font-size:10.5px;font-weight:600;letter-spacing:.02em;color:var(--ink-soft);text-transform:uppercase}
+  .trav-marks span:nth-child(2){color:var(--accent)}
+  .card .cf{font-family:var(--serif);font-weight:500;font-size:19px;line-height:1.35;color:var(--ink);border-top:1px solid var(--line);padding-top:18px}
+  .recon{font-size:16.5px;color:var(--ink);line-height:1.55;margin:20px 0 4px}
+  .tema-l{font-size:14.5px;color:var(--ink-soft);margin-top:14px}
+  .tema-l b{color:var(--ink);font-weight:600}
+
+  /* leitura completa */
+  .res p{font-size:16.5px;color:var(--ink);margin:0 0 16px;line-height:1.6}
+  .res p strong{font-weight:700}
+  .res .block{margin-top:30px;padding-top:26px;border-top:1px solid var(--line)}
+  .res .block-h{font-family:var(--serif);font-weight:600;font-size:20px;margin-bottom:12px}
+  .res .pergs{list-style:none;counter-reset:p;display:flex;flex-direction:column;gap:14px;margin-top:4px}
+  .res .pergs li{position:relative;padding-left:40px;font-size:16px;line-height:1.55;color:var(--ink)}
+  .res .pergs li::before{counter-increment:p;content:counter(p);position:absolute;left:0;top:0;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-family:var(--sans);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .res .nota{font-size:14px;color:var(--ink-soft);font-style:italic;margin-top:16px;padding:12px 15px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+  .fecho{margin-top:34px;padding:24px 22px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+  .fecho h3{font-family:var(--serif);font-weight:600;font-size:21px;margin-bottom:14px}
+  .fecho p{font-size:15.5px;color:var(--ink-soft);line-height:1.6;margin-bottom:14px}
+  .fecho p strong{color:var(--ink);font-weight:700}
+  .fecho .tema{color:var(--ink);font-weight:600}
+
+  .erro{display:none;background:#fdecea;border:1px solid #f0bdb6;color:#9a271c;font-size:13.5px;font-weight:600;border-radius:10px;padding:11px 13px;margin-bottom:12px}
+  .erro.show{display:block}
+  @media (prefers-color-scheme: dark){ .erro{background:#2a1714;border-color:#5a2a22;color:#f0a99f} }
+  .micro{font-size:12.5px;color:var(--ink-soft);text-align:center;margin-top:12px}
+  footer{text-align:center;padding:18px 0 28px;font-size:11.5px;color:var(--ink-soft);opacity:.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar" id="topbar"><i></i></div>
+  <div class="stage" id="stage"></div>
+  <footer>© Ednaldo Henper</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  /* ============ CONFIG ============ */
+  var GRUPO_URL = '';                 // link do grupo de WhatsApp (PREENCHER)
+  var ENDPOINT = '/quizz/enviar.php'; // relay -> Control (origem quiz-alavanca)
+  /* ================================ */
+
+  /* ===== fonte: alavanca.ts v3 portado — nao reescrever copy ===== */
+  var PERGUNTAS = [
+    { id:"movimento", txt:"Qual movimento está na sua cabeça e ainda não saiu do papel?", nota:"Se tem mais de um, escolhe o que mais ocupa espaço.", opcoes:[
+      { txt:"Abrir unidade", icone:"porta", movimento:"praca", dev:"Expansão. O movimento que mais parece pronto antes de estar." },
+      { txt:"Produto novo", icone:"caixas", movimento:"produto", dev:"Guarda isso: quase nunca a pergunta é qual lançar." },
+      { txt:"Contratar liderança", icone:"cadeira", movimento:"lideranca", dev:"O mais caro de errar e o mais caro de adiar, ao mesmo tempo." },
+      { txt:"Subir preço", icone:"etiqueta", movimento:"preco", dev:"O de maior retorno e o mais adiado que existe. Não é coincidência." },
+      { txt:"Mudar o modelo", icone:"engrenagem", movimento:"modelo", dev:"Poucos donos chegam a formular isso em voz alta." },
+      { txt:"Sócio ou venda", icone:"mesa", movimento:"societario", dev:"Via de mão única: não dá pra testar e voltar." },
+    ]},
+    { id:"tempo", txt:"Há quanto tempo?", opcoes:[
+      { txt:"Poucos meses", icone:"relogio", dev:"Recente. Ainda é decisão, não virou hábito." },
+      { txt:"Cerca de um ano", icone:"calendario", dev:"Um ano. Já deu pra dar a volta no assunto algumas vezes.", sinal:"postergaMuito" },
+      { txt:"Dois anos ou mais", icone:"calendario", dev:"Dois anos. Isso não é falta de informação.", sinal:"postergaMuito" },
+      { txt:"Sempre volta", icone:"ciclo", dev:"A mais honesta das quatro. Volto nela no fim.", sinal:"postergaMuito" },
+    ]},
+    { id:"hesitacao", txt:"O que te faz segurar?", opcoes:[
+      { txt:"O caixa", icone:"cofre", hesitacao:"caixa", dev:"Dá pra calcular. E você provavelmente já calculou." },
+      { txt:"O time", icone:"pessoas", hesitacao:"time", dev:"A pergunta de verdade aqui raramente é sobre o time." },
+      { txt:"Não sei se é certo", icone:"bussola", hesitacao:"certo", dev:"Então não falta coragem. Falta alguém discordando de você com competência." },
+      { txt:"Já tentei antes", icone:"cicatriz", hesitacao:"tentei", dev:"Isso muda tudo. Tentativa frustrada não vira prudência: vira trava.", sinal:"jaTentou" },
+    ]},
+    { id:"conselho", txt:"Quem olha uma decisão desse tamanho com você?", opcoes:[
+      { txt:"Ninguém", icone:"silhueta", conselho:"ninguem", dev:"Guardei essa. É a resposta mais comum e a menos dita.", sinal:"ninguemOlha" },
+      { txt:"Meu sócio", icone:"duplas", conselho:"socio", dev:"Sócio é bom, e tem limite: está no mesmo barco, vê a mesma coisa." },
+      { txt:"Meu contador", icone:"planilha", conselho:"contador", dev:"Contador olha o que já aconteceu. Decisão é sobre o que ainda não." },
+      { txt:"Meu cônjuge", icone:"casa", conselho:"conjuge", dev:"Apoio importa muito. E quem te ama tende a concordar com você." },
+      { txt:"Um amigo empresário", icone:"aperto", conselho:"amigo", dev:"O melhor dos cinco, e ainda informal: ele não tem obrigação com o seu resultado." },
+    ]},
+    { id:"custo", txt:"Se der errado, o que acontece?", opcoes:[
+      { txt:"Dá pra desfazer", icone:"voltar", custo:"desfazer", dev:"Risco de execução, não existencial. Isso libera velocidade." },
+      { txt:"Aperta o ano", icone:"aperto-ano", custo:"aperta", dev:"É a faixa em que a maioria das decisões grandes mora." },
+      { txt:"Compromete a empresa", icone:"alerta", custo:"compromete", dev:"Então não dá pra tomar essa sozinho. Vou ser direto no resultado.", sinal:"custoAlto" },
+    ]},
+    { id:"time", txt:"Quantas pessoas trabalham com você?", opcoes:[
+      { txt:"Menos de 4", icone:"um", sinal:"foraDePerfil" },
+      { txt:"4 a 10", icone:"poucos" },
+      { txt:"11 a 30", icone:"time" },
+      { txt:"31 a 80", icone:"equipe" },
+      { txt:"Mais de 80", icone:"empresa" },
+    ]},
+  ];
+
+  var NOME = { praca:"A Segunda Porta", produto:"O Portfólio Cheio", lideranca:"A Cadeira Vazia", preco:"O Preço Antigo", modelo:"O Modelo Maduro", societario:"A Mesa de Três" };
+  var MOV_LABEL = { praca:"Abrir unidade", produto:"Produto novo", lideranca:"Contratar liderança", preco:"Subir preço", modelo:"Mudar o modelo", societario:"Sócio ou venda" };
+  var TEMA = {
+    praca:"Expansão: quando abrir a segunda e quando a segunda mata a primeira",
+    produto:"Portfólio: o que lançar, o que matar e o produto de estimação",
+    lideranca:"O segundo no comando: contratar liderança sem terceirizar a decisão",
+    preco:"Preço: subir sem perder base e sem pedir desculpa",
+    modelo:"Mudar o modelo: o que fazer quando o que funciona parou de crescer",
+    societario:"Sociedade e aquisição: a decisão que não dá pra testar",
+  };
+  var ROTULO_TEMPO = ["há poucos meses","há cerca de um ano","há dois anos ou mais","sempre voltando"];
+  var ROTULO_CONSELHO = { ninguem:"decidindo sozinho", socio:"com o sócio no mesmo barco", contador:"com quem olha o passado", conjuge:"com quem tende a concordar", amigo:"com ajuda informal" };
+  var FRASE_CARTAO = {
+    praca:"A conta fecha. Não é a conta que está segurando.",
+    produto:"Produto novo não entra em espaço vazio. Entra tirando.",
+    lideranca:"Liderança não se delega por tarefa. Se delega por decisão.",
+    preco:"O medo não é perder cliente. É não saber quais.",
+    modelo:"O modelo antigo funciona. É isso que trava.",
+    societario:"A pergunta não é de valor. É do que você quer dos próximos cinco anos.",
+  };
+  var POSICAO_TEMPO = [0.3,0.45,0.6,0.5];
+
+  function calcular(r){
+    var movimento="produto", hesitacao="certo", conselho="ninguem", custo="aperta", sinais=[];
+    PERGUNTAS.forEach(function(p){ var o=p.opcoes[r[p.id]]; if(!o) return;
+      if(o.movimento) movimento=o.movimento; if(o.hesitacao) hesitacao=o.hesitacao;
+      if(o.conselho) conselho=o.conselho; if(o.custo) custo=o.custo;
+      if(o.sinal && sinais.indexOf(o.sinal)<0) sinais.push(o.sinal); });
+    var subtitulo = (ROTULO_TEMPO[r["tempo"]]||"parada") + ", " + ROTULO_CONSELHO[conselho];
+    return { movimento:movimento, hesitacao:hesitacao, conselho:conselho, custo:custo, sinais:sinais, nome:NOME[movimento], subtitulo:subtitulo, tema:TEMA[movimento] };
+  }
+  function cartaoDados(d){ var it=answers["tempo"]; return { nome:d.nome, subtitulo:d.subtitulo, posicao:(POSICAO_TEMPO[it]!=null?POSICAO_TEMPO[it]:0.45), frase:FRASE_CARTAO[d.movimento] }; }
+
+  var RESULTADOS = {
+    praca:{ reconhecimento:"A conta que você já fez provavelmente fecha. É por isso que o movimento não sai: não é a conta que está te segurando.",
+      oQueTrava:"Abrir a segunda unidade não duplica o negócio: duplica a dependência de você. A primeira funciona porque você está perto dela. A segunda vai exigir que algo funcione sem você estar lá, e **esse algo ainda não existe** — não por desorganização, mas porque até hoje não foi necessário. É por isso que a segunda unidade mata a primeira com tanta frequência: ela consome a atenção que sustentava a original.",
+      perguntas:["O que na primeira unidade só funciona porque você está presente? Essa lista é o custo real da segunda, e não aparece na planilha.","Se a segunda abrir e for pior que a primeira por doze meses, a primeira sobrevive?","Existe alguém que já poderia rodar a primeira sem você? Se não existe, o movimento não é abrir — é formar essa pessoa."] },
+    produto:{ reconhecimento:"A pergunta que você está tentando responder — qual produto — provavelmente não é a pergunta que decide isso.",
+      oQueTrava:"Produto novo quase nunca é problema de escolha, é problema de espaço. O que você já vende ocupa a sua atenção, o seu time e a operação inteira. Produto novo não entra em espaço vazio porque não existe espaço vazio: ele entra **tirando** de algo. Enquanto a decisão for só sobre o que acrescentar, ela não sai — porque a parte difícil é o que sai, e essa ninguém formula sozinho com prazer.",
+      perguntas:["Dos seus produtos atuais, qual você manteria se tivesse que cortar metade? E por que o resto está lá?","O produto novo resolve uma dor do seu cliente atual, ou vai buscar um cliente que você ainda não sabe atender?","Se o lançamento der certo, quem entrega? Se a resposta for você, o sucesso é o problema."],
+      nota:"A Casa do Pão de Queijo está no Brasil e no mundo com 40 itens. Portfólio grande raramente é sinal de maturidade." },
+    lideranca:{ reconhecimento:"É o movimento mais caro de errar. E pelo tempo que está parado, você já pagou um pedaço do custo de não fazer.",
+      oQueTrava:"Não é achar a pessoa. O mercado é difícil, e ainda assim não é isso. É que **liderança não se delega por tarefa, se delega por decisão** — e ninguém escreve o que a outra pessoa pode decidir sozinha, porque isso obriga você a definir o limite da sua própria autoridade. Sem esse limite escrito, toda escolha volta pra você, fazer fica mais rápido que explicar, e a contratação vira um ajudante caro. Você provavelmente já viveu isso uma vez.",
+      perguntas:["Quais decisões essa pessoa toma sem te consultar, e até que valor? Se você não consegue responder, não é hora de contratar — é hora de decidir isso.","O que você vai parar de olhar no dia em que ela entrar? Se a resposta é nada, você está contratando uma segunda opinião, não um líder.","Qual erro dela você aceita sem retomar o controle? Esse número define se a contratação funciona."] },
+    preco:{ reconhecimento:"De todos os movimentos possíveis, é o de maior retorno e menor custo de execução. E o mais adiado que existe. Isso não é coincidência.",
+      oQueTrava:"Não é medo de perder cliente. É que você não sabe **quais** vai perder, e a imaginação preenche esse vazio com os melhores. Na prática, aumento de preço expulsa primeiro quem já dava prejuízo e trabalho — e esse filtro é a parte boa. Mas isso não se descobre por coragem: se descobre separando a base e olhando número por número, e é um trabalho que quase ninguém faz sozinho, porque ele confronta o que você sempre acreditou sobre o seu próprio valor.",
+      perguntas:["Dos seus clientes atuais, quais dão lucro e quais você mantém por história? O aumento é sobre os segundos.","Se subisse 20% e perdesse 15% da base, você estaria melhor ou pior? Faça essa conta antes de qualquer outra.","O que o cliente precisaria perceber de diferente pra pagar mais sem se sentir traído? Essa é a única parte que precisa ser construída."] },
+    modelo:{ reconhecimento:"Poucos donos chegam a formular isso. A maioria aumenta o esforço dentro do modelo antigo até ele parar de responder.",
+      oQueTrava:"O modelo atual funciona. É isso que trava. Ele paga as contas hoje, e qualquer mudança significa operar dois modelos ao mesmo tempo por um período, com atenção dividida e resultado pior nos dois. **Essa travessia é o custo real, e ela não aparece em nenhum plano** — plano mostra o depois. Decidir sozinho é quase impossível, porque quem está dentro do modelo antigo é também quem foi construído por ele.",
+      perguntas:["O modelo está desacelerando, ou está estável e você está entediado? As duas coisas pedem respostas opostas.","Quanto tempo você aguenta operando os dois ao mesmo tempo, com resultado pior nos dois? Esse número é o seu prazo real.","O que do modelo novo você já poderia testar pequeno, este mês, sem desmontar nada?"] },
+    societario:{ reconhecimento:"É o único movimento que não dá pra testar pequeno e desfazer. E o que mais se decide por cansaço.",
+      oQueTrava:"A pergunta que parece estar em jogo é valor. A que de fato decide é outra: **o que você quer da sua vida nos próximos cinco anos**, e se esse movimento serve a isso. Sócio entra pra resolver falta de dinheiro, de braço ou de solidão, e cada uma dessas três pede um arranjo diferente. Venda resolve liquidez e cria um chefe. Nenhuma dessas respostas está na planilha, e nenhuma se formula bem sozinho — porque quando a gente está sozinho, a razão mais urgente parece ser a verdadeira.",
+      perguntas:["O que exatamente entra com o sócio: dinheiro, execução ou alguém pra dividir o peso? São três decisões diferentes com o mesmo nome.","Se amanhã aparecesse o dinheiro que você precisa, sem sócio, você ainda quereria o sócio?","Daqui a cinco anos, nesse arranjo, o que você está fazendo no dia a dia? Se a resposta não te agrada, o arranjo está errado mesmo que o número esteja certo."] },
+  };
+  var PRED_ORDEM = ["postergaMuito","ninguemOlha","custoAlto","jaTentou"];
+  var PREDICOES = {
+    postergaMuito:"Isso está na sua cabeça há mais de um ano. Vale separar duas coisas que se confundem: **prudência tem prazo e termina em decisão; postergação não tem prazo e se alimenta de informação nova.** Se mais um dado resolvesse, você já teria resolvido — você não é de evitar trabalho. O que falta não é dado.",
+    ninguemOlha:"E você respondeu que, no fim, é só você. Isso não é falta de gente ao redor: é que **ninguém ao seu redor tem obrigação com o seu resultado e liberdade pra discordar de você.** Sócio está no mesmo barco. Contador olha o passado. Quem te ama concorda. Amigo empresário não tem compromisso. Decisão desse tamanho não se toma sozinho por teimosia — se toma sozinho por falta de interlocutor, que é outra coisa e tem solução.",
+    custoAlto:"Você marcou que errar compromete a empresa. Então vou ser direto: **essa não é decisão pra tomar sozinho**, nem com quem já concorda com você. Decisão dessa faixa precisa de alguém que tente derrubá-la antes de você executar.",
+    jaTentou:"Você já tentou algo parecido e não deu. Isso pesa de um jeito específico: tentativa frustrada não vira aprendizado sozinha, vira **regra**. E a regra que se forma quase nunca é a certa — costuma ser “isso não funciona” quando o correto era “isso não funciona assim”. Até alguém de fora separar as duas, a tentativa antiga continua decidindo por você.",
+  };
+  /* ===== fim da fonte ===== */
+
+  /* ===== icones de linha (SVG, sem emoji) ===== */
+  function sv(p){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>'; }
+  var ICONES = {
+    porta: sv('<rect x="6" y="3" width="12" height="18" rx="1"/><circle cx="14.5" cy="12" r="1"/>'),
+    caixas: sv('<path d="M12 3l8 4-8 4-8-4 8-4z"/><path d="M4 7v8l8 4 8-4V7"/><path d="M12 11v8"/>'),
+    cadeira: sv('<path d="M8 4v8M16 8v4M8 8h8M6 12h12M8 12l-1 7M16 12l1 7"/>'),
+    etiqueta: sv('<path d="M4 4h7l9 9-7 7-9-9V4z"/><circle cx="8" cy="8" r="1.3"/>'),
+    engrenagem: sv('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>'),
+    mesa: sv('<path d="M3 9h18M5 9l1.5-3h11L19 9M6 9v5M18 9v5"/>'),
+    relogio: sv('<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>'),
+    calendario: sv('<rect x="4" y="5" width="16" height="15" rx="1.5"/><path d="M4 9h16M8 3v4M16 3v4"/>'),
+    ciclo: sv('<path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v4h-4"/>'),
+    cofre: sv('<rect x="3" y="5" width="18" height="14" rx="1.5"/><circle cx="12" cy="12" r="3.2"/><path d="M12 12v2.5"/>'),
+    pessoas: sv('<circle cx="7" cy="9" r="2"/><circle cx="12" cy="8" r="2.2"/><circle cx="17" cy="9" r="2"/><path d="M3.5 18c0-2 1.3-3.3 3-3.3M20.5 18c0-2-1.3-3.3-3-3.3M8 18c0-2.3 1.8-3.8 4-3.8s4 1.5 4 3.8"/>'),
+    bussola: sv('<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5 5-2z"/>'),
+    cicatriz: sv('<path d="M6 18L18 6"/><path d="M8.5 10.5l1.6 1.6M11 8l1.6 1.6M6 13l1.6 1.6M13.5 5.5l1.6 1.6"/>'),
+    silhueta: sv('<circle cx="12" cy="8" r="3.2"/><path d="M6 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/>'),
+    duplas: sv('<circle cx="8" cy="8" r="2.6"/><circle cx="16" cy="8" r="2.6"/><path d="M3.5 19c0-2.6 2-4.5 4.5-4.5s4.5 1.9 4.5 4.5M11.5 19c0-2.6 2-4.5 4.5-4.5s4.5 1.9 4.5 4.5"/>'),
+    planilha: sv('<rect x="4" y="4" width="16" height="16" rx="1.5"/><path d="M4 9.5h16M4 14.5h16M10 4v16"/>'),
+    casa: sv('<path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/>'),
+    aperto: sv('<path d="M10 12a3 3 0 0 1 3-3h0a3 3 0 0 1 0 6M14 12a3 3 0 0 1-3 3h0a3 3 0 0 1 0-6"/>'),
+    voltar: sv('<path d="M9 7L4 12l5 5"/><path d="M4 12h11a5 5 0 1 1 0 10"/>'),
+    'aperto-ano': sv('<path d="M3 8l4 4-4 4M21 8l-4 4 4 4M9 12h6"/>'),
+    alerta: sv('<path d="M12 4L2.5 20h19L12 4z"/><path d="M12 10v5M12 17.6v.01"/>'),
+    um: sv('<circle cx="12" cy="8" r="3"/><path d="M7 19c0-2.8 2.2-5 5-5s5 2.2 5 5"/>'),
+    poucos: sv('<circle cx="9" cy="9" r="2.4"/><circle cx="15" cy="9" r="2.4"/><path d="M5 18c0-2.2 1.7-3.8 4-3.8M19 18c0-2.2-1.7-3.8-4-3.8M9.5 18c0-2.3 1.5-3.8 3.5-3.8"/>'),
+    time: sv('<circle cx="7" cy="9" r="2"/><circle cx="12" cy="8" r="2.2"/><circle cx="17" cy="9" r="2"/><path d="M3.5 18c0-2 1.3-3.3 3-3.3M20.5 18c0-2-1.3-3.3-3-3.3M8 18c0-2.3 1.8-3.8 4-3.8s4 1.5 4 3.8"/>'),
+    equipe: sv('<circle cx="6" cy="8" r="1.7"/><circle cx="12" cy="8" r="1.7"/><circle cx="18" cy="8" r="1.7"/><circle cx="6" cy="15" r="1.7"/><circle cx="12" cy="15" r="1.7"/><circle cx="18" cy="15" r="1.7"/>'),
+    empresa: sv('<rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M10 21v-3h4v3"/>'),
+  };
+
+  // ---------- helpers ----------
+  var stage = document.getElementById('stage');
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function fmt(s){ return esc(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>'); }
+  function el(h){ var d=document.createElement('div'); d.innerHTML=h.trim(); return d.firstChild; }
+  function ansTxt(id){ var p=PERGUNTAS.filter(function(q){return q.id===id;})[0]; var i=answers[id]; return (p && typeof i==='number' && p.opcoes[i]) ? p.opcoes[i].txt : ''; }
+  var reduce=false; try{ reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+  var topbar=document.getElementById('topbar');
+  function setProg(pct,on){ try{ topbar.classList.toggle('on', on!==false && pct>0); topbar.querySelector('i').style.width=Math.max(0,Math.min(100,pct))+'%'; }catch(e){} }
+  function show(n,dir){ dir=dir||'fwd'; stage.innerHTML=''; stage.appendChild(n);
+    if(!reduce){ stage.classList.remove('fwd','back'); void stage.offsetWidth; stage.classList.add(dir); }
+    try{window.scrollTo(0,0);}catch(e){} }
+
+  // ---------- estado ----------
+  var answers={}, tentou='', qi=0, enviado=false;
+
+  // ---------- abertura ----------
+  function renderIntro(){
+    var n=el('<div></div>');
+    n.innerHTML='<span class="eyebrow">Diagnóstico · donos de empresa</span>'+
+      '<h1>Se a sua demanda dobrasse, o que quebraria primeiro?</h1>'+
+      '<p class="lead">O nome do momento em que você está — e por que a decisão que te ocupa a cabeça não sai.</p>'+
+      '<p class="promessa">6 perguntas, uns 2 minutos. O seu diagnóstico aparece na hora.</p>';
+    var b=el('<div class="btnrow"></div>'); var btn=el('<button class="btn">Começar</button>');
+    btn.addEventListener('click',function(){ qi=0; renderStep('fwd'); }); b.appendChild(btn); n.appendChild(b); show(n); setProg(0,false);
+  }
+  function faltamTxt(){ var f=(PERGUNTAS.length-1)-qi; return f>0?('Faltam '+f):'Última'; }
+
+  function renderStep(dir){
+    var p=PERGUNTAS[qi]; var n=el('<div></div>'); var busy=false;
+    n.innerHTML='<div class="qmeta">'+(qi>0?'<button class="back" type="button">&larr; Voltar</button>':'')+'<span>'+faltamTxt()+'</span></div>'+
+      '<div class="qtxt">'+esc(p.txt)+'</div>'+(p.nota?'<div class="qnota">'+esc(p.nota)+'</div>':'')+'<div class="opts"></div>';
+    var opts=n.querySelector('.opts');
+    p.opcoes.forEach(function(o,idx){
+      var btn=el('<button class="opt'+(answers[p.id]===idx?' sel':'')+'" type="button"><span class="ico">'+(ICONES[o.icone]||'')+'</span><span>'+esc(o.txt)+'</span></button>');
+      btn.addEventListener('click',function(){
+        if(busy) return; busy=true;
+        var sib=opts.querySelectorAll('.opt'); for(var k=0;k<sib.length;k++) sib[k].classList.remove('sel');
+        btn.classList.add('sel'); if(!reduce) btn.classList.add('pick');
+        setTimeout(function(){ escolher(idx,o); }, reduce?0:260);
+      });
+      opts.appendChild(btn);
+    });
+    var back=n.querySelector('.back'); if(back) back.addEventListener('click',function(){ if(qi>0){qi--;renderStep('back');} });
+    show(n, dir||'fwd'); setProg((qi/PERGUNTAS.length)*100);
+  }
+  function escolher(idx,o){ answers[PERGUNTAS[qi].id]=idx; if(o.dev) renderDev(o.dev); else avancar(); }
+  function renderDev(t){
+    var dur = Math.min(4800, Math.max(2200, 1400 + t.length*42)); // escala pelo tamanho da frase
+    var n=el('<div class="dev"><div class="devin"><p></p><div class="devbar"><i></i></div><span class="devhint">toque para seguir</span></div></div>');
+    n.querySelector('p').innerHTML=esc(t); show(n);
+    var done=false, to;
+    function go(){ if(done) return; done=true; if(to) clearTimeout(to); avancar(); }
+    to=setTimeout(go, reduce?Math.min(dur,1800):dur);
+    if(!reduce){ var bar=n.querySelector('.devbar i'); if(bar){ bar.style.transition='width '+dur+'ms linear'; requestAnimationFrame(function(){ bar.style.width='100%'; }); } else { n.querySelector('.devbar').style.display='none'; } }
+    else { n.querySelector('.devbar').style.display='none'; }
+    n.addEventListener('click', go);
+  }
+  function avancar(){ if(qi<PERGUNTAS.length-1){ qi++; renderStep('fwd'); } else { renderAnalise(); } }
+  function renderAnalise(){
+    setProg(100);
+    var n=el('<div class="analise"><div><div class="an-sp"></div><p>Montando o seu diagnóstico</p><span>lendo as suas respostas uma a uma</span></div></div>');
+    show(n,'fwd');
+    setTimeout(renderAberto, reduce?700:2200);
+  }
+
+  // ---------- resultado aberto (antes do gate) ----------
+  function travHTML(pos){
+    var pct=Math.round(pos*100);
+    return '<div class="trav"><div class="trav-line">'+
+      '<span class="trav-tk" style="left:0%"></span><span class="trav-tk" style="left:100%"></span>'+
+      '<span class="trav-dot" style="left:'+pct+'%"></span></div>'+
+      '<div class="trav-marks"><span>a decisão nasceu</span><span>você está aqui</span><span>do outro lado</span></div></div>';
+  }
+  function renderAberto(){
+    setProg(0,false);
+    var d=calcular(answers); var c=cartaoDados(d); window._d=d;
+    var n=el('<div class="res"></div>');
+    n.innerHTML='<span class="eyebrow">O seu momento</span>'+
+      '<div class="card reveal"><div class="ce">A Alavanca</div><div class="cn">'+esc(d.nome)+'</div><div class="cs">'+esc(d.subtitulo)+'</div>'+
+        travHTML(c.posicao)+'<div class="cf">'+esc(c.frase)+'</div></div>'+
+      '<p class="recon">'+esc(RESULTADOS[d.movimento].reconhecimento)+'</p>'+
+      '<p class="tema-l">O assunto da sua decisão: <b>'+esc(d.tema)+'</b></p>';
+    var row=el('<div class="btnrow"></div>');
+    var ver=el('<button class="btn" type="button">Ver por que não sai &rarr;</button>');
+    var baixar=el('<button class="btn ghost" type="button">Baixar meu cartão</button>');
+    ver.addEventListener('click',function(){ renderGate(d); });
+    baixar.addEventListener('click',function(){ gerarCartao(d,c); });
+    row.appendChild(ver); row.appendChild(baixar); n.appendChild(row);
+    try{ window.fbq && window.fbq('trackCustom','AlavancaResultado',{movimento:d.movimento}); }catch(e){}
+    try{ window.dataLayer && window.dataLayer.push({event:'alavanca_resultado',movimento:d.movimento,nome:d.nome}); }catch(e){}
+    show(n);
+  }
+
+  function mascara(v){ v=(v||'').replace(/\D/g,'').slice(0,11);
+    if(v.length>10) return v.replace(/(\d{2})(\d{5})(\d{4}).*/,'($1) $2-$3');
+    if(v.length>6)  return v.replace(/(\d{2})(\d{4,5})(\d{0,4}).*/,'($1) $2-$3');
+    if(v.length>2)  return v.replace(/(\d{2})(\d{0,5}).*/,'($1) $2');
+    if(v.length>0)  return v.replace(/(\d{0,2}).*/,'($1'); return v; }
+
+  // ---------- gate ----------
+  function renderGate(d){
+    var n=el('<div></div>');
+    n.innerHTML='<span class="eyebrow">Falta a parte que importa</span>'+
+      '<h1 style="font-size:clamp(25px,6.2vw,34px)">Por que esse movimento não sai</h1>'+
+      '<p class="lead">O que trava de verdade, e as três perguntas que destravam. Deixa como te chamo pro grupo do seu assunto — <strong style="color:var(--ink)">'+esc(d.tema)+'</strong>.</p>'+
+      '<div style="margin-top:22px">'+
+        '<div class="erro" id="erro"></div>'+
+        '<div class="field"><label class="lbl" for="nome">Nome <span class="req">*</span></label><input id="nome" type="text" autocomplete="name" placeholder="Seu nome"></div>'+
+        '<div class="field"><label class="lbl" for="zap">WhatsApp com DDD <span class="req">*</span></label><input id="zap" type="tel" inputmode="numeric" autocomplete="tel" placeholder="(11) 99999-9999"></div>'+
+        '<div class="field"><label class="lbl" for="email">E-mail</label><input id="email" type="email" autocomplete="email" placeholder="seu@email.com"></div>'+
+        '<div class="field"><label class="lbl" for="empresa">Sua empresa</label><input id="empresa" type="text" placeholder="Nome e segmento"></div>'+
+        '<div class="field"><label class="lbl" for="tentou">O que você já tentou e não funcionou?</label><textarea id="tentou" placeholder="Pode ser uma linha. Ou pode pular."></textarea></div>'+
+      '</div>';
+    var row=el('<div class="btnrow"></div>');
+    var btn=el('<button class="btn" id="enviar" type="button">Ver o diagnóstico completo &rarr;</button>');
+    row.appendChild(btn); n.appendChild(row);
+    n.appendChild(el('<p class="micro">Sem spam. É só pra te chamar pro grupo e pra conversa do seu tema.</p>'));
+    show(n);
+    var zap=n.querySelector('#zap'); zap.addEventListener('input',function(){ this.value=mascara(this.value); });
+    var eb=n.querySelector('#erro'); function erro(m){ eb.textContent=m; eb.classList.add('show'); eb.scrollIntoView({block:'center'}); }
+    btn.addEventListener('click',function(){
+      eb.classList.remove('show');
+      var nome=(n.querySelector('#nome').value||'').trim();
+      var digits=(n.querySelector('#zap').value||'').replace(/\D/g,'');
+      var email=(n.querySelector('#email').value||'').trim();
+      var empresa=(n.querySelector('#empresa').value||'').trim();
+      tentou=(n.querySelector('#tentou').value||'').trim();
+      if(!nome) return erro('Escreva o seu nome.');
+      if(digits.length<10) return erro('Confira o WhatsApp com DDD.');
+      if(enviado) return; enviado=true; btn.disabled=true; btn.textContent='Enviando...';
+      enviar(d,nome,digits,email,empresa);
+      renderCompleto(d);
+    });
+  }
+
+  // ---------- resultado completo (atras do gate) ----------
+  function renderCompleto(d){
+    var R=RESULTADOS[d.movimento]; var h='<div class="res">';
+    h+='<span class="eyebrow">'+esc(d.nome)+'</span>';
+    h+='<div class="block" style="margin-top:14px;border-top:0;padding-top:0"><div class="block-h">O que te trava não é o que você respondeu</div><p>'+fmt(R.oQueTrava)+'</p>';
+    PRED_ORDEM.forEach(function(s){ if(d.sinais.indexOf(s)>=0 && PREDICOES[s]) h+='<p>'+fmt(PREDICOES[s])+'</p>'; });
+    h+='</div>';
+    h+='<div class="block"><div class="block-h">Três perguntas que destravam isso</div><ul class="pergs">';
+    R.perguntas.forEach(function(q){ h+='<li>'+esc(q)+'</li>'; }); h+='</ul>';
+    if(R.nota) h+='<div class="nota">'+esc(R.nota)+'</div>'; h+='</div>';
+    h+='<div class="fecho"><h3>O que este teste não te disse</h3>'+
+      '<p>Ele nomeou o seu momento e te deu três perguntas. Elas são suas, e valem mais que qualquer plano: respondidas, decidem sozinhas.</p>'+
+      '<p>O que ele não faz é a parte que falta. Decisão desse tamanho não precisa de mais informação — precisa de <strong>alguém de fora que tente derrubá-la antes de você executar</strong>, e que tenha obrigação com o seu resultado. Sócio, contador e amigo não têm.</p>'+
+      '<p>Eu mantenho um grupo de donos de empresa nessa mesma travessia. Não é lista de conteúdo: é de onde eu chamo gente pra conversas por assunto, conforme o que cada um está decidindo. <span class="tema">O seu assunto é '+esc(d.tema)+'.</span></p>'+
+      '<div id="cta"></div></div></div>';
+    var n=el(h);
+    var cta=n.querySelector('#cta'); var row=el('<div class="btnrow"></div>');
+    var grupo = GRUPO_URL ? el('<a class="btn" href="'+GRUPO_URL+'" target="_blank" rel="noopener">Quero entrar no grupo &rarr;</a>')
+                          : el('<button class="btn" type="button" id="grupo">Quero entrar no grupo &rarr;</button>');
+    var baixar=el('<button class="btn ghost" type="button">Baixar meu cartão</button>');
+    baixar.addEventListener('click',function(){ gerarCartao(d, cartaoDados(d)); });
+    if(!GRUPO_URL) grupo.addEventListener('click',function(){ alert('Em instantes você recebe o convite do grupo no seu WhatsApp.'); });
+    row.appendChild(grupo); row.appendChild(baixar); cta.appendChild(row);
+    show(n);
+  }
+
+  // ---------- envio pro Control ----------
+  function montarDesafio(d){
+    var L=[];
+    L.push('Momento: '+d.nome+' ('+MOV_LABEL[d.movimento]+')');
+    L.push('Tema: '+d.tema);
+    L.push('Postergação: '+ansTxt('tempo'));
+    L.push('Hesitação: '+ansTxt('hesitacao'));
+    L.push('Quem olha a decisão: '+ansTxt('conselho'));
+    L.push('Custo de errar: '+ansTxt('custo'));
+    L.push('Time: '+ansTxt('time'));
+    L.push('Sinais: '+(d.sinais.length?d.sinais.join(', '):'nenhum'));
+    L.push('Já tentou: '+(tentou||'—'));
+    return L.join('\n');
+  }
+  function enviar(d,nome,digits,email,empresa){
+    var payload={ nome:nome, whatsapp:digits, email:email, empresa:empresa, origem:'quiz-alavanca',
+      desafio:montarDesafio(d), tempo_empresa:ansTxt('time'),
+      momento:d.nome, movimento:d.movimento, tema:d.tema, sinais:d.sinais,
+      hesitacao:d.hesitacao, conselho:d.conselho, custo:d.custo, respostas:answers, tentou:tentou, pagina:'quiz-alavanca' };
+    try{ var b=JSON.parse(localStorage.getItem('eh_alavanca')||'[]'); b.push(Object.assign({ts:new Date().toISOString()},payload)); localStorage.setItem('eh_alavanca',JSON.stringify(b)); }catch(e){}
+    try{ window.fbq && window.fbq('track','Lead',{content_name:'A Alavanca'}); }catch(e){}
+    try{ window.dataLayer && window.dataLayer.push({event:'alavanca_lead',movimento:d.movimento}); }catch(e){}
+    fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),keepalive:true})
+      .then(function(res){ return res.json().catch(function(){return {};}).then(function(r){ if(!res.ok||(r&&r.success===false)) console.error('[ALAVANCA] control',res.status,r); else console.info('[ALAVANCA] ok',r); }); })
+      .catch(function(err){ console.error('[ALAVANCA] falhou',err&&err.message); });
+  }
+
+  // ---------- cartao compartilhavel (canvas) ----------
+  function wrapText(x,text,maxW,lh,yStart){
+    var words=text.split(' '), line='', y=yStart, lines=[];
+    for(var i=0;i<words.length;i++){ var t=line?line+' '+words[i]:words[i]; if(x.measureText(t).width>maxW && line){ lines.push(line); line=words[i]; } else line=t; }
+    if(line) lines.push(line);
+    lines.forEach(function(ln){ x.fillText(ln, 90, y); y+=lh; }); return y;
+  }
+  function gerarCartao(d,c){
+    var W=1080,H=1350, cv=document.createElement('canvas'); cv.width=W; cv.height=H; var x=cv.getContext('2d');
+    function draw(){
+      x.fillStyle='#12202e'; x.fillRect(0,0,W,H);
+      x.fillStyle='#e8792f'; x.font='700 30px Inter, sans-serif'; x.textBaseline='alphabetic';
+      x.fillText('A  A L A V A N C A', 90, 150);
+      x.fillStyle='#ffffff'; x.font='600 96px Fraunces, Georgia, serif';
+      var yy=wrapText(x, c.nome, W-180, 104, 320);
+      x.fillStyle='#aeb9c6'; x.font='400 34px Inter, sans-serif'; x.fillText(c.subtitulo, 90, yy+6);
+      // travessia
+      var ly=760, lx0=90, lx1=W-90; x.strokeStyle='#2b3a4b'; x.lineWidth=4; x.beginPath(); x.moveTo(lx0,ly); x.lineTo(lx1,ly); x.stroke();
+      [0,0.5,1].forEach(function(t){ x.fillStyle='#2b3a4b'; x.beginPath(); x.arc(lx0+(lx1-lx0)*t, ly, 7, 0, 6.3); x.fill(); });
+      var dx=lx0+(lx1-lx0)*c.posicao; x.fillStyle='#e8792f'; x.beginPath(); x.arc(dx,ly,18,0,6.3); x.fill();
+      x.fillStyle='#8b97a5'; x.font='600 22px Inter, sans-serif';
+      x.fillText('a decisão nasceu', lx0, ly+50); x.fillStyle='#e8792f'; x.textAlign='center'; x.fillText('você está aqui', (lx0+lx1)/2, ly+50);
+      x.fillStyle='#8b97a5'; x.textAlign='right'; x.fillText('do outro lado', lx1, ly+50); x.textAlign='left';
+      x.fillStyle='#ffffff'; x.font='500 46px Fraunces, Georgia, serif'; wrapText(x, c.frase, W-180, 58, 960);
+      x.fillStyle='#8b97a5'; x.font='600 26px Inter, sans-serif'; x.fillText('ednaldohenper.com.br/quizz', 90, H-80);
+      cv.toBlob(function(blob){
+        try{ var file=new File([blob],'alavanca.png',{type:'image/png'});
+          if(navigator.canShare && navigator.canShare({files:[file]})){ navigator.share({files:[file],title:d.nome}).catch(function(){}); return; } }catch(e){}
+        var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='alavanca-'+d.movimento+'.png'; document.body.appendChild(a); a.click(); a.remove();
+      },'image/png');
+    }
+    if(document.fonts && document.fonts.ready){ document.fonts.ready.then(draw).catch(draw); setTimeout(draw,1200); }
+    else draw();
+  }
+
+  renderIntro();
+})();
+</script>
+</body>
+</html>

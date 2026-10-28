@@ -42,6 +42,14 @@
   .frase{font-family:var(--sans);font-weight:400;font-size:16.5px;line-height:1.5;
     color:var(--ink-soft);text-align:center;max-width:24em;margin-top:13px;text-wrap:balance}
   .frase .hl{color:var(--gold);font-weight:600}
+  .kicker{font-size:11.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:11px;text-align:center}
+  .cred{font-size:13.5px;color:var(--ink-soft);text-align:center;margin-top:13px;line-height:1.5;max-width:24em}
+  .cred b{color:var(--ink);font-weight:600}
+  .stats{display:flex;width:100%;margin-top:20px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:15px 6px;box-shadow:0 10px 30px rgba(0,0,0,.28)}
+  .stats > div{flex:1;text-align:center;padding:0 4px;min-width:0}
+  .stats > div + div{border-left:1px solid var(--line)}
+  .stats b{display:block;font-family:var(--disp);font-weight:600;font-size:21px;color:var(--gold);line-height:1;letter-spacing:.01em}
+  .stats span{display:block;font-size:11px;color:var(--ink-soft);margin-top:6px;line-height:1.25}
 
   /* ---- links ---- */
   .links{width:100%;display:flex;flex-direction:column;gap:13px;margin-top:30px}
@@ -84,10 +92,17 @@
 <div class="wrap">
 
   <div class="ph"><img src="assets/foto.png" alt="Ednaldo Henper"></div>
+  <div class="kicker">Construindo negócios com propósito</div>
   <div class="name">Ednaldo Henper
     <svg width="20" height="20" viewBox="0 0 24 24" aria-label="verificado"><circle cx="12" cy="12" r="12" fill="#1877F2"></circle><path fill="#fff" d="M10.1 16.3l-3.8-3.8 1.6-1.6 2.2 2.2 5.9-5.9 1.6 1.6z"></path></svg>
   </div>
   <p class="frase">Eu ajudo o dono a pensar,<br>comunicar e agir como <span class="hl">dono</span>.</p>
+  <p class="cred">Neurociência no <b>Einstein</b> · Marketing na <b>FGV</b></p>
+  <div class="stats">
+    <div><b>+300</b><span>mentorados</span></div>
+    <div><b>+16k</b><span>líderes treinados</span></div>
+    <div><b>+11</b><span>países</span></div>
+  </div>
 
   <div class="links">
 

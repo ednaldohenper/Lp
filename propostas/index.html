@@ -40,12 +40,12 @@
 
     /* ---- Visão A: escada em degraus ---- */
     .stairs{display:flex;align-items:flex-end;gap:8px;min-height:240px;position:relative;padding-bottom:42px;}
-    .fcap{position:absolute;left:0;bottom:6px;width:calc((100% - 24px)/4*2 + 8px);border-top:2px solid #A65A38;padding-top:9px;display:flex;align-items:center;justify-content:center;}
+    .fcap{position:absolute;left:0;bottom:6px;width:calc((100% - 16px)/3);border-top:2px solid #A65A38;padding-top:9px;display:flex;align-items:center;justify-content:center;}
     .fcap .lbl{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#A65A38;text-align:center;line-height:1.3;}
     .fcap::before,.fcap::after{content:'';position:absolute;top:-2px;width:2px;height:10px;background:#A65A38;}
     .fcap::before{left:0;} .fcap::after{right:0;}
-    .mcap{position:absolute;bottom:6px;left:calc((100% - 24px)/4*2 + 16px);width:calc((100% - 24px)/4);border-top:2px solid #1E40AF;padding-top:9px;display:flex;align-items:center;justify-content:center;}
-    .ecap{position:absolute;bottom:6px;left:calc((100% - 24px)/4*3 + 24px);width:calc((100% - 24px)/4);border-top:2px solid #B98F33;padding-top:9px;display:flex;align-items:center;justify-content:center;}
+    .mcap{position:absolute;bottom:6px;left:calc((100% - 16px)/3 + 8px);width:calc((100% - 16px)/3);border-top:2px solid #1E40AF;padding-top:9px;display:flex;align-items:center;justify-content:center;}
+    .ecap{position:absolute;bottom:6px;left:calc((100% - 16px)/3*2 + 16px);width:calc((100% - 16px)/3);border-top:2px solid #B98F33;padding-top:9px;display:flex;align-items:center;justify-content:center;}
     .ecap .lbl{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#B98F33;text-align:center;line-height:1.3;}
     .ecap::before,.ecap::after{content:'';position:absolute;top:-2px;width:2px;height:10px;background:#B98F33;}
     .ecap::before{left:0;} .ecap::after{right:0;}
@@ -206,9 +206,16 @@
     .cover .ct{position:absolute;left:16px;right:16px;bottom:12px;z-index:2;color:#fff;font-size:clamp(17px,2vw,20px);font-weight:800;line-height:1.12;text-shadow:0 2px 12px rgba(0,0,0,.55);}
     @media(max-width:760px){.cover{margin:-20px -22px 12px;}}
     /* ---- cabecalho compacto (bolinha) p/ produtos que nao sao mentoria/conselho ---- */
-    .chead{display:flex;align-items:center;gap:13px;margin:0 0 12px;}
-    .cmini{flex:none;width:58px;height:58px;border-radius:50%;background-size:cover;background-position:center 20%;background-repeat:no-repeat;box-shadow:0 5px 14px rgba(22,26,32,.20);border:2px solid #fff;}
+    .chead{display:flex;align-items:center;gap:15px;margin:0;}
+    .cmini{flex:none;width:70px;height:70px;border-radius:50%;background-size:cover;background-position:center 20%;background-repeat:no-repeat;box-shadow:0 5px 14px rgba(22,26,32,.20);border:2px solid #fff;}
     .cht-title{font-size:16.5px;font-weight:800;color:var(--grafite);line-height:1.18;letter-spacing:-.01em;}
+    details.pcard{display:block;}
+    details.pcard > summary.chead{list-style:none;cursor:pointer;display:flex;align-items:center;gap:15px;margin:0;}
+    details.pcard > summary.chead::-webkit-details-marker{display:none;}
+    details.pcard > summary.chead:hover .cht-title{color:var(--dourado-esc);}
+    .chev{margin-left:auto;flex:none;font-size:13px;color:var(--cinza);transition:transform .2s ease;}
+    details.pcard[open] .chev{transform:rotate(180deg);}
+    .pbody{margin-top:16px;display:flex;flex-direction:column;}
     /* ---- acordeon (papel na esteira) ---- */
     details.acc{background:var(--creme);border-radius:10px;margin-bottom:14px;overflow:hidden;border:1px solid rgba(201,162,74,.22);}
     details.acc summary{cursor:pointer;list-style:none;padding:10px 14px;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--dourado-esc);font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:10px;user-select:none;}
@@ -247,13 +254,12 @@
     <section class="vis">
       <span class="vis-label">A esteira <small>— captação → evento → mentoria</small></span>
       <div class="stairs">
-        <div class="stair"><div class="block" style="--ac:#2E9E8F;--h:90px"><span class="sn">◆ Captação</span><span class="pn">Low-tickets &amp; iscas</span><span class="pr">Grátis / baixo</span><span class="fm">Palestras · workshops · livros · diagnóstico · Ascensão</span></div></div>
-        <div class="stair"><div class="block" style="--ac:#1E6FB0;--h:125px"><span class="sn">Captação · evento de entrada</span><span class="pn">Negócio nos Trilhos</span><span class="pr">R$ 67</span><span class="fm">Aquece e leva à Imersão</span></div></div>
+        <div class="stair"><div class="block" style="--ac:#2E9E8F;--h:150px"><span class="sn">◆ Captação · captura</span><span class="pn">Iscas, cursos e eventos de entrada</span><span class="pr">Grátis – R$ 67</span><span class="fm">Palestras · workshops · livros · diagnóstico · Ascensão · Negócio nos Trilhos</span></div></div>
         <div class="fcap"><span class="lbl">Funil de captura · capta, aquece e leva ao evento &rarr;</span></div>
-        <div class="stair"><div class="block hero" style="--ac:#1E40AF;--h:250px"><span class="star">★ O produto</span><span class="sn">Destino · a mentoria</span><span class="pn">Ciclo da Inovação</span><span class="pr">R$60k/ano</span><span class="fm">Trimestral · contínuo</span><div class="dslist"><div class="dsitem" style="--dc:#7C6BFF"><span class="stag">Downsell 1</span><b>Protocolo Maestria</b><i>1º trecho · R$18k/90 dias</i></div><div class="dsitem" style="--dc:#4A7FA5"><span class="stag">Downsell 2</span><span class="stag" style="--dc:#2E9E8F;margin-left:4px">★ Bônus</span><b>Força Motriz</b><i>jornada gravada (4 meses) · R$4.9–9.9k</i></div></div></div></div>
+        <div class="stair"><div class="block hero" style="--ac:#1E40AF;--h:250px"><span class="star">★ O produto</span><span class="sn">Destino · em grupo</span><span class="pn">Ciclo da Inovação</span><span class="pr">R$60k/ano</span><span class="fm">Trimestral · contínuo</span><div class="dslist"><div class="dsitem" style="--dc:#7C6BFF"><span class="stag">Downsell 1</span><b>Protocolo Maestria</b><i>1º trecho · R$18k/90 dias</i></div><div class="dsitem" style="--dc:#4A7FA5"><span class="stag">Downsell 2</span><span class="stag" style="--dc:#2E9E8F;margin-left:4px">★ Bônus</span><b>Força Motriz</b><i>jornada gravada (4 meses) · R$4.9–9.9k</i></div></div></div></div>
         <div class="stair"><div class="block" style="--ac:#C9A24A;--h:340px"><span class="sn">Destino · individual</span><span class="pn">O Conselho</span><span class="pr">R$120k/ano</span><span class="fm">O Ednaldo sozinho</span></div></div>
-        <div class="mcap"><span class="lbl">O destino · a mentoria</span></div>
-        <div class="ecap"><span class="lbl">↑ Evolução dos mentorados</span></div>
+        <div class="mcap"><span class="lbl">O destino · em grupo</span></div>
+        <div class="ecap"><span class="lbl">O destino · individual</span></div>
       </div>
     </section>
 
@@ -271,8 +277,9 @@
     <p class="group-s">Entradas de baixo (ou zero) ticket. O trabalho é o mesmo: encher o evento. <strong>Não devem reaparecer de graça dentro dele.</strong></p>
     <div class="grid">
 
-      <div class="card palestras">
-        <div class="chead"><span class="cmini" style="background-image:url('/assets/covers/lideranca.jpg?v=2')"></span><span class="cht-title">Palestras</span></div>
+      <details class="card palestras pcard">
+        <summary class="chead"><span class="cmini" style="background-image:url('/assets/covers/lideranca.jpg?v=2')"></span><span class="cht-title">Palestras</span><span class="chev" aria-hidden="true">▾</span></summary>
+        <div class="pbody">
         <div class="meta"><span class="chip">Captação · palestra-isca</span><span class="chip price">Grátis</span></div>
         <details class="acc"><summary>Papel na esteira</summary><p>Palestras de alto valor percebido que captam público novo e geram autoridade. <strong>Levam ao Ascensão ou direto para a Imersão.</strong> Cada linha com LP, PDF e Slides conforme disponível (🔒 = protegido por senha).</p><p><strong>Liderança Situacional</strong> · Palestra · gestão de pessoas — O erro de liderar todo mundo igual e como adaptar seu estilo à maturidade de cada pessoa para reter e desenvolver talentos.</p></details>
         <div class="pal-list">
@@ -295,9 +302,11 @@
           <div class="pal-row pal-empty"><span class="pal-sub">+ novas palestras entram aqui</span></div>
         </div>
       </div>
+      </details>
 
-      <div class="card palestras">
-        <div class="chead"><span class="cmini" style="background-image:url('/assets/covers/alicerce.jpg?v=2')"></span><span class="cht-title">Workshops</span></div>
+      <details class="card palestras pcard">
+        <summary class="chead"><span class="cmini" style="background-image:url('/assets/covers/alicerce.jpg?v=2')"></span><span class="cht-title">Workshops</span><span class="chev" aria-hidden="true">▾</span></summary>
+        <div class="pbody">
         <div class="meta"><span class="chip">Captação · workshop-isca</span><span class="chip price">Grátis</span></div>
         <details class="acc"><summary>Papel na esteira</summary><p>Workshops e encontros de imersão curta que aproximam o público e geram relação. Cada linha com LP, PDF e Slides conforme disponível (🔒 = protegido por senha).</p><p><strong>O Alicerce</strong> · Workshop · encontro de casais — As 4 lições de Jesus para casais: se ouvir, se valorizar, crescer juntos e amar sem cobrança. Fé + ciência, numa tarde a dois.</p></details>
         <div class="pal-list">
@@ -312,9 +321,11 @@
           <div class="pal-row pal-empty"><span class="pal-sub">+ novos workshops entram aqui</span></div>
         </div>
       </div>
+      </details>
 
-      <div class="card livros">
-        <div class="chead"><span class="cmini" style="background-image:url('/assets/covers/livros.jpg?v=2')"></span><span class="cht-title">Livros</span></div>
+      <details class="card livros pcard">
+        <summary class="chead"><span class="cmini" style="background-image:url('/assets/covers/livros.jpg?v=2')"></span><span class="cht-title">Livros</span><span class="chev" aria-hidden="true">▾</span></summary>
+        <div class="pbody">
         <div class="meta"><span class="chip">Captação · topo de funil</span><span class="chip price">Ticket baixo</span></div>
         <details class="acc"><summary>Papel na esteira</summary><p>Autoridade e topo de funil: entram cedo, geram confiança e alimentam a captação para o evento.</p></details>
         <div class="books">
@@ -328,9 +339,11 @@
           </div>
         </div>
       </div>
+      </details>
 
-      <div class="card diag">
-        <div class="chead"><span class="cmini" style="background:linear-gradient(135deg,#6B7280,#3F454E)"></span><span class="cht-title">Diagnóstico</span></div>
+      <details class="card diag pcard">
+        <summary class="chead"><span class="cmini" style="background:linear-gradient(135deg,#6B7280,#3F454E)"></span><span class="cht-title">Diagnóstico</span><span class="chev" aria-hidden="true">▾</span></summary>
+        <div class="pbody">
         <div class="meta"><span class="chip">Captação · captura</span><span class="chip price">Grátis</span></div>
         <details class="acc"><summary>Papel na esteira</summary><p>Ferramentas gratuitas de diagnóstico. Capturam o lead, geram consciência do problema e abrem caminho para o evento.</p><p><strong>Raio-X de Senioridade de Dono</strong> · o dono — Mede o nível de senioridade do dono e em que fase ele está na jornada de maturidade.</p><p><strong>Análise Maestria</strong> · As 9 Janelas · o negócio — Diagnóstico das 9 janelas do negócio, mostra onde o crescimento emperra.</p><p><strong>Perfil do Líder</strong> · Liderança · o dono — Diagnóstico do perfil de liderança, identifica o estilo do líder e os pontos a desenvolver.</p></details>
         <div class="pal-list">
@@ -355,10 +368,12 @@
           <div class="pal-row pal-empty"><span class="pal-sub">+ novos diagnósticos entram aqui</span></div>
         </div>
       </div>
+      </details>
 
 
-      <div class="card chave">
-        <div class="chead"><span class="cmini" style="background:linear-gradient(135deg,#22A8F0,#0E5C8A)"></span><span class="cht-title">A Chave do Tempo</span></div>
+      <details class="card chave pcard">
+        <summary class="chead"><span class="cmini" style="background:linear-gradient(135deg,#22A8F0,#0E5C8A)"></span><span class="cht-title">A Chave do Tempo</span><span class="chev" aria-hidden="true">▾</span></summary>
+        <div class="pbody">
         <div class="meta"><span class="chip">Captação · desafio 7 dias</span><span class="chip price">R$ 67–97</span><span class="chip warn">checkout + vídeo pendentes</span></div>
         <details class="acc"><summary>Papel na esteira</summary><p>Dono sufocado pela falta de tempo, que quer uma <strong>vitória rápida</strong>: recuperar horas e sentir que “funciona” em 7 dias. Impulso de baixo risco e <strong>pico de venda periódico</strong> — entra na captação, aquecendo para o evento.</p></details>
         <a class="kit-link" href="kits/chave-do-tempo.html" target="_blank" rel="noopener">🎨 Guia de estilo ↗</a>
@@ -367,6 +382,7 @@
           <a class="btn btn-pdf" href="pdfs/achavedotempo.pdf" download>Baixar PDF</a>
         </div>
       </div>
+      </details>
 
     </div>
     </div>
@@ -377,8 +393,9 @@
     <p class="group-s">Entradas que aquecem e levam à Imersão: o evento online recorrente (Ascensão) e o produto de entrada (Negócio nos Trilhos).</p>
     <div class="grid">
 
-      <div class="card ascensao">
-        <div class="chead"><span class="cmini" style="background-image:url('/assets/covers/ascensao.jpg?v=2')"></span><span class="cht-title">Ascensão Empresarial</span></div>
+      <details class="card ascensao pcard">
+        <summary class="chead"><span class="cmini" style="background-image:url('/assets/covers/ascensao.jpg?v=2')"></span><span class="cht-title">Ascensão Empresarial</span><span class="chev" aria-hidden="true">▾</span></summary>
+        <div class="pbody">
         <div class="meta"><span class="chip">Captação · online recorrente</span><span class="chip price">R$ 67</span></div>
         <details class="acc"><summary>Papel na esteira</summary><p>Dono de PME curioso, que quer “ver o Ednaldo ao vivo” antes de se comprometer. Ticket baixo derruba a objeção. <strong>O palco vende o evento (a Imersão)</strong>, não entrega o método completo de graça.</p></details>
         <a class="kit-link" href="kits/ascensao-empresarial.html" target="_blank" rel="noopener">🎨 Guia de estilo ↗</a>
@@ -388,9 +405,11 @@
           <a class="btn btn-slides" href="slides/?f=ascensao&amp;t=html" target="_blank" rel="noopener">🔒 Slides</a>
         </div>
       </div>
+      </details>
 
-      <div class="card negocio">
-        <div class="chead"><span class="cmini" style="background-image:url('/assets/covers/negocio.jpg?v=2')"></span><span class="cht-title">Negócio nos Trilhos</span></div>
+      <details class="card negocio pcard">
+        <summary class="chead"><span class="cmini" style="background-image:url('/assets/covers/negocio.jpg?v=2')"></span><span class="cht-title">Negócio nos Trilhos</span><span class="chev" aria-hidden="true">▾</span></summary>
+        <div class="pbody">
         <div class="meta"><span class="chip">Captação · produto de entrada</span><span class="chip price">R$ 67</span></div>
         <details class="acc"><summary>Papel na esteira</summary><p>Produto de entrada (treinamento). Atrai o dono que quer fazer o negócio render mais e o traz para dentro da esteira — aquece para a <strong>Imersão Método GNC</strong>.</p></details>
         <div class="actions">
@@ -398,6 +417,7 @@
           <span class="btn btn-off" title="PDF ainda não enviado">PDF pendente</span>
         </div>
       </div>
+      </details>
 
     </div>
     </div>
@@ -408,29 +428,35 @@
     <p class="group-s">Cursos e treinamentos avulsos. As páginas em HTML entram assim que você enviar — aí eu ligo os links e as capas.</p>
     <div class="grid">
 
-      <div class="card curso">
-        <div class="chead"><span class="cmini" style="background-image:url('/assets/covers/vendamais.jpg?v=1')"></span><span class="cht-title">Método Venda Mais</span></div>
+      <details class="card curso pcard">
+        <summary class="chead"><span class="cmini" style="background-image:url('/assets/covers/vendamais.jpg?v=1')"></span><span class="cht-title">Método Venda Mais</span><span class="chev" aria-hidden="true">▾</span></summary>
+        <div class="pbody">
         <div class="meta"><span class="chip">Curso / treinamento</span></div>
         <div class="actions">
           <a class="btn btn-lp" href="/metodovendamais/" target="_blank" rel="noopener">Ver LP</a>
         </div>
       </div>
+      </details>
 
-      <div class="card curso">
-        <div class="chead"><span class="cmini" style="background-image:url('/assets/covers/expert.jpg?v=1')"></span><span class="cht-title">Expert com Pessoas</span></div>
+      <details class="card curso pcard">
+        <summary class="chead"><span class="cmini" style="background-image:url('/assets/covers/expert.jpg?v=1')"></span><span class="cht-title">Expert com Pessoas</span><span class="chev" aria-hidden="true">▾</span></summary>
+        <div class="pbody">
         <div class="meta"><span class="chip">Curso / treinamento</span></div>
         <div class="actions">
           <a class="btn btn-lp" href="/expertcompessoas/" target="_blank" rel="noopener">Ver LP</a>
         </div>
       </div>
+      </details>
 
-      <div class="card curso">
-        <div class="chead"><span class="cmini" style="background-image:url('/assets/covers/planner.jpg?v=1')"></span><span class="cht-title">Planner</span></div>
+      <details class="card curso pcard">
+        <summary class="chead"><span class="cmini" style="background-image:url('/assets/covers/planner.jpg?v=1')"></span><span class="cht-title">Planner</span><span class="chev" aria-hidden="true">▾</span></summary>
+        <div class="pbody">
         <div class="meta"><span class="chip">Curso / treinamento</span></div>
         <div class="actions">
           <a class="btn btn-lp" href="/planner/" target="_blank" rel="noopener">Ver LP</a>
         </div>
       </div>
+      </details>
 
     </div>
     </div>
@@ -441,8 +467,9 @@
     <p class="group-s">Os dois encontros presenciais de 2 dias, lado a lado. <strong>Método GNC</strong> — o dono e o negócio; o 1º movimento, onde a mentoria é vendida no palco. <strong>Foco no Essencial</strong> — o dono como pessoa (fora do funil). A diferença precisa estar clara pra não competirem pelo mesmo fim de semana.</p>
     <div class="grid">
 
-      <div class="card gnc">
-        <div class="chead"><span class="cmini" style="background-image:url('/assets/covers/metodognc.jpg?v=2')"></span><span class="cht-title">Imersão Método GNC</span></div>
+      <details class="card gnc pcard">
+        <summary class="chead"><span class="cmini" style="background-image:url('/assets/covers/metodognc.jpg?v=2')"></span><span class="cht-title">Imersão Método GNC</span><span class="chev" aria-hidden="true">▾</span></summary>
+        <div class="pbody">
         <div class="meta"><span class="chip">Primeiro movimento</span><span class="chip">Presencial · 2 dias · Monte Sião</span><span class="chip warn">nome do evento a definir</span></div>
         <details class="acc"><summary>Papel na esteira</summary><p>O <strong>primeiro movimento</strong> da mentoria. Dois dias trabalhando três áreas (o dono, o relacionamento e o negócio). <strong>É aqui que a mentoria é vendida, no palco.</strong> A Jornada Força Motriz (4 meses, gravada) vem dentro das faixas 2 e 3 do evento; fora dele, reaparece como <strong>2º downsell (2ª retentativa)</strong> da mentoria.</p></details>
         <div class="faixas">
@@ -455,9 +482,11 @@
           <span class="btn btn-off" title="PDF ainda não enviado">PDF pendente</span>
         </div>
       </div>
+      </details>
 
-      <div class="card foco">
-        <div class="chead"><span class="cmini" style="background-image:url('/assets/covers/foco.jpg?v=2')"></span><span class="cht-title">Foco no Essencial</span></div>
+      <details class="card foco pcard">
+        <summary class="chead"><span class="cmini" style="background-image:url('/assets/covers/foco.jpg?v=2')"></span><span class="cht-title">Foco no Essencial</span><span class="chev" aria-hidden="true">▾</span></summary>
+        <div class="pbody">
         <div class="meta"><span class="chip">Fora da esteira · evento anual</span><span class="chip">Inteligência emocional do dono</span><span class="chip price">Pré-venda 2027</span></div>
         <details class="acc"><summary>A fronteira</summary><p>Vira <strong>evento anual de inteligência emocional do dono</strong>. Foco no Essencial é o dono como pessoa; a Imersão Método GNC é o dono <strong>e</strong> o negócio. As duas são presenciais de 2 dias — a linha precisa estar dita em toda peça pra elas não competirem pelo mesmo fim de semana.</p></details>
         <a class="kit-link" href="kits/foco-no-essencial.html" target="_blank" rel="noopener">🎨 Guia de estilo ↗</a>
@@ -466,6 +495,7 @@
           <span class="btn btn-off" title="PDF ainda não enviado">PDF pendente</span>
         </div>
       </div>
+      </details>
 
     </div>
     </div>

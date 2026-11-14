@@ -15,6 +15,41 @@
     var t=setInterval(scan,150); setTimeout(function(){ clearInterval(t); },10000);
   })();
   </script>
+  <script>
+  /* Botao de tela cheia (para cast/Chromecast/Google TV preencher a tela). */
+  (function(){
+    var btn;
+    function inFS(){ return document.fullscreenElement||document.webkitFullscreenElement; }
+    function reqFS(){ var el=document.documentElement; (el.requestFullscreen||el.webkitRequestFullscreen||function(){}).call(el); }
+    function exitFS(){ (document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document); }
+    function sync(){ if(!btn) return; if(inFS()){ btn.textContent='✕ Sair'; } else { btn.textContent='⛶ Tela cheia'; btn.style.opacity='1'; } }
+    var hideT;
+    function flash(){ if(!btn) return; btn.style.opacity='1'; clearTimeout(hideT); if(inFS()){ hideT=setTimeout(function(){ btn.style.opacity='0'; },2500); } }
+    function make(){
+      if(btn&&document.body.contains(btn)) return;
+      btn=document.createElement('button');
+      btn.type='button';
+      btn.textContent='⛶ Tela cheia';
+      btn.setAttribute('aria-label','Tela cheia');
+      btn.style.cssText='position:fixed;top:14px;right:14px;z-index:2147483647;'+
+        'font:600 13px/1 -apple-system,BlinkMacSystemFont,sans-serif;color:#fff;'+
+        'background:rgba(10,10,16,.62);border:1px solid rgba(255,255,255,.28);'+
+        'padding:8px 12px;border-radius:999px;cursor:pointer;backdrop-filter:blur(6px);'+
+        '-webkit-backdrop-filter:blur(6px);transition:opacity .25s;opacity:1;';
+      btn.addEventListener('click',function(e){ e.stopPropagation(); if(inFS()) exitFS(); else reqFS(); });
+      document.body.appendChild(btn);
+      sync();
+    }
+    function boot(){ try{ make(); }catch(e){} }
+    document.addEventListener('DOMContentLoaded',boot);
+    if(document.readyState!=='loading') boot();
+    var bt=setInterval(boot,400); setTimeout(function(){ clearInterval(bt); },12000);
+    document.addEventListener('fullscreenchange',function(){ sync(); flash(); });
+    document.addEventListener('webkitfullscreenchange',function(){ sync(); flash(); });
+    document.addEventListener('mousemove',flash);
+    document.addEventListener('touchstart',flash,{passive:true});
+  })();
+  </script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #faf9f5; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
